@@ -519,7 +519,7 @@ def build_plan_prompt(task_info, graph_context, role="planner", review=None, cod
         allowed = infer_allowed_files(task_info)
     header = {
         "planner": "You are the local planner for a bounded workstation auto-run. Return a concise implementation plan only. Do not invent scope. If you cannot plan safely, say BLOCKED and why.",
-        "coder": "You are the local coder for a bounded workstation auto-run. Return only a single unified diff block if safe. The diff must stay within Allowed Files and respect the file count limit. If blocked, say BLOCKED and why. Do not include extra prose unless blocked.",
+        "coder": "You are the local coder for a bounded workstation auto-run. Return only a single git-style unified diff block if safe, with diff --git and a/ b/ path prefixes. The diff must stay within Allowed Files and respect the file count limit. If blocked, say BLOCKED and why. Do not include extra prose unless blocked.",
         "reviewer": "You are the local reviewer for a bounded workstation auto-run. Explain why the current attempt or test failed or was blocked, and name the smallest safe next fix. Keep it concise.",
     }[role]
     parts = [
@@ -562,11 +562,32 @@ def build_plan_prompt(task_info, graph_context, role="planner", review=None, cod
 def extract_diff(text: str):
     m = re.search(r"```(?:diff|patch)\s*\n(.*?)```", text, re.S)
     if m:
-        return m.group(1).strip() + "\n"
+        return normalize_diff(m.group(1))
     if "diff --git" in text:
         start = text.index("diff --git")
-        return text[start:].strip() + "\n"
+        return normalize_diff(text[start:])
     return ""
+
+def normalize_diff(text: str):
+    lines = [line.rstrip() for line in text.strip().splitlines()]
+    normalized = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("--- ") and i + 1 < len(lines) and lines[i + 1].startswith("+++ "):
+            old_path = line[4:].strip()
+            new_path = lines[i + 1][4:].strip()
+            if old_path != "/dev/null" and not old_path.startswith(("a/", "b/")):
+                old_path = f"a/{old_path}"
+            if new_path != "/dev/null" and not new_path.startswith(("a/", "b/")):
+                new_path = f"b/{new_path}"
+            normalized.append(f"--- {old_path}")
+            normalized.append(f"+++ {new_path}")
+            i += 2
+            continue
+        normalized.append(line)
+        i += 1
+    return "\n".join(normalized).strip() + "\n"
 
 def docs_only(paths):
     if not paths:
