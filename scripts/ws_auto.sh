@@ -574,6 +574,28 @@ def docs_only(paths):
             return False
     return True
 
+def infer_allowed_files(task_info):
+    explicit = []
+    text = "\n".join(
+        [
+            task_info.get("body", ""),
+            task_info.get("goal", ""),
+            "\n".join(task_info.get("acceptance", [])),
+            task_info.get("notes", ""),
+        ]
+    )
+    candidates = [
+        "START_HERE.md",
+        "WORKSTATION_MANUAL.md",
+        "LOCAL_AI_STACK_STATUS.md",
+        "FINAL_RECOMMENDED_PROFILE.md",
+        "README.md",
+    ]
+    for name in candidates:
+        if name in text:
+            explicit.append(name)
+    return explicit
+
 def write_run_file(run_dir: Path, name: str, content: str):
     write_text(run_dir / name, content)
 
@@ -701,7 +723,12 @@ for task_info in tasks:
     allowed_file = run_dir / "allowed_files.txt"
     allowed_file.write_text("\n".join(task_info["allowed"]) + "\n", encoding="utf-8", newline="\n")
     if not task_info["allowed"]:
-        allowed_file.write_text("not specified\n", encoding="utf-8")
+        inferred_allowed = infer_allowed_files(task_info)
+        if inferred_allowed:
+            allowed_file.write_text("\n".join(inferred_allowed) + "\n", encoding="utf-8", newline="\n")
+            append_text(run_dir / "local_attempts.md", f"- Inferred Allowed Files: {', '.join(inferred_allowed)}\n")
+        else:
+            allowed_file.write_text("not specified\n", encoding="utf-8")
 
     local_status = "BLOCKED_LOCAL"
     tests_passed = False
