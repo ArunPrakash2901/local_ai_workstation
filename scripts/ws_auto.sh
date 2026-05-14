@@ -30,6 +30,7 @@ export AUTO_TASK_FILE="$TASK_FILE"
 
 "$PYTHON" - "$@" <<'PY'
 import argparse
+import difflib
 import importlib.util
 import json
 import os
@@ -589,6 +590,25 @@ def normalize_diff(text: str):
         i += 1
     return "\n".join(normalized).strip() + "\n"
 
+def strip_code_fences(text: str):
+    m = re.search(r"```(?:json|diff|patch|text|markdown)?\s*\n(.*?)```", text, re.S)
+    return m.group(1).strip() if m else text.strip()
+
+def patch_is_approximate(text: str):
+    markers = (
+        "index 1234567..89abcdef",
+        "index 1234567..",
+        "@@ -1,5 +1,6 *",
+        "@@ -20,6 +20,7 @@ The `ws` command is part of the local AI workstation. It offers a range of com...",
+    )
+    if any(marker in text for marker in markers):
+        return True
+    if re.search(r"^@@[^\n]*\.\.\.[^\n]*$", text, re.M):
+        return True
+    if re.search(r"^index\s+[0-9a-f]{7,8}\.\.[0-9a-f]{7,8}\s*$", text, re.M) and "placeholder" in text.lower():
+        return True
+    return False
+
 def validate_patch_syntax(patch_text: str):
     text = patch_text.strip()
     if not text:
@@ -627,7 +647,217 @@ def validate_patch_syntax(patch_text: str):
         return False, "no hunk headers found"
     return True, "SAFE"
 
-def record_rejected_patch(run_dir: Path, patch_text: str, reason: str, stage: str):
+def docs_rewrite_candidates(allowed_files, project_dir: Path):
+    doc_names = {"START_HERE.md", "WORKSTATION_MANUAL.md", "LOCAL_AI_STACK_STATUS.md", "FINAL_RECOMMENDED_PROFILE.md", "README.md"}
+    candidates = []
+    total = 0
+    for rel in allowed_files:
+        rel_norm = rel.replace("\\", "/")
+        name = Path(rel_norm).name
+        if name not in doc_names and Path(rel_norm).suffix.lower() not in {".md", ".txt"}:
+            return None
+        path = (project_dir / rel_norm).resolve()
+        try:
+            path.relative_to(project_dir)
+        except ValueError:
+            return None
+        if not path.exists() or not path.is_file():
+            return None
+        size = path.stat().st_size
+        if size > 20000:
+            return None
+        total += size
+        if total > 40000:
+            return None
+        candidates.append(rel_norm)
+    return candidates
+
+def load_rewrite_snapshots(project_dir: Path, allowed_files):
+    snapshots = []
+    for rel in allowed_files:
+        path = project_dir / rel
+        snapshots.append({
+            "path": rel,
+            "content": path.read_text(encoding="utf-8", errors="replace"),
+        })
+    return snapshots
+
+def build_docs_rewrite_prompt(task_info, graph_context, snapshots, ws_help_text, review=None):
+    parts = [
+        "You are the local coder for a bounded workstation auto-run.",
+        "You will be shown the exact current contents of allowed documentation files.",
+        "Return ONLY JSON or NO_PATCH.",
+        "Do not use markdown fences, placeholder hashes, ellipses, invented context, or diff headers.",
+        "Each edit must target an exact substring copied from the current file content shown below.",
+        "Do not invent file content. Do not rewrite an entire file unless the edit is anchored to an exact substring from the file.",
+        "If you cannot safely change a file, omit it.",
+        "If nothing needs to change, return NO_PATCH.",
+        "",
+        "Task:",
+        task_info["body"].strip(),
+        "",
+        "Goal:",
+        task_info["goal"].strip() or "not specified",
+        "",
+        "Acceptance Criteria:",
+        "\n".join(f"- {x}" for x in task_info["acceptance"]) or "- not specified",
+        "",
+        "Allowed Files:",
+        "\n".join(f"- {x}" for x in normalized_allowed_files(task_info) or infer_allowed_files(task_info)) or "- not specified",
+        "",
+        "Current File Contents:",
+    ]
+    for snap in snapshots:
+        parts.extend([
+            f"## File: {snap['path']}",
+            "BEGIN FILE CONTENT",
+            snap["content"],
+            "END FILE CONTENT",
+            "",
+        ])
+    parts.extend([
+        "Graph Context:",
+        graph_context,
+        "",
+        "ws help Output:",
+        ws_help_text or "not available",
+        "",
+        "Return JSON in this form:",
+        '{"edits":[{"path":"START_HERE.md","find":"exact substring from file","replace":"replacement text","count":1}]}',
+        "",
+        "Rules:",
+        "- `find` must be copied exactly from the current file content shown above.",
+        "- `replace` may be new text, but it must stay within the allowed file and task scope.",
+        "- If no exact anchor exists, return NO_PATCH.",
+    ])
+    if review:
+        parts.extend(["", "Reviewer Guidance:", review])
+    return "\n".join(parts)
+
+def parse_rewrite_response(text: str):
+    stripped = strip_code_fences(text)
+    if stripped.strip() == "NO_PATCH":
+        return None, "NO_PATCH"
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None, "no JSON object found"
+    payload = stripped[start:end + 1]
+    try:
+        data = json.loads(payload)
+    except Exception as exc:
+        return None, f"invalid JSON payload: {exc}"
+    if isinstance(data, dict) and "edits" in data:
+        items = data["edits"]
+        edits = []
+        if isinstance(items, list):
+            for item in items:
+                if not isinstance(item, dict):
+                    return None, "invalid edits entry"
+                path = str(item.get("path", "")).strip().replace("\\", "/")
+                find = item.get("find", "")
+                replace = item.get("replace", "")
+                count = item.get("count", 1)
+                if not path or not isinstance(find, str) or not isinstance(replace, str):
+                    return None, "invalid edit entry"
+                try:
+                    count = int(count)
+                except Exception:
+                    return None, "invalid edit count"
+                if count < 1:
+                    return None, "invalid edit count"
+                edits.append({"path": path, "find": find, "replace": replace, "count": count})
+            return edits, "SAFE"
+        return None, "invalid edits payload"
+    if isinstance(data, dict) and "files" in data:
+        items = data["files"]
+        rewrite_map = {}
+        if isinstance(items, list):
+            for item in items:
+                if not isinstance(item, dict):
+                    return None, "invalid files entry"
+                path = str(item.get("path", "")).strip().replace("\\", "/")
+                content = item.get("content", "")
+                if not path or not isinstance(content, str):
+                    return None, "invalid file entry"
+                rewrite_map[path] = content
+            return rewrite_map, "SAFE"
+        if isinstance(items, dict):
+            for path, content in items.items():
+                path = str(path).strip().replace("\\", "/")
+                if not path or not isinstance(content, str):
+                    return None, "invalid file entry"
+                rewrite_map[path] = content
+            return rewrite_map, "SAFE"
+        return None, "invalid files payload"
+    if isinstance(data, dict):
+        rewrite_map = {}
+        for path, content in data.items():
+            path = str(path).strip().replace("\\", "/")
+            if not path or not isinstance(content, str):
+                return None, "invalid file entry"
+            rewrite_map[path] = content
+        return rewrite_map, "SAFE"
+    return None, "invalid JSON payload"
+
+def build_patch_from_rewrites(project_dir: Path, rewrite_map, run_dir: Path, allowed_files=None):
+    grounded_dir = run_dir / "grounded_rewrites"
+    grounded_dir.mkdir(parents=True, exist_ok=True)
+    diffs = []
+    changed = []
+    allowed_set = {x.replace("\\", "/") for x in allowed_files} if allowed_files else None
+    if isinstance(rewrite_map, list):
+        grouped = {}
+        for edit in rewrite_map:
+            rel = edit["path"].replace("\\", "/")
+            grouped.setdefault(rel, []).append(edit)
+        items = grouped.items()
+    else:
+        items = ((rel, [{"find": None, "replace": content, "count": 1}]) for rel, content in rewrite_map.items())
+
+    for rel, edits in items:
+        rel_norm = rel.replace("\\", "/")
+        if allowed_set is not None and rel_norm not in allowed_set:
+            return None, [], f"file outside allowed files {rel_norm}"
+        real_path = (project_dir / rel_norm).resolve()
+        try:
+            real_path.relative_to(project_dir)
+        except ValueError:
+            return None, [], f"unsafe path {rel_norm}"
+        if not real_path.exists() or not real_path.is_file():
+            return None, [], f"missing file {rel_norm}"
+        temp_path = grounded_dir / rel_norm
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        old_text = real_path.read_text(encoding="utf-8", errors="replace")
+        new_text = old_text
+        if isinstance(rewrite_map, list):
+            for edit in edits:
+                find = edit["find"]
+                replace = edit["replace"]
+                count = edit.get("count", 1)
+                if find not in new_text:
+                    return None, [], f"anchor not found {rel_norm}: {find[:80]}"
+                new_text = new_text.replace(find, replace, count)
+        else:
+            new_text = edits[0]["replace"]
+        temp_path.write_text(new_text, encoding="utf-8", newline="\n")
+        if old_text == new_text:
+            continue
+        diff = "".join(difflib.unified_diff(
+            old_text.splitlines(keepends=True),
+            new_text.splitlines(keepends=True),
+            fromfile=f"a/{rel_norm}",
+            tofile=f"b/{rel_norm}",
+            lineterm="\n",
+        ))
+        if diff.strip():
+            diffs.append(diff.strip())
+            changed.append(rel_norm)
+    if not diffs:
+        return "", changed, "no changes"
+    return "\n\n".join(diffs) + "\n", changed, "SAFE"
+
+def record_rejected_patch(run_dir: Path, patch_text: str, reason: str, stage: str, *, approximate: bool = False):
     write_run_file(run_dir, "rejected_patch.diff", patch_text)
     write_run_file(run_dir, "patch_validation.md", "\n".join([
         "# Patch Validation",
@@ -635,16 +865,18 @@ def record_rejected_patch(run_dir: Path, patch_text: str, reason: str, stage: st
         f"- Stage: {stage}",
         f"- Result: rejected",
         f"- Reason: {reason}",
+        f"- Approximate: {'yes' if approximate else 'no'}",
         "",
     ]))
 
-def write_patch_validation(run_dir: Path, *, stage: str, result: str, reason: str, repair_attempted: bool, repair_result: str = "not run"):
+def write_patch_validation(run_dir: Path, *, stage: str, result: str, reason: str, repair_attempted: bool, repair_result: str = "not run", approximate: bool = False):
     write_run_file(run_dir, "patch_validation.md", "\n".join([
         "# Patch Validation",
         "",
         f"- Stage: {stage}",
         f"- Result: {result}",
         f"- Reason: {reason}",
+        f"- Approximate: {'yes' if approximate else 'no'}",
         f"- Repair Attempted: {'yes' if repair_attempted else 'no'}",
         f"- Repair Result: {repair_result}",
         "",
@@ -776,6 +1008,9 @@ for task_info in tasks:
     write_run_file(run_dir, "git_status_before.md", git_status_before + "\n")
     write_run_file(run_dir, "status.txt", "IN_PROGRESS\n")
     heartbeat(run_dir, "preflight complete")
+    ws_help_rc, ws_help_out = run_cmd(["bash", str(scripts / "ws"), "help"], timeout=30, run_dir=run_dir, label="ws help")
+    ws_help_text = ws_help_out if ws_help_rc == 0 else ""
+    write_run_file(run_dir, "ws_help.md", ws_help_text + "\n")
 
     planner_prompt = build_plan_prompt(task_info, graph_context, role="planner")
     planner_system = "You are the local planner for a bounded workstation auto-run. Return a concise implementation plan only."
@@ -825,6 +1060,9 @@ for task_info in tasks:
         allowed_file.write_text("\n".join(allowed) + "\n", encoding="utf-8", newline="\n")
     else:
         allowed_file.write_text("not specified\n", encoding="utf-8", newline="\n")
+    grounded_allowed = docs_rewrite_candidates(allowed, project_dir)
+    grounded_snapshots = load_rewrite_snapshots(project_dir, grounded_allowed) if grounded_allowed else []
+    grounded_docs_mode = bool(grounded_allowed)
 
     local_status = "BLOCKED_LOCAL"
     tests_passed = False
@@ -844,24 +1082,61 @@ for task_info in tasks:
 
     for attempt in range(1, max(args.max_attempts, 1) + 1):
         append_text(run_dir / "local_attempts.md", f"\n## Attempt {attempt}\n")
-        coder_prompt = build_plan_prompt(task_info, graph_context, role="coder", review=reviewer_notes)
-        coder_system = "You are the local coder for a bounded workstation auto-run. Return only a single unified diff block if safe. If blocked, say BLOCKED and why."
+        if grounded_docs_mode:
+            coder_prompt = build_docs_rewrite_prompt(task_info, graph_context, grounded_snapshots, ws_help_text, review=reviewer_notes)
+            coder_system = "You are the local coder for a grounded documentation rewrite. Return only JSON or NO_PATCH. Do not emit diffs, markdown fences, placeholder hashes, ellipses, or invented context."
+        else:
+            coder_prompt = build_plan_prompt(task_info, graph_context, role="coder", review=reviewer_notes)
+            coder_system = "You are the local coder for a bounded workstation auto-run. Return only a single git-style unified diff block if safe, with diff --git and a/ b/ path prefixes. The diff must stay within Allowed Files and respect the file count limit. If blocked, say BLOCKED and why. Do not include extra prose unless blocked. Do not invent file content, placeholder hashes, or ellipses. If you cannot produce a valid patch, return NO_PATCH."
         coder_response = call_local_model(coder_model, coder_system, coder_prompt, timeout_seconds=180, run_dir=run_dir, label="coder model")
         append_text(run_dir / "local_attempts.md", f"- Coder Model: {coder_model}\n")
         append_text(run_dir / "local_attempts.md", f"- Coder Preview:\n\n{coder_response[:3000]}\n")
-        patch = extract_diff(coder_response)
-        if not patch:
-            reviewer_prompt = build_plan_prompt(task_info, graph_context, role="reviewer")
-            reviewer_system = "You are the local reviewer for a bounded workstation auto-run. Explain the smallest safe next fix."
-            reviewer_notes = call_local_model(reviewer_model, reviewer_system, reviewer_prompt + "\n\nCurrent coder output:\n\n" + coder_response[:3000], timeout_seconds=180, run_dir=run_dir, label="reviewer model")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
-            continue
+        patch = ""
+        if grounded_docs_mode:
+            rewrite_map, rewrite_reason = parse_rewrite_response(coder_response)
+            if rewrite_map is None:
+                if rewrite_reason == "NO_PATCH":
+                    reviewer_prompt = build_plan_prompt(task_info, graph_context, role="reviewer")
+                    reviewer_system = "You are the local reviewer for a bounded workstation auto-run. Explain the smallest safe next fix."
+                    reviewer_notes = call_local_model(reviewer_model, reviewer_system, reviewer_prompt + "\n\nCurrent coder output:\n\n" + coder_response[:3000], timeout_seconds=180, run_dir=run_dir, label="reviewer model")
+                    append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
+                    append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
+                    continue
+                approximate = True if grounded_docs_mode else patch_is_approximate(coder_response)
+                record_rejected_patch(run_dir, coder_response, rewrite_reason, f"attempt {attempt}", approximate=approximate)
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=rewrite_reason, repair_attempted=False, repair_result="parse-failed", approximate=approximate)
+                local_status = "PATCH_INVALID_APPROXIMATE" if approximate else "PATCH_INVALID"
+                break
+            patch, changed_files_from_rewrite, patch_reason = build_patch_from_rewrites(project_dir, rewrite_map, run_dir, allowed)
+            if patch_reason == "no changes":
+                reviewer_prompt = build_plan_prompt(task_info, graph_context, role="reviewer")
+                reviewer_system = "You are the local reviewer for a bounded workstation auto-run. Explain the smallest safe next fix."
+                reviewer_notes = call_local_model(reviewer_model, reviewer_system, reviewer_prompt + "\n\nCurrent coder output:\n\n" + coder_response[:3000], timeout_seconds=180, run_dir=run_dir, label="reviewer model")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
+                continue
+            if patch_reason != "SAFE":
+                approximate = True if grounded_docs_mode else patch_is_approximate(coder_response)
+                record_rejected_patch(run_dir, coder_response, patch_reason, f"attempt {attempt}", approximate=approximate)
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=False, repair_result="rewrite-failed", approximate=approximate)
+                local_status = "PATCH_INVALID_APPROXIMATE" if approximate else "PATCH_INVALID"
+                break
+            append_text(run_dir / "local_attempts.md", f"- Grounded Rewrite Files: {', '.join(changed_files_from_rewrite) or 'none'}\n")
+        else:
+            patch = extract_diff(coder_response)
+            if not patch:
+                reviewer_prompt = build_plan_prompt(task_info, graph_context, role="reviewer")
+                reviewer_system = "You are the local reviewer for a bounded workstation auto-run. Explain the smallest safe next fix."
+                reviewer_notes = call_local_model(reviewer_model, reviewer_system, reviewer_prompt + "\n\nCurrent coder output:\n\n" + coder_response[:3000], timeout_seconds=180, run_dir=run_dir, label="reviewer model")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
+                continue
 
         patch = normalize_diff(patch)
         patch_ok, patch_reason = validate_patch_syntax(patch)
         if not patch_ok:
-            record_rejected_patch(run_dir, patch, patch_reason, f"attempt {attempt}")
+            approximate = True if grounded_docs_mode else (patch_is_approximate(coder_response) or patch_is_approximate(patch))
+            record_rejected_patch(run_dir, patch, patch_reason, f"attempt {attempt}", approximate=approximate)
             append_text(run_dir / "local_attempts.md", f"- Patch Validation: {patch_reason}\n")
             if not patch_repair_attempted:
                 patch_repair_attempted = True
@@ -887,15 +1162,16 @@ for task_info in tasks:
                 repair_patch = normalize_diff(extract_diff(repair_response))
                 repair_ok, repair_reason = validate_patch_syntax(repair_patch)
                 if not repair_ok:
-                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result=repair_reason)
-                    local_status = "PATCH_INVALID"
+                    repair_approximate = patch_is_approximate(repair_response) or patch_is_approximate(repair_patch)
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result=repair_reason, approximate=repair_approximate)
+                    local_status = "PATCH_INVALID_APPROXIMATE" if approximate or repair_approximate else "PATCH_INVALID"
                     break
                 patch = repair_patch
                 write_run_file(run_dir, "repair_patch.diff", patch)
-                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=patch_reason, repair_attempted=True, repair_result="syntax-ok")
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=patch_reason, repair_attempted=True, repair_result="syntax-ok", approximate=approximate)
             else:
-                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result="not-repaired")
-                local_status = "PATCH_INVALID"
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result="not-repaired", approximate=approximate)
+                local_status = "PATCH_INVALID_APPROXIMATE" if approximate else "PATCH_INVALID"
                 break
 
         proposed_patch.write_text(patch, encoding="utf-8", newline="\n")
@@ -1205,6 +1481,8 @@ for task_info in tasks:
         status = "PASSED"
     elif last_test_text and "No test command found." in last_test_text:
         status = "NEEDS_USER_REVIEW"
+    elif local_status == "PATCH_INVALID_APPROXIMATE":
+        status = "BLOCKED_PATCH_INVALID_APPROXIMATE" if changed else "PATCH_INVALID_APPROXIMATE"
     elif local_status == "PATCH_INVALID":
         status = "BLOCKED_PATCH_INVALID" if changed else "PATCH_INVALID"
     elif local_status == "FAILED_TESTS":

@@ -48,6 +48,7 @@ codex_usage = run_dir.joinpath("codex_usage.md").read_text(encoding="utf-8", err
 codex_response = run_dir.joinpath("codex_response.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_response.md").exists() else ""
 exception_log = run_dir.joinpath("exception.log").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("exception.log").exists() else ""
 status = run_dir.joinpath("status.txt").read_text(encoding="utf-8", errors="replace").strip() if run_dir.joinpath("status.txt").exists() else "unknown"
+patch_approximate = "Approximate: yes" in patch_validation
 
 project_key = re.search(r"(?m)^- Project Key:\s*(.+)$", project_meta)
 project_key = project_key.group(1).strip() if project_key else "unknown"
@@ -97,7 +98,7 @@ def next_action():
         return "review plan"
     if status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}:
         return "commit changes or mark task complete"
-    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL", "PATCH_INVALID", "BLOCKED_PATCH_INVALID"}:
+    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL", "PATCH_INVALID", "BLOCKED_PATCH_INVALID", "PATCH_INVALID_APPROXIMATE", "BLOCKED_PATCH_INVALID_APPROXIMATE"}:
         return "repair patch or fix task spec"
     if status == "TIMEOUT":
         return "rerun with a smaller scope or more time"
@@ -115,6 +116,7 @@ report = f"""# Auto Run Final Report
 - Branch: {branch}
 - Run Folder: {run_dir}
 {"- Blocked With Changes: yes" if blocked_with_changes else "- Blocked With Changes: no"}
+{"- Ungrounded Patch: yes" if patch_approximate else "- Ungrounded Patch: no"}
 
 ## What Happened
 {attempts.strip() or "No detailed attempt log was written."}
