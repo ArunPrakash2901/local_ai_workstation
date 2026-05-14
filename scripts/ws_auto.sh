@@ -589,6 +589,67 @@ def normalize_diff(text: str):
         i += 1
     return "\n".join(normalized).strip() + "\n"
 
+def validate_patch_syntax(patch_text: str):
+    text = patch_text.strip()
+    if not text:
+        return False, "empty patch"
+    has_file_header = False
+    has_hunk = False
+    for line in text.splitlines():
+        if line.startswith("diff --git "):
+            has_file_header = True
+            continue
+        if line.startswith(("index ", "new file mode", "deleted file mode", "similarity index", "rename from", "rename to")):
+            continue
+        if line.startswith("--- "):
+            has_file_header = True
+            continue
+        if line.startswith("+++ "):
+            has_file_header = True
+            continue
+        if line.startswith("@@ "):
+            if not re.match(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@(?: .*)?$", line):
+                return False, f"malformed hunk header: {line}"
+            has_hunk = True
+            continue
+        if line.startswith((" ", "+", "-")):
+            continue
+        if line.startswith("\\ No newline at end of file"):
+            continue
+        if line.startswith("```"):
+            return False, "markdown fence found in patch"
+        if not line.strip():
+            continue
+        return False, f"unexpected patch content: {line}"
+    if not has_file_header:
+        return False, "no file headers found"
+    if not has_hunk:
+        return False, "no hunk headers found"
+    return True, "SAFE"
+
+def record_rejected_patch(run_dir: Path, patch_text: str, reason: str, stage: str):
+    write_run_file(run_dir, "rejected_patch.diff", patch_text)
+    write_run_file(run_dir, "patch_validation.md", "\n".join([
+        "# Patch Validation",
+        "",
+        f"- Stage: {stage}",
+        f"- Result: rejected",
+        f"- Reason: {reason}",
+        "",
+    ]))
+
+def write_patch_validation(run_dir: Path, *, stage: str, result: str, reason: str, repair_attempted: bool, repair_result: str = "not run"):
+    write_run_file(run_dir, "patch_validation.md", "\n".join([
+        "# Patch Validation",
+        "",
+        f"- Stage: {stage}",
+        f"- Result: {result}",
+        f"- Reason: {reason}",
+        f"- Repair Attempted: {'yes' if repair_attempted else 'no'}",
+        f"- Repair Result: {repair_result}",
+        "",
+    ]))
+
 def docs_only(paths):
     if not paths:
         return False
@@ -771,6 +832,7 @@ for task_info in tasks:
     final_patch = ""
     proposed_patch = run_dir / "proposed.patch"
     proposed_patch_ready = False
+    patch_repair_attempted = False
     reviewer_notes = ""
     codex_status = "none"
     codex_used = False
@@ -796,6 +858,46 @@ for task_info in tasks:
             append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
             continue
 
+        patch = normalize_diff(patch)
+        patch_ok, patch_reason = validate_patch_syntax(patch)
+        if not patch_ok:
+            record_rejected_patch(run_dir, patch, patch_reason, f"attempt {attempt}")
+            append_text(run_dir / "local_attempts.md", f"- Patch Validation: {patch_reason}\n")
+            if not patch_repair_attempted:
+                patch_repair_attempted = True
+                repair_allowed = normalized_allowed_files(task_info) or infer_allowed_files(task_info) or ["START_HERE.md", "WORKSTATION_MANUAL.md"]
+                repair_prompt = "\n".join([
+                    "Repair this patch into a valid git-style unified diff only.",
+                    "Output only the diff. No markdown fences. No explanations.",
+                    "",
+                    "Git Apply Error:",
+                    patch_reason,
+                    "",
+                    "Rejected Patch:",
+                    patch,
+                    "",
+                    "Allowed Files:",
+                    "\n".join(f"- {x}" for x in repair_allowed),
+                    "",
+                ])
+                repair_system = "You are the local coder for a bounded workstation auto-run. Return only a valid git-style unified diff. Do not use markdown fences or prose."
+                repair_response = call_local_model(coder_model, repair_system, repair_prompt, timeout_seconds=180, run_dir=run_dir, label="coder patch repair")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Model: {coder_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Preview:\n\n{repair_response[:3000]}\n")
+                repair_patch = normalize_diff(extract_diff(repair_response))
+                repair_ok, repair_reason = validate_patch_syntax(repair_patch)
+                if not repair_ok:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result=repair_reason)
+                    local_status = "PATCH_INVALID"
+                    break
+                patch = repair_patch
+                write_run_file(run_dir, "repair_patch.diff", patch)
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=patch_reason, repair_attempted=True, repair_result="syntax-ok")
+            else:
+                write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=patch_reason, repair_attempted=True, repair_result="not-repaired")
+                local_status = "PATCH_INVALID"
+                break
+
         proposed_patch.write_text(patch, encoding="utf-8", newline="\n")
         proposed_patch_ready = True
         guard_rc, guard_out = run_cmd(
@@ -815,6 +917,8 @@ for task_info in tasks:
             guard_reason = "unsafe path or content"
         elif "no changed file paths" in guard_lower:
             guard_reason = "no changed files in patch"
+        elif guard_rc == 0 and apply_guard_text.startswith("SAFE"):
+            guard_reason = "passed"
         write_run_file(run_dir, "apply_guard.md", "\n".join([
             "# Apply Guard",
             "",
@@ -845,18 +949,114 @@ for task_info in tasks:
         git_apply_check_rc, git_apply_check_out = run_cmd(["git", "-C", str(project_dir), "apply", "--check", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply check")
         append_text(run_dir / "local_attempts.md", f"- Git Apply Check Exit: {git_apply_check_rc}\n\n{git_apply_check_out.strip()}\n")
         if git_apply_check_rc != 0:
-            reviewer_notes = call_local_model(reviewer_model, "You are the local reviewer for a bounded workstation auto-run. Explain why the patch did not apply cleanly and what the smallest safe next fix is.", coder_prompt + "\n\nPatch:\n\n" + patch + "\n\nApply check output:\n" + git_apply_check_out, timeout_seconds=180, run_dir=run_dir, label="reviewer model")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
-            continue
+            record_rejected_patch(run_dir, patch, git_apply_check_out.strip() or "git apply check failed", f"attempt {attempt}")
+            write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=git_apply_check_out.strip() or "git apply check failed", repair_attempted=patch_repair_attempted, repair_result="git-apply-check-failed")
+            if not patch_repair_attempted:
+                patch_repair_attempted = True
+                repair_allowed = normalized_allowed_files(task_info) or infer_allowed_files(task_info) or ["START_HERE.md", "WORKSTATION_MANUAL.md"]
+                repair_prompt = "\n".join([
+                    "Repair this patch into a valid git-style unified diff only.",
+                    "Output only the diff. No markdown fences. No explanations.",
+                    "",
+                    "Git Apply Error:",
+                    git_apply_check_out.strip() or "git apply check failed",
+                    "",
+                    "Rejected Patch:",
+                    patch,
+                    "",
+                    "Allowed Files:",
+                    "\n".join(f"- {x}" for x in repair_allowed),
+                    "",
+                ])
+                repair_system = "You are the local coder for a bounded workstation auto-run. Return only a valid git-style unified diff. Do not use markdown fences or prose."
+                repair_response = call_local_model(coder_model, repair_system, repair_prompt, timeout_seconds=180, run_dir=run_dir, label="coder patch repair")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Model: {coder_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Preview:\n\n{repair_response[:3000]}\n")
+                repair_patch = normalize_diff(extract_diff(repair_response))
+                repair_ok, repair_reason = validate_patch_syntax(repair_patch)
+                if not repair_ok:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=git_apply_check_out.strip() or "git apply check failed", repair_attempted=True, repair_result=repair_reason)
+                    local_status = "PATCH_INVALID"
+                    break
+                write_run_file(run_dir, "repair_patch.diff", repair_patch)
+                proposed_patch.write_text(repair_patch, encoding="utf-8", newline="\n")
+                proposed_patch_ready = True
+                guard_rc, guard_out = run_cmd(
+                    ["bash", str(scripts / "ws_apply_guard.sh"), str(project_dir), str(proposed_patch), str(allowed_file), str(args.max_files)],
+                    timeout=120,
+                    run_dir=run_dir,
+                    label="apply guard patch repair",
+                )
+                if guard_rc != 0 or "SAFE" not in guard_out.splitlines()[0:2]:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=git_apply_check_out.strip() or "git apply check failed", repair_attempted=True, repair_result="guard-blocked")
+                    local_status = "PATCH_INVALID"
+                    break
+                git_apply_check_rc, git_apply_check_out = run_cmd(["git", "-C", str(project_dir), "apply", "--check", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply check repair")
+                append_text(run_dir / "local_attempts.md", f"- Repair Git Apply Check Exit: {git_apply_check_rc}\n\n{git_apply_check_out.strip()}\n")
+                if git_apply_check_rc != 0:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=git_apply_check_out.strip() or "git apply check failed", repair_attempted=True, repair_result="still-invalid")
+                    local_status = "PATCH_INVALID"
+                    break
+            else:
+                reviewer_notes = call_local_model(reviewer_model, "You are the local reviewer for a bounded workstation auto-run. Explain why the patch did not apply cleanly and what the smallest safe next fix is.", coder_prompt + "\n\nPatch:\n\n" + patch + "\n\nApply check output:\n" + git_apply_check_out, timeout_seconds=180, run_dir=run_dir, label="reviewer model")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
+                continue
 
         git_apply_rc, git_apply_out = run_cmd(["git", "-C", str(project_dir), "apply", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply")
         append_text(run_dir / "local_attempts.md", f"- Git Apply Exit: {git_apply_rc}\n\n{git_apply_out.strip()}\n")
         if git_apply_rc != 0:
-            reviewer_notes = call_local_model(reviewer_model, "You are the local reviewer for a bounded workstation auto-run. Explain why the patch failed to apply and the smallest safe next fix.", coder_prompt + "\n\nPatch:\n\n" + patch + "\n\nApply output:\n" + git_apply_out, timeout_seconds=180, run_dir=run_dir, label="reviewer model")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
-            append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
-            continue
+            record_rejected_patch(run_dir, patch, git_apply_out.strip() or "git apply failed", f"attempt {attempt}")
+            write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=git_apply_out.strip() or "git apply failed", repair_attempted=patch_repair_attempted, repair_result="git-apply-failed")
+            if not patch_repair_attempted:
+                patch_repair_attempted = True
+                repair_allowed = normalized_allowed_files(task_info) or infer_allowed_files(task_info) or ["START_HERE.md", "WORKSTATION_MANUAL.md"]
+                repair_prompt = "\n".join([
+                    "Repair this patch into a valid git-style unified diff only.",
+                    "Output only the diff. No markdown fences. No explanations.",
+                    "",
+                    "Git Apply Error:",
+                    git_apply_out.strip() or "git apply failed",
+                    "",
+                    "Rejected Patch:",
+                    patch,
+                    "",
+                    "Allowed Files:",
+                    "\n".join(f"- {x}" for x in repair_allowed),
+                    "",
+                ])
+                repair_system = "You are the local coder for a bounded workstation auto-run. Return only a valid git-style unified diff. Do not use markdown fences or prose."
+                repair_response = call_local_model(coder_model, repair_system, repair_prompt, timeout_seconds=180, run_dir=run_dir, label="coder patch repair")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Model: {coder_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Patch Repair Preview:\n\n{repair_response[:3000]}\n")
+                repair_patch = normalize_diff(extract_diff(repair_response))
+                repair_ok, repair_reason = validate_patch_syntax(repair_patch)
+                if not repair_ok:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="rejected", reason=git_apply_out.strip() or "git apply failed", repair_attempted=True, repair_result=repair_reason)
+                    local_status = "PATCH_INVALID"
+                    break
+                write_run_file(run_dir, "repair_patch.diff", repair_patch)
+                proposed_patch.write_text(repair_patch, encoding="utf-8", newline="\n")
+                proposed_patch_ready = True
+                guard_rc, guard_out = run_cmd(
+                    ["bash", str(scripts / "ws_apply_guard.sh"), str(project_dir), str(proposed_patch), str(allowed_file), str(args.max_files)],
+                    timeout=120,
+                    run_dir=run_dir,
+                    label="apply guard patch repair",
+                )
+                if guard_rc != 0 or "SAFE" not in guard_out.splitlines()[0:2]:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=git_apply_out.strip() or "git apply failed", repair_attempted=True, repair_result="guard-blocked")
+                    local_status = "PATCH_INVALID"
+                    break
+                if run_cmd(["git", "-C", str(project_dir), "apply", "--check", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply check repair")[0] != 0:
+                    write_patch_validation(run_dir, stage=f"attempt {attempt}", result="repaired", reason=git_apply_out.strip() or "git apply failed", repair_attempted=True, repair_result="still-invalid")
+                    local_status = "PATCH_INVALID"
+                    break
+            else:
+                reviewer_notes = call_local_model(reviewer_model, "You are the local reviewer for a bounded workstation auto-run. Explain why the patch failed to apply and the smallest safe next fix.", coder_prompt + "\n\nPatch:\n\n" + patch + "\n\nApply output:\n" + git_apply_out, timeout_seconds=180, run_dir=run_dir, label="reviewer model")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Model: {reviewer_model}\n")
+                append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
+                continue
 
         applied_once = True
         if task_info["test_command"]:
@@ -1005,6 +1205,8 @@ for task_info in tasks:
         status = "PASSED"
     elif last_test_text and "No test command found." in last_test_text:
         status = "NEEDS_USER_REVIEW"
+    elif local_status == "PATCH_INVALID":
+        status = "BLOCKED_PATCH_INVALID" if changed else "PATCH_INVALID"
     elif local_status == "FAILED_TESTS":
         status = "BLOCKED_LOCAL_WITH_CHANGES" if changed else "FAILED_TESTS"
     elif local_status == "NEEDS_USER_REVIEW":

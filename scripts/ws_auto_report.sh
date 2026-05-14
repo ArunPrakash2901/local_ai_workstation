@@ -42,6 +42,8 @@ git_after = run_dir.joinpath("git_status_after.md").read_text(encoding="utf-8", 
 attempts = run_dir.joinpath("local_attempts.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("local_attempts.md").exists() else ""
 test_output = run_dir.joinpath("test_output.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("test_output.md").exists() else ""
 apply_guard = run_dir.joinpath("apply_guard.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("apply_guard.md").exists() else ""
+patch_validation = run_dir.joinpath("patch_validation.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("patch_validation.md").exists() else ""
+rejected_patch = run_dir.joinpath("rejected_patch.diff").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("rejected_patch.diff").exists() else ""
 codex_usage = run_dir.joinpath("codex_usage.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_usage.md").exists() else ""
 codex_response = run_dir.joinpath("codex_response.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_response.md").exists() else ""
 exception_log = run_dir.joinpath("exception.log").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("exception.log").exists() else ""
@@ -95,8 +97,8 @@ def next_action():
         return "review plan"
     if status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}:
         return "commit changes or mark task complete"
-    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL"}:
-        return "review diff or fix task spec"
+    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL", "PATCH_INVALID", "BLOCKED_PATCH_INVALID"}:
+        return "repair patch or fix task spec"
     if status == "TIMEOUT":
         return "rerun with a smaller scope or more time"
     return "inspect run artifacts"
@@ -131,6 +133,12 @@ report = f"""# Auto Run Final Report
 
 ## Safety
 {apply_guard.strip() or "No additional safety notes recorded."}
+
+## Patch Validation
+{patch_validation.strip() or "No patch validation notes recorded."}
+
+## Rejected Patch
+{rejected_patch.strip() or "No rejected patch recorded."}
 
 ## Internal Exception
 {exception_log.strip() or "none"}
