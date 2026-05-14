@@ -44,6 +44,7 @@ test_output = run_dir.joinpath("test_output.md").read_text(encoding="utf-8", err
 apply_guard = run_dir.joinpath("apply_guard.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("apply_guard.md").exists() else ""
 codex_usage = run_dir.joinpath("codex_usage.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_usage.md").exists() else ""
 codex_response = run_dir.joinpath("codex_response.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_response.md").exists() else ""
+exception_log = run_dir.joinpath("exception.log").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("exception.log").exists() else ""
 status = run_dir.joinpath("status.txt").read_text(encoding="utf-8", errors="replace").strip() if run_dir.joinpath("status.txt").exists() else "unknown"
 
 project_key = re.search(r"(?m)^- Project Key:\s*(.+)$", project_meta)
@@ -87,13 +88,14 @@ if not codex_used and codex_usage.strip().startswith("{"):
         pass
 tests_passed = "Exit Code: 0" in test_output or status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}
 files_changed = bool(changed_files)
+blocked_with_changes = status in {"BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX"} and files_changed
 
 def next_action():
     if status == "PLAN_ONLY":
         return "review plan"
     if status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}:
         return "commit changes or mark task complete"
-    if status in {"BLOCKED_LOCAL", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW"}:
+    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL"}:
         return "review diff or fix task spec"
     if status == "TIMEOUT":
         return "rerun with a smaller scope or more time"
@@ -110,6 +112,7 @@ report = f"""# Auto Run Final Report
 - Codex Used: {"yes" if codex_used else "no"}
 - Branch: {branch}
 - Run Folder: {run_dir}
+{"- Blocked With Changes: yes" if blocked_with_changes else "- Blocked With Changes: no"}
 
 ## What Happened
 {attempts.strip() or "No detailed attempt log was written."}
@@ -128,6 +131,9 @@ report = f"""# Auto Run Final Report
 
 ## Safety
 {apply_guard.strip() or "No additional safety notes recorded."}
+
+## Internal Exception
+{exception_log.strip() or "none"}
 
 ## Recommended Next Action
 {next_action()}

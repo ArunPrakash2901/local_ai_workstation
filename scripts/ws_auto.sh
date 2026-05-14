@@ -39,6 +39,7 @@ import subprocess
 import sys
 import time
 import tempfile
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -87,6 +88,28 @@ models_yaml = ws_home / "registry" / "models.yaml"
 active_model_yaml = ws_home / "registry" / "active_model.yaml"
 active_kv_yaml = ws_home / "registry" / "active_kv_profile.yaml"
 paths_yaml = ws_home / "registry" / "paths.yaml"
+current_run_dir = None
+
+def fatal_exception_handler(exc_type, exc, tb):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc, tb)
+        return
+    target = current_run_dir
+    if target is not None:
+        try:
+            heartbeat(target, f"internal exception: {exc_type.__name__}: {exc}")
+            write_run_file(target, "status.txt", "FAILED_INTERNAL\n")
+            write_run_file(target, "exception.log", "".join(traceback.format_exception(exc_type, exc, tb)))
+            project_ctx = globals().get("project_dir")
+            if project_ctx is not None:
+                write_run_file(target, "git_status_after.md", git_status(project_ctx, run_dir=target) + "\n")
+            run_cmd(["bash", str(scripts / "ws_auto_report.sh"), str(target)], timeout=30, run_dir=target, label="auto report failed internal")
+        except Exception:
+            pass
+    sys.__excepthook__(exc_type, exc, tb)
+    sys.exit(1)
+
+sys.excepthook = fatal_exception_handler
 
 def run_cmd(cmd, *, cwd=None, timeout=60, check=False, run_dir=None, label="command"):
     proc = subprocess.Popen(
@@ -620,6 +643,7 @@ else:
 overall_results = []
 for task_info in tasks:
     run_dir = Path(task_info["_run_dir"])
+    current_run_dir = run_dir
     git_status_before = git_status(project_dir, run_dir=run_dir)
     write_run_file(run_dir, "model_roles.md", json.dumps(model_info, indent=2, sort_keys=True))
     write_run_file(run_dir, "run_config.md", run_dir.joinpath("run_config.md").read_text(encoding="utf-8", errors="replace") + "\n".join([
@@ -657,9 +681,11 @@ for task_info in tasks:
         branch_result = run_cmd(["git", "-C", str(project_dir), "switch", "-c", branch_name], timeout=30, run_dir=run_dir, label="git branch create")
         if branch_result[0] != 0:
             branch_result = run_cmd(["git", "-C", str(project_dir), "switch", branch_name], timeout=30, run_dir=run_dir, label="git branch switch")
+        branch_created = branch_result[0] == 0
         write_run_file(run_dir, "run_config.md", run_dir.joinpath("run_config.md").read_text(encoding="utf-8") + f"- Git Branch: {branch_name}\n")
     else:
         branch_name = run_cmd(["git", "-C", str(project_dir), "branch", "--show-current"], timeout=30, run_dir=run_dir, label="git current branch")[1].strip() or "unknown"
+        branch_created = True
 
     if not detect_repo(project_dir, run_dir=run_dir):
         write_run_file(run_dir, "status.txt", "SAFETY_BLOCKED\n")
@@ -681,6 +707,8 @@ for task_info in tasks:
     tests_passed = False
     files_changed = []
     final_patch = ""
+    proposed_patch = run_dir / "proposed.patch"
+    proposed_patch_ready = False
     reviewer_notes = ""
     codex_status = "none"
     codex_used = False
@@ -688,6 +716,7 @@ for task_info in tasks:
     applied_once = False
     last_test_text = ""
     apply_guard_text = ""
+    tests_ran = False
 
     for attempt in range(1, max(args.max_attempts, 1) + 1):
         append_text(run_dir / "local_attempts.md", f"\n## Attempt {attempt}\n")
@@ -705,8 +734,8 @@ for task_info in tasks:
             append_text(run_dir / "local_attempts.md", f"- Reviewer Notes:\n\n{reviewer_notes[:3000]}\n")
             continue
 
-        proposed_patch = run_dir / "proposed.patch"
         proposed_patch.write_text(patch, encoding="utf-8", newline="\n")
+        proposed_patch_ready = True
         guard_rc, guard_out = run_cmd(
             ["bash", str(scripts / "ws_apply_guard.sh"), str(project_dir), str(proposed_patch), str(allowed_file), str(args.max_files)],
             timeout=120,
@@ -714,7 +743,34 @@ for task_info in tasks:
             label="apply guard",
         )
         apply_guard_text = guard_out.strip()
-        write_run_file(run_dir, "apply_guard.md", apply_guard_text + "\n")
+        guard_reason = "blocked by guard"
+        guard_lower = apply_guard_text.lower()
+        if "max is" in guard_lower or "changes" in guard_lower:
+            guard_reason = "file limit exceeded"
+        elif "outside allowed files" in guard_lower:
+            guard_reason = "outside allowed files"
+        elif "unsafe" in guard_lower or "escapes project" in guard_lower:
+            guard_reason = "unsafe path or content"
+        elif "no changed file paths" in guard_lower:
+            guard_reason = "no changed files in patch"
+        write_run_file(run_dir, "apply_guard.md", "\n".join([
+            "# Apply Guard",
+            "",
+            f"- Phase: attempt {attempt}",
+            f"- Guard Exit Code: {guard_rc}",
+            f"- Guard Reason: {guard_reason}",
+            f"- Branch Name: {branch_name}",
+            f"- Branch Created: {'yes' if branch_created else 'no'}",
+            f"- Allowed File Exists: {'yes' if allowed_file.exists() else 'no'}",
+            f"- Patch Ready Before Guard: {'yes' if proposed_patch_ready else 'no'}",
+            f"- Edits Made Before Block: {'yes' if proposed_patch_ready or applied_once else 'no'}",
+            f"- Tests Ran: {'yes' if tests_ran else 'no'}",
+            "",
+            "## Guard Output",
+            "",
+            apply_guard_text or "blank",
+            "",
+        ]))
         append_text(run_dir / "local_attempts.md", f"- Apply Guard Result: {guard_rc}\n\n{apply_guard_text}\n")
         if guard_rc != 0 or "SAFE" not in apply_guard_text.splitlines()[0:2]:
             reviewer_prompt = build_plan_prompt(task_info, graph_context, role="reviewer", review=apply_guard_text)
@@ -749,6 +805,7 @@ for task_info in tasks:
             test_rc, test_stdout = run_cmd(["bash", str(scripts / "ws_test_runner.sh"), str(project_dir), str(run_dir), "", str(args.max_minutes)], timeout=max(args.max_minutes * 60 + 30, 120), run_dir=run_dir, label="test runner", check=False)
             last_test_text = test_stdout
             write_run_file(run_dir, "test_output.md", test_stdout + "\n")
+        tests_ran = True
 
         if test_rc == 0:
             tests_passed = True
@@ -817,13 +874,16 @@ for task_info in tasks:
             codex_response = codex_response_path.read_text(encoding="utf-8", errors="replace") if codex_response_path.exists() else ""
             append_text(run_dir / "local_attempts.md", f"- Codex Status: SENT\n")
             append_text(run_dir / "local_attempts.md", f"- Codex Response:\n\n{codex_response[:4000]}\n")
+            codex_advice_only = True
             if codex_response:
                 retry_prompt = build_plan_prompt(task_info, graph_context, role="coder", codex=codex_response[:4000], review=reviewer_notes)
                 retry_response = call_local_model(coder_model, coder_system, retry_prompt, timeout_seconds=180, run_dir=run_dir, label="coder model retry")
                 retry_patch = extract_diff(retry_response)
                 append_text(run_dir / "local_attempts.md", f"\n## Codex-Guided Retry\n\n- Coder Model: {coder_model}\n- Preview:\n\n{retry_response[:3000]}\n")
+                codex_advice_only = not bool(retry_patch)
                 if retry_patch:
                     proposed_patch.write_text(retry_patch, encoding="utf-8", newline="\n")
+                    proposed_patch_ready = True
                     guard_rc, guard_out = run_cmd(
                         ["bash", str(scripts / "ws_apply_guard.sh"), str(project_dir), str(proposed_patch), str(allowed_file), str(args.max_files)],
                         timeout=120,
@@ -845,6 +905,10 @@ for task_info in tasks:
                             else:
                                 local_status = "FAILED_TESTS"
                                 last_test_text = test_stdout
+                    else:
+                        append_text(run_dir / "local_attempts.md", "- Codex advice produced no applyable patch.\n")
+            if codex_advice_only and not tests_passed:
+                local_status = "NEEDS_USER_REVIEW"
         else:
             codex_status = usage.get("status", "BLOCKED_CODEX")
             append_text(run_dir / "local_attempts.md", f"- Codex Status: {codex_status}\n")
@@ -869,7 +933,10 @@ for task_info in tasks:
     elif tests_passed and not changed:
         status = "NO_CHANGES"
     elif codex_used and not tests_passed:
-        status = "BLOCKED_CODEX"
+        if changed:
+            status = "NEEDS_USER_REVIEW"
+        else:
+            status = "BLOCKED_CODEX"
     elif local_status == "SAFETY_BLOCKED":
         status = "SAFETY_BLOCKED"
     elif last_test_text and "No test command found." in last_test_text and docs_only(changed):
@@ -877,9 +944,14 @@ for task_info in tasks:
     elif last_test_text and "No test command found." in last_test_text:
         status = "NEEDS_USER_REVIEW"
     elif local_status == "FAILED_TESTS":
-        status = "FAILED_TESTS"
+        status = "BLOCKED_LOCAL_WITH_CHANGES" if changed else "FAILED_TESTS"
+    elif local_status == "NEEDS_USER_REVIEW":
+        status = "NEEDS_USER_REVIEW"
     else:
-        status = local_status if local_status != "BLOCKED_LOCAL" else "BLOCKED_LOCAL"
+        if local_status == "BLOCKED_LOCAL" and changed:
+            status = "BLOCKED_LOCAL_WITH_CHANGES"
+        else:
+            status = local_status if local_status != "BLOCKED_LOCAL" else "BLOCKED_LOCAL"
 
     write_run_file(run_dir, "status.txt", status + "\n")
     write_run_file(run_dir, "git_status_after.md", git_after + "\n")

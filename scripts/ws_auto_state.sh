@@ -58,7 +58,7 @@ fi
 if [ "$MODE" = "status" ] || [ -z "$MODE" ]; then
     echo "Auto Loop Status"
     echo "----------------"
-    for status in PLAN_ONLY PASSED PASSED_WITH_CODEX BLOCKED_LOCAL BLOCKED_CODEX FAILED_TESTS SAFETY_BLOCKED TIMEOUT NO_CHANGES NEEDS_USER_REVIEW; do
+    for status in PLAN_ONLY PASSED PASSED_WITH_CODEX BLOCKED_LOCAL BLOCKED_LOCAL_WITH_CHANGES BLOCKED_CODEX FAILED_TESTS SAFETY_BLOCKED TIMEOUT NO_CHANGES NEEDS_USER_REVIEW FAILED_INTERNAL; do
         count=$(python3 - "$ROOT" "$status" <<'PY'
 import sys
 from pathlib import Path
