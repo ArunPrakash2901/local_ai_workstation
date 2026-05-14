@@ -68,6 +68,8 @@ source /mnt/d/_ai_brain/scripts/ws_env.sh
 
 For now, `WS_HOME` is `/mnt/d/_ai_brain`, `MODEL_HOME` is `/mnt/d/ollama/models`, and `D:\Local_AI_Workstation` is only the future parent skeleton. Nothing has been moved.
 
+The `ai*` commands are legacy compatibility aliases. Use `ws ...` for the current command surface.
+
 ## 4. Local-First Frontier Packets
 
 The default workflow stays local: `ws`, Graphify, and Ollama prepare context on your machine. Gemini, Codex, and Claude are explicit consultants only; packet creation does not call them, authenticate them, or upload data.
@@ -108,13 +110,23 @@ ws build <project> <task_file> --plan-only --max-tasks 1
 ws open-build latest
 ws build <project> <task_file> --apply --branch --max-tasks 1
 ws open-build latest
+ws codex-status
+ws codex-canary
+ws codex-work <project> <task_file> --mode detect --branch
+ws codex-handoff <project> <task_file>
+ws codex-import latest
+ws codex-apply <project> <task_file> --branch
 ```
 
-After the apply run, review `final_diff.patch`, `test_output.md`, and `build_report.md`. If local Hermes gets stuck and the packet is safe, explicitly opt into Codex:
+After the apply run, review `final_diff.patch`, `test_output.md`, and `build_report.md`. If you want Codex as the bounded implementer, check `ws codex-status` first and then use `ws codex-work`:
 
 ```bash
-ws build <project> <task_file> --apply --branch --max-tasks 1 --escalate codex
+ws codex-work <project> <task_file> --mode detect --branch --max-files 5 --max-minutes 20
+ws codex-handoff <project> <task_file>
+ws codex-import latest
 ```
+
+`ws codex-work --mode detect` chooses CLI auto only if the canary passed recently. Otherwise it generates a handoff work order. `ws codex-apply` remains a legacy compatibility path. If `ws codex-status` reports `CODEX_AUTH_REQUIRED`, run `codex login` in Windows Terminal before retrying the canary or handoff flow.
 
 Gemini is manual packet review only for now because its CLI is not safe non-interactively from WSL.
 
@@ -158,6 +170,19 @@ ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --m
 ```
 
 Use plan-only first, review the auto run report, then move to a supervised apply. Codex escalation is explicit only. Gemini stays manual packet review only, and Claude remains disabled. No auto-commit or auto-push happens.
+
+## 10. Windows Agent Orchestrator
+
+Use `ws agent-*` when you want Windows to host Codex execution directly and WSL to stay in control of orchestration, validation, and reporting.
+
+```bash
+ws agent-status
+ws agent-canary
+ws agent-run workstation_control_plane D:\_ai_brain\tasks\generated\workstation_control_plane_task_001_stabilize_ws_command_documentation.md --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
+ws agent-import latest
+```
+
+`ws agent-run --mode detect` chooses Codex only if the Windows canary has passed recently. If not, it returns `CODEX_HANDOFF_READY` and writes the exact work order for manual Codex execution.
 
 ## Important Constraints
 - **Do not graph massive raw datasets** (e.g., inside Kaggle folders). Let the AI read your Python *logic*, not your raw Parquet files. `.graphifyignore` handles this automatically.

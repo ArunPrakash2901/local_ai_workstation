@@ -75,6 +75,15 @@ For projects like `portfolio_website`, Graphify mapped 372 nodes across componen
 - **Command**: `ws auto <project_key> <task_file> [flags]`
 - **Default**: bounded local planning and apply loop with no auto-commit or auto-push.
 - **Apply Mode**: `--apply --branch` allows guarded changes only when the task stays within file limits and safety checks.
-- **Escalation**: Codex is explicit only with `--auto-escalate codex`; Gemini stays manual packet review only; Claude is disabled.
+- **Codex Modes**: `ws codex-status` shows Windows Codex auth/bridge state and whether CLI auto is ready. `ws codex-canary` performs the noninteractive edit probe. `ws codex-work --mode detect` uses CLI auto only when the canary passed recently; otherwise it generates a handoff work order. `ws codex-handoff` always creates the work order, and `ws codex-import` validates the manual Codex diff after you run it.
+- **Escalation**: Codex is explicit only with `--auto-escalate codex` in `ws auto` or by using the handoff/import flow; Gemini stays manual packet review only; Claude is disabled.
 - **Artifacts**: `D:\_ai_brain\auto_runs\<timestamp>_<project>_<task>`.
 - **Safety**: no deletes, no deploys, no model warmups, no qwen2.5:32b automatic use, no secrets/raw datasets/model files, no dependency installs unless explicitly allowed by a future task.
+
+## Windows Agent Orchestrator
+- **Command**: `ws agent-run <project_key> <task_file> [flags]`
+- **Default**: Windows PowerShell runs Codex from the Windows session, while WSL remains the orchestrator and reporter.
+- **Canary**: `ws agent-canary` verifies whether Codex can complete a tiny noninteractive edit from Windows.
+- **Detect Mode**: `--mode detect` uses Codex only when the canary passed recently; otherwise it returns `CODEX_HANDOFF_READY`.
+- **Import**: `ws agent-import latest` validates the resulting diff after a manual Codex run and writes the final report.
+- **Safety**: no auto-commit, no auto-push, no deletes, no secrets, no raw data, no model files, no qwen2.5:32b automatic use, no Gemini/Claude automatic use.

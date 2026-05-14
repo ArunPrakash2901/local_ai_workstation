@@ -13,22 +13,24 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 
 ## Core Commands (WSL)
 
+Prefer the unified `ws` entrypoint. Legacy `ai*` aliases remain available for compatibility only.
+
 ### Project Management
-- **List Projects**: `bash /mnt/d/_ai_brain/scripts/ai_list_projects.sh`
-- **View Project Info**: `bash /mnt/d/_ai_brain/scripts/ai_project.sh <project_key>`
+- **List Projects**: `ws projects`
+- **View Project Info**: `ws project <project_key>`
 
 ### Codebase Intelligence (Read-Only)
-- **Global Question**: `bash /mnt/d/_ai_brain/scripts/ai_global_ask.sh "<question>"`
+- **Global Question**: `ws global "<question>"`
   - Queries the global graph across all indexed projects.
-- **Project Question**: `bash /mnt/d/_ai_brain/scripts/ai_ask.sh <project_key> "<question>"`
+- **Project Question**: `ws ask <project_key> "<question>"`
   - Uses the project's specific Graphify graph.
-- **Debug Error**: `bash /mnt/d/_ai_brain/scripts/ai_debug.sh <project_key> <path_to_error_log>`
+- **Debug Error**: `ws debug <project_key> <path_to_error_log>`
   - Analyzes logs with project context.
-- **Audit Project**: `bash /mnt/d/_ai_brain/scripts/ai_audit.sh <project_key>`
+- **Audit Project**: `ws audit <project_key>`
   - Generates an architectural and quality report.
 
 ### Feature Development
-- **Run Task**: `bash /mnt/d/_ai_brain/scripts/ai_run_task.sh <project_key> <path_to_task_file>`
+- **Run Task**: `ws task <project_key> <path_to_task_file>`
   - Generates an implementation plan based on the task description.
 
 ## Adding a New Project
@@ -113,6 +115,25 @@ ws build-status
 ws build-runs
 ws open-build latest
 ```
+
+### Codex Execution Modes
+Use `ws codex-status` to check whether Codex CLI auto is actually ready. The workstation now distinguishes between:
+
+- `cli-auto` - only if a recent canary edit passed
+- `handoff` - always available
+
+`ws codex-work` accepts `--mode detect|auto|handoff`. Detect falls back to handoff unless the canary cache says CLI auto is ready. `ws codex-apply` remains a legacy compatibility path.
+
+```bash
+ws codex-status
+ws codex-canary
+ws codex-work workstation_control_plane D:\_ai_brain\tasks\workstation_control_plane_prd.md --mode detect --branch
+ws codex-handoff workstation_control_plane D:\_ai_brain\tasks\workstation_control_plane_prd.md
+ws codex-import latest
+ws codex-apply workstation_control_plane D:\_ai_brain\tasks\workstation_control_plane_prd.md --branch
+```
+
+If `ws codex-status` reports `CODEX_AUTH_REQUIRED`, open Windows Terminal and run `codex login`, then rerun `ws codex-canary`. If CLI auto is not ready, use `ws codex-handoff` and paste the work order into Codex manually. The workstation still refuses changes outside the task allowlist and does not auto-commit or auto-push.
 
 Task files use this format:
 
@@ -215,21 +236,46 @@ ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --m
 Rules:
 - No auto-commit.
 - No auto-push.
-- Codex is used only when `--auto-escalate codex` is present.
+- Prefer `ws codex-work` for bounded Codex implementation runs.
+- `ws codex-apply` remains legacy compatibility.
 - Gemini remains manual packet review only for now.
 - Claude stays disabled.
 - `qwen2.5:32b` remains lab-only and is not loaded automatically.
 - `ws auto` writes a full run folder under `D:\_ai_brain\auto_runs`.
 - Review `final_report.md`, `local_attempts.md`, `test_output.md`, and `final_diff.patch` before taking the next step.
 
+## Codex Handoff Workflow
+
+When CLI auto is not ready, use the handoff path:
+
+```bash
+ws codex-handoff workstation_control_plane <task_file>
+ws codex-import latest
+```
+
+`ws codex-handoff` writes a precise work order, copies it to the clipboard when available, and stops. After you run Codex manually in Windows, `ws codex-import` validates the resulting diff against the allowlist and writes the final report.
+
+## Windows Agent Orchestrator
+
+The Windows agent runner keeps orchestration in WSL but executes Codex from Windows. Use it when you want the workstation to prepare the work order, branch, and validation harness while leaving Codex execution to the Windows session.
+
+```bash
+ws agent-status
+ws agent-canary
+ws agent-run workstation_control_plane D:\_ai_brain\tasks\generated\workstation_control_plane_task_001_stabilize_ws_command_documentation.md --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
+ws agent-import latest
+```
+
+`ws agent-run --mode detect` uses CLI auto only when the Windows canary has passed recently. Otherwise it returns `CODEX_HANDOFF_READY` and writes a precise work order for manual Codex execution. `ws agent-import` validates the resulting diff against the task allowlist, writes the final report, and never auto-commits or auto-pushes.
+
 ## Example Usage
 ```bash
 # What projects do I have?
-bash /mnt/d/_ai_brain/scripts/ai_list_projects.sh
+ws projects
 
 # Ask about the GSP project
-bash /mnt/d/_ai_brain/scripts/ai_ask.sh gsp "How is the quarterly estimation implemented?"
+ws ask gsp "How is the quarterly estimation implemented?"
 
 # Debug a simulation error
-bash /mnt/d/_ai_brain/scripts/ai_debug.sh simulation ./error.log
+ws debug simulation ./error.log
 ```

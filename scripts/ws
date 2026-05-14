@@ -30,6 +30,12 @@ case "$SUBCOMMAND" in
         echo "  debug <key> <log>   Debug error log"
         echo "  task <key> <file>   Run bounded implementation task"
         echo "  build <key> <file>  Run bounded local-first product build loop"
+        echo "  codex-status        Show Windows Codex auth, canary, and recommended mode"
+        echo "  codex-canary        Run a tiny noninteractive Codex canary edit"
+        echo "  codex-work <key> <file> Run Codex with mode detect|auto|handoff"
+        echo "  codex-handoff <key> <file> Create a manual Codex work order"
+        echo "  codex-import <run>  Import and validate a manual Codex handoff run"
+        echo "  codex-apply <key> <file> Legacy Codex apply route"
         echo ""
         echo "Models & KV:"
         echo "  model               Show active model configuration"
@@ -63,7 +69,12 @@ case "$SUBCOMMAND" in
         echo "  build-status        Show latest build loop status"
         echo "  build-runs          List recent build run folders"
         echo "  open-build <id>     Show artifacts for a build run"
-        echo "  auto <key> <task>   Run bounded closed-loop auto task"
+        echo "  auto <key> <task>   Run bounded closed-loop auto task (--executor codex for Codex apply)"
+        echo "  codex-apply <key> <task> Run Codex as the bounded implementer"
+        echo "  agent-status        Show Windows agent orchestrator status"
+        echo "  agent-canary        Run the Windows-native Codex canary"
+        echo "  agent-run <k> <t>   Run the Windows-native agent orchestrator"
+        echo "  agent-import <run>  Import a manual or agent Codex run"
         echo "  auto-status         Show auto run status summary"
         echo "  auto-runs           List recent auto run folders"
         echo "  open-auto <id>      Show artifacts for an auto run"
@@ -104,6 +115,71 @@ case "$SUBCOMMAND" in
         ;;
     build)
         bash "$SCRIPTS_DIR/ws_build.sh" "$@"
+        ;;
+    codex-status)
+        bash "$SCRIPTS_DIR/ws_codex_status.sh" "$@"
+        ;;
+    codex-canary)
+        bash "$SCRIPTS_DIR/ws_codex_canary.sh" "$@"
+        ;;
+    codex-work)
+        bash "$SCRIPTS_DIR/ws_codex_work.sh" "$@"
+        ;;
+    codex-handoff)
+        bash "$SCRIPTS_DIR/ws_codex_handoff.sh" "$@"
+        ;;
+    codex-import)
+        bash "$SCRIPTS_DIR/ws_codex_import.sh" "$@"
+        ;;
+    agent-status)
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_status.ps1")" "$@"
+        ;;
+    agent-canary)
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_canary.ps1")" "$@"
+        ;;
+    agent-run)
+        AGENT_PS1="$(wslpath -w "$SCRIPTS_DIR/ws_agent_run.ps1")"
+        if [ $# -lt 2 ]; then
+            echo "Usage: ws agent-run <project_key> <task_file> [flags]"
+            exit 1
+        fi
+        AGENT_PROJECT="$1"
+        AGENT_TASK="$2"
+        shift 2
+        to_win_path() {
+            case "$1" in
+                /mnt/*) wslpath -w "$1" ;;
+                *) printf '%s' "$1" ;;
+            esac
+        }
+        AGENT_TASK_WIN="$(to_win_path "$AGENT_TASK")"
+        AGENT_ARGS=( -NoProfile -ExecutionPolicy Bypass -File "$AGENT_PS1" -Command Run -ProjectKey "$AGENT_PROJECT" -TaskFile "$AGENT_TASK_WIN" )
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --mode)
+                    AGENT_ARGS+=( -Mode "$2" ); shift 2 ;;
+                --branch)
+                    AGENT_ARGS+=( -Branch ); shift ;;
+                --max-files)
+                    AGENT_ARGS+=( -MaxFiles "$2" ); shift 2 ;;
+                --max-minutes)
+                    AGENT_ARGS+=( -MaxMinutes "$2" ); shift 2 ;;
+                --stop-on-fail)
+                    AGENT_ARGS+=( -StopOnFail ); shift ;;
+                --dry-run)
+                    AGENT_ARGS+=( -DryRun ); shift ;;
+                --tests)
+                    AGENT_ARGS+=( -Tests "$2" ); shift 2 ;;
+                --context)
+                    AGENT_ARGS+=( -Context "$2" ); shift 2 ;;
+                *)
+                    AGENT_ARGS+=( "$1" ); shift ;;
+            esac
+        done
+        powershell.exe "${AGENT_ARGS[@]}"
+        ;;
+    agent-import)
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_import.ps1")" "$@"
         ;;
     model)
         bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
@@ -235,6 +311,9 @@ case "$SUBCOMMAND" in
         ;;
     auto)
         bash "$SCRIPTS_DIR/ws_auto.sh" "$@"
+        ;;
+    codex-apply)
+        bash "$SCRIPTS_DIR/ws_codex_apply.sh" "$@"
         ;;
     auto-status)
         bash "$SCRIPTS_DIR/ws_auto_state.sh" status
