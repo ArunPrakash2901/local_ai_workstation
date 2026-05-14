@@ -459,6 +459,9 @@ def graph_context_for(task_info, run_dir: Path | None = None):
     return f"No graph context available at {graph_file}."
 
 def compose_context_pack(task_info, graph_context):
+    allowed = normalized_allowed_files(task_info)
+    if not allowed:
+        allowed = infer_allowed_files(task_info)
     return "\n".join([
         "# Context Pack",
         "",
@@ -475,7 +478,7 @@ def compose_context_pack(task_info, graph_context):
         "\n".join(f"- {x}" for x in task_info["acceptance"]) or "- not specified",
         "",
         "## Allowed Files",
-        "\n".join(f"- {x}" for x in task_info["allowed"]) or "- not specified",
+        "\n".join(f"- {x}" for x in allowed) or "- not specified",
         "",
         "## Denied Files",
         "\n".join(f"- {x}" for x in (task_info["denied"] or [".env", "credentials", "raw datasets", "data/*", "models/*", "node_modules/*", ".git/*"])),
@@ -511,6 +514,9 @@ def compose_context_pack(task_info, graph_context):
     ])
 
 def build_plan_prompt(task_info, graph_context, role="planner", review=None, codex=None):
+    allowed = normalized_allowed_files(task_info)
+    if not allowed:
+        allowed = infer_allowed_files(task_info)
     header = {
         "planner": "You are the local planner for a bounded workstation auto-run. Return a concise implementation plan only. Do not invent scope. If you cannot plan safely, say BLOCKED and why.",
         "coder": "You are the local coder for a bounded workstation auto-run. Return only a single unified diff block if safe. The diff must stay within Allowed Files and respect the file count limit. If blocked, say BLOCKED and why. Do not include extra prose unless blocked.",
@@ -530,7 +536,7 @@ def build_plan_prompt(task_info, graph_context, role="planner", review=None, cod
         "\n".join(f"- {x}" for x in task_info["acceptance"]) or "- not specified",
         "",
         "Allowed Files:",
-        "\n".join(f"- {x}" for x in task_info["allowed"]) or "- not specified",
+        "\n".join(f"- {x}" for x in allowed) or "- not specified",
         "",
         "Denied Files:",
         "\n".join(f"- {x}" for x in (task_info["denied"] or [".env", "credentials", "raw datasets", "data/*", "models/*", "node_modules/*", ".git/*"])),
@@ -573,6 +579,12 @@ def docs_only(paths):
         if not any(p.startswith(root) for root in allowed_roots):
             return False
     return True
+
+def normalized_allowed_files(task_info):
+    allowed = [x.strip() for x in task_info.get("allowed", []) if x and x.strip()]
+    if allowed == ["not specified"]:
+        allowed = []
+    return allowed
 
 def infer_allowed_files(task_info):
     explicit = []
@@ -721,14 +733,16 @@ for task_info in tasks:
     write_run_file(run_dir, "git_status_before.md", git_status(project_dir, run_dir=run_dir) + "\n")
 
     allowed_file = run_dir / "allowed_files.txt"
-    allowed_file.write_text("\n".join(task_info["allowed"]) + "\n", encoding="utf-8", newline="\n")
-    if not task_info["allowed"]:
+    allowed = normalized_allowed_files(task_info)
+    if not allowed:
         inferred_allowed = infer_allowed_files(task_info)
         if inferred_allowed:
-            allowed_file.write_text("\n".join(inferred_allowed) + "\n", encoding="utf-8", newline="\n")
+            allowed = inferred_allowed
             append_text(run_dir / "local_attempts.md", f"- Inferred Allowed Files: {', '.join(inferred_allowed)}\n")
-        else:
-            allowed_file.write_text("not specified\n", encoding="utf-8")
+    if allowed:
+        allowed_file.write_text("\n".join(allowed) + "\n", encoding="utf-8", newline="\n")
+    else:
+        allowed_file.write_text("not specified\n", encoding="utf-8", newline="\n")
 
     local_status = "BLOCKED_LOCAL"
     tests_passed = False
