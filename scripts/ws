@@ -63,6 +63,10 @@ case "$SUBCOMMAND" in
         echo "  build-status        Show latest build loop status"
         echo "  build-runs          List recent build run folders"
         echo "  open-build <id>     Show artifacts for a build run"
+        echo "  auto <key> <task>   Run bounded closed-loop auto task"
+        echo "  auto-status         Show auto run status summary"
+        echo "  auto-runs           List recent auto run folders"
+        echo "  open-auto <id>      Show artifacts for an auto run"
         echo "  task-new            Create canonical task in tasks/inbox"
         echo "  task-split <prd>    Split structured PRDs into generated tasks"
         echo "  task-status         Show task lifecycle counts and recent tasks"
@@ -228,6 +232,18 @@ case "$SUBCOMMAND" in
         echo "Tests:         $TARGET/test_output.md"
         echo "Diff:          $TARGET/final_diff.patch"
         echo "Report:        $TARGET/build_report.md"
+        ;;
+    auto)
+        bash "$SCRIPTS_DIR/ws_auto.sh" "$@"
+        ;;
+    auto-status)
+        bash "$SCRIPTS_DIR/ws_auto_state.sh" status
+        ;;
+    auto-runs)
+        bash "$SCRIPTS_DIR/ws_auto_state.sh" runs
+        ;;
+    open-auto)
+        bash "$SCRIPTS_DIR/ws_auto_state.sh" open "${1:-latest}"
         ;;
     task-new)
         bash "$SCRIPTS_DIR/ws_task_new.sh" "$@"

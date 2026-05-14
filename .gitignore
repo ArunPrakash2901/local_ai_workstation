@@ -11,6 +11,7 @@ scratch/
 graphify-out/
 runtimes/
 models/
+auto_runs/
 __pycache__/
 *.pyc
 *.log
