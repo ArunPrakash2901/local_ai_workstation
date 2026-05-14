@@ -1,0 +1,276 @@
+#!/bin/bash
+
+# Unified Workstation Command
+if [ -f "/mnt/d/_ai_brain/scripts/ws_env.sh" ]; then
+    # shellcheck source=/mnt/d/_ai_brain/scripts/ws_env.sh
+    source "/mnt/d/_ai_brain/scripts/ws_env.sh"
+fi
+
+WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
+SCRIPTS_DIR="$WS_HOME/scripts"
+RUNS_DIR="$WS_HOME/runs"
+SUBCOMMAND=$1
+shift
+
+case "$SUBCOMMAND" in
+    help|--help|-h)
+        echo "AI Workstation Unified Command (ws)"
+        echo "-----------------------------------"
+        echo "Usage: ws <subcommand> [args] [flags]"
+        echo ""
+        echo "Projects:"
+        echo "  projects            List all registered projects"
+        echo "  project <key>       Show project metadata"
+        echo ""
+        echo "Intelligence:"
+        echo "  ask <key> <q>       Ask project-specific question"
+        echo "  global <q>          Ask cross-project global question"
+        echo "  graph <key|global>  Query knowledge graph directly"
+        echo "  audit <key>         Perform project audit"
+        echo "  debug <key> <log>   Debug error log"
+        echo "  task <key> <file>   Run bounded implementation task"
+        echo "  build <key> <file>  Run bounded local-first product build loop"
+        echo ""
+        echo "Models & KV:"
+        echo "  model               Show active model configuration"
+        echo "  models              List available model profiles"
+        echo "  use <profile>       Switch active model profile"
+        echo "  warm [profile]      Warm model safely"
+        echo "  unload              Unload models from VRAM"
+        echo "  kv                  List KV cache profiles"
+        echo "  kvuse <profile>     Switch active KV cache profile"
+        echo "  daily               Restore safe daily profile"
+        echo "  moe                 List MoE/big-model lab profiles"
+        echo ""
+        echo "Frontier Escalation:"
+        echo "  frontier            Show status of frontier providers"
+        echo "  packet <key> <q>    Create escalation packet (local first)"
+        echo "  redact <packet>     Safety scan a packet before manual escalation"
+        echo "  escalate <prov> <p> Send SAFE packet explicitly to gemini/codex"
+        echo "  review <key> <run>  Reserved; do not use until explicitly enabled"
+        echo "  stuck <key> <run>   Reserved; do not use until explicitly enabled"
+        echo ""
+        echo "System:"
+        echo "  status              High-level health/status check"
+        echo "  runs                List recent run folders"
+        echo "  open-run <id>       Show paths for a specific run"
+        echo "  aliases             Show legacy aliases"
+        echo "  paths               Show path abstraction and migration status"
+        echo "  audit-workstation   Read-only audit of workstation infrastructure"
+        echo "  cleanup-plan        Generate read-only cleanup plan"
+        echo "  cleanup-apply       Archive approved cleanup candidates; requires --apply"
+        echo "  cleanup-status      Show latest cleanup reports and unresolved issues"
+        echo "  build-status        Show latest build loop status"
+        echo "  build-runs          List recent build run folders"
+        echo "  open-build <id>     Show artifacts for a build run"
+        echo "  task-new            Create canonical task in tasks/inbox"
+        echo "  task-split <prd>    Split structured PRDs into generated tasks"
+        echo "  task-status         Show task lifecycle counts and recent tasks"
+        echo "  task-next [project] Print next task source and path"
+        echo "  task-review <file>  Create Codex review packet for a task"
+        echo "  task-complete <file> Mark task completed"
+        echo "  task-block <file>   Mark task blocked with reason"
+        echo ""
+        echo "Global Flags (passed to scripts):"
+        echo "  --profile <p>, --model <m>, --kv <k>, --context <c>"
+        ;;
+    projects)
+        bash "$SCRIPTS_DIR/ai_list_projects.sh" "$@"
+        ;;
+    project)
+        bash "$SCRIPTS_DIR/ai_project.sh" "$@"
+        ;;
+    ask)
+        bash "$SCRIPTS_DIR/ai_ask.sh" "$@"
+        ;;
+    global)
+        bash "$SCRIPTS_DIR/ai_global_ask.sh" "$@"
+        ;;
+    graph)
+        bash "$SCRIPTS_DIR/ai_graph.sh" "$@"
+        ;;
+    audit)
+        bash "$SCRIPTS_DIR/ai_audit.sh" "$@"
+        ;;
+    debug)
+        bash "$SCRIPTS_DIR/ai_debug.sh" "$@"
+        ;;
+    task)
+        bash "$SCRIPTS_DIR/ai_run_task.sh" "$@"
+        ;;
+    build)
+        bash "$SCRIPTS_DIR/ws_build.sh" "$@"
+        ;;
+    model)
+        bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
+        ;;
+    models)
+        bash "$SCRIPTS_DIR/ai_models.sh" "$@"
+        ;;
+    use)
+        bash "$SCRIPTS_DIR/ai_model_use.sh" "$@"
+        ;;
+    warm)
+        bash "$SCRIPTS_DIR/ai_model_warm.sh" "$@"
+        ;;
+    unload)
+        bash "$SCRIPTS_DIR/ai_model_unload.sh" "$@"
+        ;;
+    kv)
+        bash "$SCRIPTS_DIR/ai_kv_profiles.sh" "$@"
+        ;;
+    kvuse)
+        bash "$SCRIPTS_DIR/ai_kv_use.sh" "$@"
+        ;;
+    daily)
+        bash "$SCRIPTS_DIR/ai_daily_restore.sh" "$@"
+        ;;
+    moe)
+        # Assuming ai_moe_list.sh was supposed to be implemented or we use ai_models with filter
+        # For now, map to ai_models.sh if ai_moe_list doesn't exist
+        if [ -f "$SCRIPTS_DIR/ai_moe_list.sh" ]; then
+            bash "$SCRIPTS_DIR/ai_moe_list.sh" "$@"
+        else
+            bash "$SCRIPTS_DIR/ai_models.sh" | grep -E "YES.*YES|Lab|Profile"
+        fi
+        ;;
+    status)
+        # Combine health check and current model
+        powershell.exe -File "D:/_ai_brain/scripts/check_health.ps1"
+        bash "$SCRIPTS_DIR/ai_model_current.sh"
+        ;;
+    runs)
+        if compgen -G "$RUNS_DIR/*" > /dev/null; then
+            ls -dt "$RUNS_DIR"/* | head -n 10
+        else
+            echo "No run folders found under $RUNS_DIR"
+        fi
+        ;;
+    open-run)
+        RUN_ID=$1
+        if [ -z "$RUN_ID" ]; then echo "Usage: ws open-run <id_or_latest>"; exit 1; fi
+        if [ "$RUN_ID" == "latest" ]; then
+            TARGET=$(ls -dt "$RUNS_DIR"/* 2>/dev/null | head -n 1)
+        else
+            TARGET=$(ls -d "$RUNS_DIR"/*"$RUN_ID"* 2>/dev/null | head -n 1)
+        fi
+        if [ -d "$TARGET" ]; then
+            echo "Run Folder: $TARGET"
+            echo "Context:    $TARGET/context_pack.md"
+            echo "Graph:      $TARGET/graph_context.md"
+            echo "Prompt:     $TARGET/prompt.md"
+            echo "User Prompt:$TARGET/user_prompt.md"
+            echo "Answer:     $TARGET/answer.md"
+            echo "Summary:    $TARGET/run_summary.yaml"
+        else
+            echo "Error: Run $RUN_ID not found."
+            exit 1
+        fi
+        ;;
+    aliases)
+        echo "Legacy aliases (supported but ws preferred):"
+        echo "ailist, aiproj, aiask, aiglobal, aigraph, aiaudit, aidebug, aitask"
+        echo "aimodels, aimodel, aiuse, aikv, aidaily"
+        ;;
+    paths)
+        bash "$SCRIPTS_DIR/ws_path_status.sh"
+        ;;
+    audit-workstation)
+        bash "$SCRIPTS_DIR/ws_audit_workstation.sh" "$@"
+        ;;
+    cleanup-plan)
+        bash "$SCRIPTS_DIR/ws_cleanup_plan.sh" "$@"
+        ;;
+    cleanup-apply)
+        bash "$SCRIPTS_DIR/ws_cleanup_apply.sh" "$@"
+        ;;
+    cleanup-status)
+        bash "$SCRIPTS_DIR/ws_cleanup_status.sh" "$@"
+        ;;
+    build-status)
+        LATEST=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
+        if [ -z "$LATEST" ]; then
+            echo "No build runs found."
+        else
+            echo "Latest build run: $LATEST"
+            echo -n "Status: "
+            cat "$LATEST/status.txt" 2>/dev/null || echo "unknown"
+            [ -f "$LATEST/build_report.md" ] && echo "Report: $LATEST/build_report.md"
+        fi
+        ;;
+    build-runs)
+        if find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+            find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -n 20 | cut -d' ' -f2-
+        else
+            echo "No build runs found."
+        fi
+        ;;
+    open-build)
+        RUN_ID=${1:-}
+        if [ -z "$RUN_ID" ]; then echo "Usage: ws open-build <latest|run_id>"; exit 1; fi
+        if [ "$RUN_ID" = "latest" ]; then
+            TARGET=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
+        else
+            TARGET=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -name "*$RUN_ID*" -print 2>/dev/null | head -n 1)
+        fi
+        if [ -z "$TARGET" ] || [ ! -d "$TARGET" ]; then
+            echo "Build run not found: $RUN_ID"
+            exit 1
+        fi
+        echo "Build Run:     $TARGET"
+        echo "Status:        $TARGET/status.txt"
+        echo "Task:          $TARGET/task.md"
+        echo "Metadata:      $TARGET/project_metadata.md"
+        echo "Graph Context: $TARGET/graph_context.md"
+        echo "Context Pack:  $TARGET/context_pack.md"
+        echo "Local Plan:    $TARGET/local_plan.md"
+        echo "Attempts:      $TARGET/attempts.md"
+        echo "Tests:         $TARGET/test_output.md"
+        echo "Diff:          $TARGET/final_diff.patch"
+        echo "Report:        $TARGET/build_report.md"
+        ;;
+    task-new)
+        bash "$SCRIPTS_DIR/ws_task_new.sh" "$@"
+        ;;
+    task-split)
+        bash "$SCRIPTS_DIR/ws_task_split.sh" "$@"
+        ;;
+    task-status)
+        bash "$SCRIPTS_DIR/ws_task_status.sh" "$@"
+        ;;
+    task-next)
+        bash "$SCRIPTS_DIR/ws_task_next.sh" "$@"
+        ;;
+    task-review)
+        bash "$SCRIPTS_DIR/ws_task_review_packet.sh" "$@"
+        ;;
+    task-complete)
+        bash "$SCRIPTS_DIR/ws_task_complete.sh" "$@"
+        ;;
+    task-block)
+        bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
+        ;;
+    frontier)
+        bash "$SCRIPTS_DIR/ws_frontier_status.sh"
+        ;;
+    packet)
+        bash "$SCRIPTS_DIR/ws_make_packet.sh" "$@"
+        ;;
+    redact)
+        bash "$SCRIPTS_DIR/ws_redact_packet.sh" "$@"
+        ;;
+    escalate)
+        bash "$SCRIPTS_DIR/ws_escalate.sh" "$@"
+        ;;
+    review)
+        bash "$SCRIPTS_DIR/ws_review.sh" "$@"
+        ;;
+    stuck)
+        bash "$SCRIPTS_DIR/ws_stuck.sh" "$@"
+        ;;
+    *)
+        echo "Unknown subcommand: $SUBCOMMAND"
+        echo "Try 'ws help' for usage."
+        exit 1
+        ;;
+esac

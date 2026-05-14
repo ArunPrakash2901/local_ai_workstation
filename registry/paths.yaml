@@ -1,0 +1,19 @@
+live:
+  control_plane_windows: "D:\\_ai_brain"
+  control_plane_wsl: "/mnt/d/_ai_brain"
+  ollama_models_windows: "D:\\ollama\\models"
+  ollama_models_wsl: "/mnt/d/ollama/models"
+  parent_windows: "D:\\Local_AI_Workstation"
+  parent_wsl: "/mnt/d/Local_AI_Workstation"
+
+future:
+  control_plane_windows: "D:\\Local_AI_Workstation\\control_plane"
+  control_plane_wsl: "/mnt/d/Local_AI_Workstation/control_plane"
+  ollama_models_windows: "D:\\Local_AI_Workstation\\models\\ollama"
+  ollama_models_wsl: "/mnt/d/Local_AI_Workstation/models/ollama"
+
+active:
+  ws_home: "/mnt/d/_ai_brain"
+  ws_parent: "/mnt/d/Local_AI_Workstation"
+  model_home: "/mnt/d/ollama/models"
+  migration_mode: "live_paths"

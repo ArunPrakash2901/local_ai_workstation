@@ -1,0 +1,91 @@
+projects:
+  portfolio_website:
+    display_name: Portfolio Website
+    windows_path: D:\portfolio_website
+    wsl_path: /mnt/d/portfolio_website
+    graph_path: D:\portfolio_website\graphify-out\graph.json
+    project_type: web_app
+    priority: high
+    safe_to_modify: true
+    status: graphed
+    notes: Next.js, Tailwind, TypeScript. 372 nodes.
+  simulation:
+    display_name: Simulation
+    windows_path: D:\Simulation
+    wsl_path: /mnt/d/Simulation
+    graph_path: D:\Simulation\graphify-out\graph.json
+    project_type: research
+    priority: medium
+    safe_to_modify: true
+    status: graphed
+    notes: 32 nodes.
+  gsp:
+    display_name: GSP (Gross State Product)
+    windows_path: D:\GSP
+    wsl_path: /mnt/d/GSP
+    graph_path: D:\GSP\graphify-out\graph.json
+    project_type: quant_econometrics
+    priority: high
+    safe_to_modify: true
+    status: graphed
+    notes: R/Python pipeline for GSP estimation. 7 nodes.
+  llm_handbook:
+    display_name: LLM Engineer Handbook
+    windows_path: D:\LLM-engineer-handbook
+    wsl_path: /mnt/d/LLM-engineer-handbook
+    graph_path: D:\LLM-engineer-handbook\graphify-out\graph.json
+    project_type: educational
+    priority: low
+    safe_to_modify: false
+    status: graphed
+    notes: 7 nodes.
+  melbourne_oil:
+    display_name: Melbourne Oil Scarcity Outlook
+    windows_path: D:\Melbourne-Oil-Scarcity-outlook
+    wsl_path: /mnt/d/Melbourne-Oil-Scarcity-outlook
+    graph_path: D:\Melbourne-Oil-Scarcity-outlook\graphify-out\graph.json
+    project_type: quant_eda
+    priority: medium
+    safe_to_modify: true
+    status: graphed
+    notes: 6 nodes.
+  churn_predictor:
+    display_name: Predict Customer Churn (Kaggle)
+    windows_path: D:\kaagle_competitions\Predict Customer Churn
+    wsl_path: /mnt/d/kaagle_competitions/Predict Customer Churn
+    graph_path: D:\kaagle_competitions\Predict Customer Churn\graphify-out\graph.json
+    project_type: kaggle_competition
+    priority: medium
+    safe_to_modify: true
+    status: graphed
+    notes: Kaggle churn prediction.
+  ds_course:
+    display_name: Complete Data Science Course 2024
+    windows_path: D:\Complete-Data-Science-With-Machine-Learning-And-NLP-2024
+    wsl_path: /mnt/d/Complete-Data-Science-With-Machine-Learning-And-NLP-2024
+    graph_path: unknown
+    project_type: educational
+    priority: low
+    safe_to_modify: false
+    status: not_graphed
+    notes: Massive course repo.
+  gsp_research:
+    display_name: GSP Research Documents
+    windows_path: D:\GSP research
+    wsl_path: /mnt/d/GSP research
+    graph_path: unknown
+    project_type: documentation
+    priority: low
+    safe_to_modify: false
+    status: skipped
+    notes: Primarily PDFs and docs.
+  workstation_control_plane:
+    display_name: Local AI Workstation Control Plane
+    windows_path: D:\_ai_brain
+    wsl_path: /mnt/d/_ai_brain
+    graph_path: D:\_ai_brain\graphify-out\graph.json
+    project_type: local_ai_workstation
+    priority: high
+    safe_to_modify: true
+    status: internal_control_plane
+    notes: "This is the local AI workstation itself: ws command, scripts, registries, prompts, frontier bridge, build loop, cleanup tools, and documentation."

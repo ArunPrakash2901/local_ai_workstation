@@ -1,0 +1,4 @@
+active_profile: stable_default
+context: 8192
+flash_attention: true
+kv_cache_type: default

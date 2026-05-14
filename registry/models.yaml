@@ -1,0 +1,59 @@
+hermes_default:
+  model_name: hermes3:8b
+  role: default local orchestrator / graph assistant
+  architecture: dense
+  local_or_cloud: local
+  daily_safe: true
+  lab_only: false
+  default_context: 8192
+  recommended_for: global workstation default, Graphify Q&A, debugging, project audits
+  fallback: true
+
+llama31_8b:
+  model_name: llama3.1:8b
+  role: general assistant / reasoning comparison
+  architecture: dense
+  local_or_cloud: local
+  daily_safe: true
+  default_context: 8192
+  recommended_for: general reasoning, summaries, comparison with Hermes
+
+qwen_coder_7b:
+  model_name: qwen2.5-coder:7b
+  role: coding assistant
+  architecture: dense
+  local_or_cloud: local
+  daily_safe: true
+  default_context: 8192
+  recommended_for: code explanation, small patches, debugging, tests
+
+deepseek_coder_v2_lite:
+  model_name: deepseek-coder-v2:lite
+  role: coder / MoE lab model
+  architecture: moe
+  local_or_cloud: local
+  daily_safe: false
+  lab_only: true
+  default_context: 4096
+  recommended_for: coding lab, deeper code reasoning, MoE/RAM-offload experiment
+
+phi35_fast:
+  model_name: phi3.5:latest
+  role: fast lightweight assistant
+  architecture: dense
+  local_or_cloud: local
+  daily_safe: true
+  default_context: 8192
+  recommended_for: fast summaries, quick explanations, low-latency tasks
+
+qwen_32b_lab:
+  model_name: qwen2.5:32b
+  role: heavyweight coding / logic lab
+  architecture: dense
+  local_or_cloud: local
+  daily_safe: false
+  lab_only: true
+  expected_fit: gpu_plus_ram
+  default_context: 4096
+  recommended_for: slower heavyweight reasoning, difficult code analysis, architecture review
+  avoid_for: fast debugging, daily interaction, overnight loops

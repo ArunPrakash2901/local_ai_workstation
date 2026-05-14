@@ -1,0 +1,31 @@
+workflows:
+  global_ask:
+    description: Queries the global Graphify graph across all projects.
+    read_only: true
+  project_ask:
+    description: Asks a question about a specific project using its local graph.
+    read_only: true
+  debug:
+    description: Debugs an error log using project context.
+    read_only: true
+  audit:
+    description: Performs a read-only architecture and quality audit.
+    read_only: true
+  graph_query:
+    description: Directly queries Graphify for paths or explanations.
+    read_only: true
+  task_run:
+    description: Executes a bounded implementation task.
+    read_only: false
+    requires_approval: true
+    safety_check: true
+  read_only_review:
+    description: Reviewing code or documentation without changes.
+    read_only: true
+  documentation:
+    description: Generating or updating documentation.
+    read_only: false
+  learning:
+    description: Explaining concepts or errors for educational purposes.
+    read_only: true
+default_mode: read_only

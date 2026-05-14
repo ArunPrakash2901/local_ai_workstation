@@ -1,0 +1,32 @@
+gemini:
+  command: gemini
+  mode: terminal_cli
+  enabled: true
+  non_interactive: gemini -p <packet>
+  best_for:
+    - deep reasoning
+    - strategy
+    - large synthesis
+    - research
+
+codex:
+  command: codex
+  mode: terminal_cli
+  enabled: true
+  non_interactive: codex exec --skip-git-repo-check --sandbox read-only -
+  best_for:
+    - coding review
+    - refactor planning
+    - implementation strategy
+    - debugging
+
+claude:
+  command: claude
+  mode: terminal_cli
+  enabled: false
+  non_interactive: unavailable
+  best_for:
+    - debugging
+    - architecture review
+    - explanation
+    - code reasoning

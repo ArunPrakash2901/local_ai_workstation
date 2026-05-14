@@ -1,0 +1,4 @@
+active_model: hermes3:8b
+active_profile: hermes_default
+context_length: 8192
+mode: daily

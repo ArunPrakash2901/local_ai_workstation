@@ -1,0 +1,23 @@
+stable_default:
+  kv_cache_type: default
+  flash_attention: true
+  context: 8192
+  purpose: safest daily mode
+
+kv_q8_balanced:
+  kv_cache_type: q8_0
+  flash_attention: true
+  context: 8192
+  purpose: memory saving with lower quality risk
+
+kv_q4_memory_saver:
+  kv_cache_type: q4_0
+  flash_attention: true
+  context: 8192
+  purpose: serious memory-saving profile for long context or larger models
+
+kv_q4_big_model_lab:
+  kv_cache_type: q4_0
+  flash_attention: true
+  context: 4096
+  purpose: big model / MoE lab mode
