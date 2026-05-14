@@ -44,6 +44,9 @@ test_output = run_dir.joinpath("test_output.md").read_text(encoding="utf-8", err
 apply_guard = run_dir.joinpath("apply_guard.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("apply_guard.md").exists() else ""
 patch_validation = run_dir.joinpath("patch_validation.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("patch_validation.md").exists() else ""
 rejected_patch = run_dir.joinpath("rejected_patch.diff").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("rejected_patch.diff").exists() else ""
+codex_patch = run_dir.joinpath("codex_patch.diff").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_patch.diff").exists() else ""
+codex_patch_validation = run_dir.joinpath("codex_patch_validation.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_patch_validation.md").exists() else ""
+codex_patch_apply = run_dir.joinpath("codex_patch_apply.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_patch_apply.md").exists() else ""
 codex_usage = run_dir.joinpath("codex_usage.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_usage.md").exists() else ""
 codex_response = run_dir.joinpath("codex_response.md").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("codex_response.md").exists() else ""
 exception_log = run_dir.joinpath("exception.log").read_text(encoding="utf-8", errors="replace") if run_dir.joinpath("exception.log").exists() else ""
@@ -91,14 +94,14 @@ if not codex_used and codex_usage.strip().startswith("{"):
         pass
 tests_passed = "Exit Code: 0" in test_output or status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}
 files_changed = bool(changed_files)
-blocked_with_changes = status in {"BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX"} and files_changed
+blocked_with_changes = status in {"BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "BLOCKED_CODEX_ADVICE_ONLY", "BLOCKED_CODEX_PATCH_INVALID"} and files_changed
 
 def next_action():
     if status == "PLAN_ONLY":
         return "review plan"
     if status in {"PASSED", "PASSED_WITH_CODEX", "NO_CHANGES"}:
         return "commit changes or mark task complete"
-    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL", "PATCH_INVALID", "BLOCKED_PATCH_INVALID", "PATCH_INVALID_APPROXIMATE", "BLOCKED_PATCH_INVALID_APPROXIMATE"}:
+    if status in {"BLOCKED_LOCAL", "BLOCKED_LOCAL_WITH_CHANGES", "BLOCKED_CODEX", "BLOCKED_CODEX_ADVICE_ONLY", "BLOCKED_CODEX_PATCH_INVALID", "FAILED_TESTS", "SAFETY_BLOCKED", "NEEDS_USER_REVIEW", "FAILED_INTERNAL", "PATCH_INVALID", "BLOCKED_PATCH_INVALID", "PATCH_INVALID_APPROXIMATE", "BLOCKED_PATCH_INVALID_APPROXIMATE"}:
         return "repair patch or fix task spec"
     if status == "TIMEOUT":
         return "rerun with a smaller scope or more time"
@@ -132,6 +135,15 @@ report = f"""# Auto Run Final Report
 
 ## Codex Usage
 {codex_usage.strip() or "Codex was not used."}
+
+## Codex Patch
+{codex_patch.strip() or "No Codex patch recorded."}
+
+## Codex Patch Validation
+{codex_patch_validation.strip() or "No Codex patch validation recorded."}
+
+## Codex Patch Apply
+{codex_patch_apply.strip() or "No Codex patch apply record."}
 
 ## Safety
 {apply_guard.strip() or "No additional safety notes recorded."}

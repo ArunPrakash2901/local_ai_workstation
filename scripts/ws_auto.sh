@@ -561,11 +561,15 @@ def build_plan_prompt(task_info, graph_context, role="planner", review=None, cod
     return header + "\n\n" + "\n".join(parts)
 
 def extract_diff(text: str):
+    text = strip_code_fences(text)
     m = re.search(r"```(?:diff|patch)\s*\n(.*?)```", text, re.S)
     if m:
         return normalize_diff(m.group(1))
     if "diff --git" in text:
         start = text.index("diff --git")
+        return normalize_diff(text[start:])
+    if re.search(r"^---\s+(?:a/|b/|/)", text, re.M) and re.search(r"^\+\+\+\s+(?:a/|b/|/)", text, re.M):
+        start = re.search(r"^---\s+(?:a/|b/|/)", text, re.M).start()
         return normalize_diff(text[start:])
     return ""
 
@@ -613,6 +617,12 @@ def validate_patch_syntax(patch_text: str):
     text = patch_text.strip()
     if not text:
         return False, "empty patch"
+    if "```" in text:
+        return False, "markdown fence found in patch"
+    if "index 1234567..89abcdef" in text or re.search(r"^index\s+[0-9a-f]{7,8}\.\.[0-9a-f]{7,8}\s*$", text, re.M):
+        return False, "placeholder hashes found in patch"
+    if re.search(r"^@@[^\n]*\.\.\.[^\n]*$", text, re.M):
+        return False, "ellipsis found in hunk header"
     has_file_header = False
     has_hunk = False
     for line in text.splitlines():
@@ -636,8 +646,6 @@ def validate_patch_syntax(patch_text: str):
             continue
         if line.startswith("\\ No newline at end of file"):
             continue
-        if line.startswith("```"):
-            return False, "markdown fence found in patch"
         if not line.strip():
             continue
         return False, f"unexpected patch content: {line}"
@@ -857,6 +865,30 @@ def build_patch_from_rewrites(project_dir: Path, rewrite_map, run_dir: Path, all
         return "", changed, "no changes"
     return "\n\n".join(diffs) + "\n", changed, "SAFE"
 
+def load_allowed_file_snapshots(project_dir: Path, allowed_files, *, max_file_bytes=20000, max_total_bytes=40000):
+    snapshots = []
+    total = 0
+    for rel in allowed_files:
+        rel_norm = rel.replace("\\", "/")
+        path = (project_dir / rel_norm).resolve()
+        try:
+            path.relative_to(project_dir)
+        except ValueError:
+            return None, f"unsafe path {rel_norm}"
+        if not path.exists() or not path.is_file():
+            return None, f"missing file {rel_norm}"
+        size = path.stat().st_size
+        if size > max_file_bytes:
+            return None, f"file too large {rel_norm}"
+        total += size
+        if total > max_total_bytes:
+            return None, "allowed file content too large"
+        snapshots.append({
+            "path": rel_norm,
+            "content": path.read_text(encoding="utf-8", errors="replace"),
+        })
+    return snapshots, "SAFE"
+
 def record_rejected_patch(run_dir: Path, patch_text: str, reason: str, stage: str, *, approximate: bool = False):
     write_run_file(run_dir, "rejected_patch.diff", patch_text)
     write_run_file(run_dir, "patch_validation.md", "\n".join([
@@ -881,6 +913,107 @@ def write_patch_validation(run_dir: Path, *, stage: str, result: str, reason: st
         f"- Repair Result: {repair_result}",
         "",
     ]))
+
+def write_codex_patch_validation(run_dir: Path, *, status: str, reason: str, patch_present: bool, advice_only: bool = False, guard_result: str = "not run", apply_result: str = "not run"):
+    write_run_file(run_dir, "codex_patch_validation.md", "\n".join([
+        "# Codex Patch Validation",
+        "",
+        f"- Status: {status}",
+        f"- Reason: {reason}",
+        f"- Patch Present: {'yes' if patch_present else 'no'}",
+        f"- Advice Only: {'yes' if advice_only else 'no'}",
+        f"- Guard Result: {guard_result}",
+        f"- Apply Result: {apply_result}",
+        "",
+    ]))
+
+def write_codex_patch_apply(run_dir: Path, *, status: str, patch_path: str = "", guard_out: str = "", check_out: str = "", apply_out: str = ""):
+    write_run_file(run_dir, "codex_patch_apply.md", "\n".join([
+        "# Codex Patch Apply",
+        "",
+        f"- Status: {status}",
+        f"- Patch Path: {patch_path or 'none'}",
+        "",
+        "## Apply Guard",
+        "",
+        guard_out.strip() or "not run",
+        "",
+        "## Git Apply Check",
+        "",
+        check_out.strip() or "not run",
+        "",
+        "## Git Apply",
+        "",
+        apply_out.strip() or "not run",
+        "",
+    ]))
+
+def build_codex_patch_packet(task_info, graph_context, allowed_snapshots, local_plan_text, attempts_text, test_text, apply_guard_text):
+    allowed = normalized_allowed_files(task_info) or infer_allowed_files(task_info)
+    parts = [
+        "# Auto Escalation Packet",
+        "",
+        "## Mode",
+        "Codex Patch Mode",
+        "",
+        "## Codex Instructions",
+        "Return ONLY a valid git-style unified diff.",
+        "Do not write files directly.",
+        "Do not use markdown fences.",
+        "Do not include explanations or advice-only text.",
+        "Do not use placeholder hashes, ellipses, or invented context.",
+        "Paths must stay inside Allowed Files only.",
+        "If you cannot produce a valid patch, return NO_PATCH.",
+        "",
+        "## Task",
+        task_info["body"].strip(),
+        "",
+        "## Project Metadata",
+        json.dumps(project, indent=2, sort_keys=True),
+        "",
+        "## Graph Context",
+        graph_context,
+        "",
+        "## Allowed Files",
+        "\n".join(f"- {x}" for x in allowed) or "- not specified",
+        "",
+        "## Allowed File Contents",
+    ]
+    if allowed_snapshots:
+        for snap in allowed_snapshots:
+            parts.extend([
+                f"### File: {snap['path']}",
+                "BEGIN FILE CONTENT",
+                snap["content"],
+                "END FILE CONTENT",
+                "",
+            ])
+    else:
+        parts.extend([
+            "not available",
+            "",
+        ])
+    parts.extend([
+        "## Local Plan",
+        local_plan_text or "not available",
+        "",
+        "## Attempts",
+        attempts_text or "not available",
+        "",
+        "## Test Output",
+        test_text or "not available",
+        "",
+        "## Apply Guard Reason",
+        apply_guard_text or "not run",
+        "",
+        "## Specific Question for Frontier Model",
+        "Why did this local build fail, and what is the smallest safe patch as a valid git-style unified diff?",
+        "",
+        "## Safety Notice",
+        "Secrets, raw datasets, credentials, .env files, private keys, and broker keys were excluded.",
+        "",
+    ])
+    return "\n".join(parts)
 
 def docs_only(paths):
     if not paths:
@@ -1074,6 +1207,8 @@ for task_info in tasks:
     reviewer_notes = ""
     codex_status = "none"
     codex_used = False
+    codex_patch_status = "not-run"
+    codex_patch_applied = False
     cloud_attempts = 0
     applied_once = False
     last_test_text = ""
@@ -1358,39 +1493,21 @@ for task_info in tasks:
         local_status = "FAILED_TESTS"
 
     if not tests_passed and args.auto_escalate == "codex" and args.no_escalate is False and cloud_attempts < max(args.max_cloud_attempts, 0):
+        allowed_for_codex = normalized_allowed_files(task_info) or infer_allowed_files(task_info)
+        allowed_snapshots, snapshot_reason = load_allowed_file_snapshots(project_dir, allowed_for_codex)
+        if snapshot_reason != "SAFE":
+            allowed_snapshots = []
         packet = run_dir / "codex_packet.md"
         packet.write_text(
-            "\n".join([
-                "# Auto Escalation Packet",
-                "",
-                "## Task",
-                task_info["body"].strip(),
-                "",
-                "## Project Metadata",
-                json.dumps(project, indent=2, sort_keys=True),
-                "",
-                "## Graph Context",
+            build_codex_patch_packet(
+                task_info,
                 graph_context,
-                "",
-                "## Local Plan",
+                allowed_snapshots,
                 run_dir.joinpath("local_plan.md").read_text(encoding="utf-8", errors="replace"),
-                "",
-                "## Apply Guard Reason",
-                apply_guard_text or "not run",
-                "",
-                "## Attempts",
                 run_dir.joinpath("local_attempts.md").read_text(encoding="utf-8", errors="replace"),
-                "",
-                "## Test Output",
                 last_test_text or run_dir.joinpath("test_output.md").read_text(encoding="utf-8", errors="replace"),
-                "",
-                "## Specific Question for Frontier Model",
-                "Why did this local build fail/block, and what is the smallest safe next fix?",
-                "",
-                "## Safety Notice",
-                "Secrets, raw datasets, credentials, .env files, private keys, and broker keys were excluded.",
-                "",
-            ]),
+                apply_guard_text or "not run",
+            ),
             encoding="utf-8",
             newline="\n",
         )
@@ -1411,42 +1528,80 @@ for task_info in tasks:
             codex_response_path = run_dir / "codex_response.md"
             codex_response = codex_response_path.read_text(encoding="utf-8", errors="replace") if codex_response_path.exists() else ""
             append_text(run_dir / "local_attempts.md", f"- Codex Status: SENT\n")
+            append_text(run_dir / "local_attempts.md", f"- Codex Patch Mode: requested\n")
             append_text(run_dir / "local_attempts.md", f"- Codex Response:\n\n{codex_response[:4000]}\n")
-            codex_advice_only = True
-            if codex_response:
-                retry_prompt = build_plan_prompt(task_info, graph_context, role="coder", codex=codex_response[:4000], review=reviewer_notes)
-                retry_response = call_local_model(coder_model, coder_system, retry_prompt, timeout_seconds=180, run_dir=run_dir, label="coder model retry")
-                retry_patch = extract_diff(retry_response)
-                append_text(run_dir / "local_attempts.md", f"\n## Codex-Guided Retry\n\n- Coder Model: {coder_model}\n- Preview:\n\n{retry_response[:3000]}\n")
-                codex_advice_only = not bool(retry_patch)
-                if retry_patch:
-                    proposed_patch.write_text(retry_patch, encoding="utf-8", newline="\n")
+            codex_patch = extract_diff(codex_response)
+            if not codex_patch:
+                codex_patch_status = "BLOCKED_CODEX_ADVICE_ONLY"
+                local_status = codex_patch_status
+                write_codex_patch_validation(run_dir, status=codex_patch_status, reason="Codex response did not include an applyable diff.", patch_present=False, advice_only=True)
+                write_codex_patch_apply(run_dir, status="not applied", patch_path=str(run_dir / "codex_patch.diff"))
+            else:
+                codex_patch = normalize_diff(codex_patch)
+                write_run_file(run_dir, "codex_patch.diff", codex_patch)
+                patch_ok, patch_reason = validate_patch_syntax(codex_patch)
+                if not patch_ok:
+                    codex_patch_status = "BLOCKED_CODEX_PATCH_INVALID"
+                    write_codex_patch_validation(run_dir, status=codex_patch_status, reason=patch_reason, patch_present=True)
+                    write_codex_patch_apply(run_dir, status="invalid", patch_path=str(run_dir / "codex_patch.diff"))
+                    record_rejected_patch(run_dir, codex_patch, patch_reason, "codex patch validation", approximate=patch_is_approximate(codex_patch) or patch_is_approximate(codex_response))
+                    local_status = codex_patch_status
+                else:
+                    proposed_patch.write_text(codex_patch, encoding="utf-8", newline="\n")
                     proposed_patch_ready = True
                     guard_rc, guard_out = run_cmd(
                         ["bash", str(scripts / "ws_apply_guard.sh"), str(project_dir), str(proposed_patch), str(allowed_file), str(args.max_files)],
                         timeout=120,
                         run_dir=run_dir,
-                        label="apply guard codex retry",
+                        label="apply guard codex patch",
                     )
-                    write_run_file(run_dir, "apply_guard.md", (run_dir / "apply_guard.md").read_text(encoding="utf-8", errors="replace") + "\n\n## Codex Retry\n\n" + guard_out.strip() + "\n")
-                    if guard_rc == 0 and "SAFE" in guard_out.splitlines()[0:2]:
-                        if run_cmd(["git", "-C", str(project_dir), "apply", "--check", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply check codex retry")[0] == 0:
-                            run_cmd(["git", "-C", str(project_dir), "apply", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply codex retry")
-                            if task_info["test_command"]:
-                                test_rc, test_stdout = run_cmd(["bash", str(scripts / "ws_test_runner.sh"), str(project_dir), str(run_dir), task_info["test_command"], str(args.max_minutes)], timeout=max(args.max_minutes * 60 + 30, 120), run_dir=run_dir, label="test runner codex retry", check=False)
-                            else:
-                                test_rc, test_stdout = run_cmd(["bash", str(scripts / "ws_test_runner.sh"), str(project_dir), str(run_dir), "", str(args.max_minutes)], timeout=max(args.max_minutes * 60 + 30, 120), run_dir=run_dir, label="test runner codex retry", check=False)
-                            write_run_file(run_dir, "test_output.md", test_stdout + "\n")
-                            if test_rc == 0:
-                                tests_passed = True
-                                local_status = "PASSED_WITH_CODEX"
-                            else:
-                                local_status = "FAILED_TESTS"
-                                last_test_text = test_stdout
+                    write_run_file(run_dir, "apply_guard.md", (run_dir / "apply_guard.md").read_text(encoding="utf-8", errors="replace") + "\n\n## Codex Patch\n\n" + guard_out.strip() + "\n")
+                    append_text(run_dir / "local_attempts.md", f"- Codex Patch Guard Result: {guard_rc}\n\n{guard_out.strip()}\n")
+                    if guard_rc != 0 or "SAFE" not in guard_out.splitlines()[0:2]:
+                        codex_patch_status = "BLOCKED_CODEX_PATCH_INVALID"
+                        write_codex_patch_validation(run_dir, status=codex_patch_status, reason=(guard_out.strip() or "apply guard blocked"), patch_present=True, guard_result=guard_out.strip() or "blocked")
+                        write_codex_patch_apply(run_dir, status="blocked by guard", patch_path=str(run_dir / "codex_patch.diff"), guard_out=guard_out)
+                        record_rejected_patch(run_dir, codex_patch, guard_out.strip() or "apply guard blocked", "codex patch guard", approximate=patch_is_approximate(codex_patch) or patch_is_approximate(codex_response))
+                        local_status = codex_patch_status
                     else:
-                        append_text(run_dir / "local_attempts.md", "- Codex advice produced no applyable patch.\n")
-            if codex_advice_only and not tests_passed:
-                local_status = "NEEDS_USER_REVIEW"
+                        git_apply_check_rc, git_apply_check_out = run_cmd(["git", "-C", str(project_dir), "apply", "--check", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply check codex patch")
+                        append_text(run_dir / "local_attempts.md", f"- Codex Patch Git Apply Check Exit: {git_apply_check_rc}\n\n{git_apply_check_out.strip()}\n")
+                        if git_apply_check_rc != 0:
+                            codex_patch_status = "BLOCKED_CODEX_PATCH_INVALID"
+                            write_codex_patch_validation(run_dir, status=codex_patch_status, reason=(git_apply_check_out.strip() or "git apply check failed"), patch_present=True, guard_result="SAFE", apply_result=git_apply_check_out.strip() or "git apply check failed")
+                            write_codex_patch_apply(run_dir, status="git apply check failed", patch_path=str(run_dir / "codex_patch.diff"), guard_out=guard_out, check_out=git_apply_check_out)
+                            record_rejected_patch(run_dir, codex_patch, git_apply_check_out.strip() or "git apply check failed", "codex patch git apply check", approximate=patch_is_approximate(codex_patch) or patch_is_approximate(codex_response))
+                            local_status = codex_patch_status
+                        else:
+                            git_apply_rc, git_apply_out = run_cmd(["git", "-C", str(project_dir), "apply", str(proposed_patch)], timeout=120, run_dir=run_dir, label="git apply codex patch")
+                            append_text(run_dir / "local_attempts.md", f"- Codex Patch Git Apply Exit: {git_apply_rc}\n\n{git_apply_out.strip()}\n")
+                            if git_apply_rc != 0:
+                                codex_patch_status = "BLOCKED_CODEX_PATCH_INVALID"
+                                write_codex_patch_validation(run_dir, status=codex_patch_status, reason=(git_apply_out.strip() or "git apply failed"), patch_present=True, guard_result="SAFE", apply_result=git_apply_out.strip() or "git apply failed")
+                                write_codex_patch_apply(run_dir, status="git apply failed", patch_path=str(run_dir / "codex_patch.diff"), guard_out=guard_out, check_out=git_apply_check_out, apply_out=git_apply_out)
+                                record_rejected_patch(run_dir, codex_patch, git_apply_out.strip() or "git apply failed", "codex patch apply", approximate=patch_is_approximate(codex_patch) or patch_is_approximate(codex_response))
+                                local_status = codex_patch_status
+                            else:
+                                codex_patch_status = "APPLIED"
+                                codex_patch_applied = True
+                                write_codex_patch_validation(run_dir, status="APPLIED", reason="Codex patch applied locally after validation.", patch_present=True, guard_result="SAFE", apply_result="applied")
+                                write_codex_patch_apply(run_dir, status="applied", patch_path=str(run_dir / "codex_patch.diff"), guard_out=guard_out, check_out=git_apply_check_out, apply_out=git_apply_out)
+                                applied_once = True
+                                if task_info["test_command"]:
+                                    test_rc, test_stdout = run_cmd(["bash", str(scripts / "ws_test_runner.sh"), str(project_dir), str(run_dir), task_info["test_command"], str(args.max_minutes)], timeout=max(args.max_minutes * 60 + 30, 120), run_dir=run_dir, label="test runner codex patch", check=False)
+                                else:
+                                    test_rc, test_stdout = run_cmd(["bash", str(scripts / "ws_test_runner.sh"), str(project_dir), str(run_dir), "", str(args.max_minutes)], timeout=max(args.max_minutes * 60 + 30, 120), run_dir=run_dir, label="test runner codex patch", check=False)
+                                last_test_text = test_stdout
+                                write_run_file(run_dir, "test_output.md", test_stdout + "\n")
+                                tests_ran = True
+                                if test_rc == 0:
+                                    tests_passed = True
+                                    local_status = "PASSED_WITH_CODEX"
+                                else:
+                                    local_status = "FAILED_TESTS"
+                                    last_test_text = test_stdout
+            if codex_patch_status == "not-run":
+                codex_patch_status = "BLOCKED_CODEX_ADVICE_ONLY"
         else:
             codex_status = usage.get("status", "BLOCKED_CODEX")
             append_text(run_dir / "local_attempts.md", f"- Codex Status: {codex_status}\n")
@@ -1471,7 +1626,9 @@ for task_info in tasks:
     elif tests_passed and not changed:
         status = "NO_CHANGES"
     elif codex_used and not tests_passed:
-        if changed:
+        if local_status in {"BLOCKED_CODEX_ADVICE_ONLY", "BLOCKED_CODEX_PATCH_INVALID", "SAFETY_BLOCKED", "FAILED_TESTS", "NEEDS_USER_REVIEW"}:
+            status = local_status
+        elif changed:
             status = "NEEDS_USER_REVIEW"
         else:
             status = "BLOCKED_CODEX"

@@ -50,6 +50,9 @@ if [ "$MODE" = "open" ]; then
     echo "Codex Packet:  $TARGET/codex_packet.md"
     echo "Codex Usage:   $TARGET/codex_usage.md"
     echo "Codex Reply:   $TARGET/codex_response.md"
+    echo "Codex Patch:   $TARGET/codex_patch.diff"
+    echo "Patch Validation: $TARGET/codex_patch_validation.md"
+    echo "Patch Apply:   $TARGET/codex_patch_apply.md"
     echo "Diff:          $TARGET/final_diff.patch"
     echo "Report:        $TARGET/final_report.md"
     exit 0
@@ -58,7 +61,7 @@ fi
 if [ "$MODE" = "status" ] || [ -z "$MODE" ]; then
     echo "Auto Loop Status"
     echo "----------------"
-    for status in PLAN_ONLY PASSED PASSED_WITH_CODEX BLOCKED_LOCAL BLOCKED_LOCAL_WITH_CHANGES BLOCKED_CODEX FAILED_TESTS SAFETY_BLOCKED TIMEOUT NO_CHANGES NEEDS_USER_REVIEW FAILED_INTERNAL PATCH_INVALID BLOCKED_PATCH_INVALID; do
+    for status in PLAN_ONLY PASSED PASSED_WITH_CODEX BLOCKED_LOCAL BLOCKED_LOCAL_WITH_CHANGES BLOCKED_CODEX BLOCKED_CODEX_ADVICE_ONLY BLOCKED_CODEX_PATCH_INVALID FAILED_TESTS SAFETY_BLOCKED TIMEOUT NO_CHANGES NEEDS_USER_REVIEW FAILED_INTERNAL PATCH_INVALID BLOCKED_PATCH_INVALID PATCH_INVALID_APPROXIMATE BLOCKED_PATCH_INVALID_APPROXIMATE; do
         count=$(python3 - "$ROOT" "$status" <<'PY'
 import sys
 from pathlib import Path
