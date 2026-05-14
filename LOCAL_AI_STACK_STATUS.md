@@ -70,3 +70,11 @@ For projects like `portfolio_website`, Graphify mapped 372 nodes across componen
 - **Commands**: `ws task-new`, `ws task-split`, `ws task-status`, `ws task-next`, `ws task-review`, `ws task-complete`, `ws task-block`.
 - **Rule**: `ws build` does not auto-complete tasks. Completion/blocking requires explicit lifecycle commands.
 - **Review Packets**: `ws task-review <task> --with codex` creates/redacts a packet only; sending still requires explicit `ws escalate codex latest`.
+
+## Closed-Loop Auto Runner Status
+- **Command**: `ws auto <project_key> <task_file> [flags]`
+- **Default**: bounded local planning and apply loop with no auto-commit or auto-push.
+- **Apply Mode**: `--apply --branch` allows guarded changes only when the task stays within file limits and safety checks.
+- **Escalation**: Codex is explicit only with `--auto-escalate codex`; Gemini stays manual packet review only; Claude is disabled.
+- **Artifacts**: `D:\_ai_brain\auto_runs\<timestamp>_<project>_<task>`.
+- **Safety**: no deletes, no deploys, no model warmups, no qwen2.5:32b automatic use, no secrets/raw datasets/model files, no dependency installs unless explicitly allowed by a future task.

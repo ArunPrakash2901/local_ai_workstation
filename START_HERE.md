@@ -147,6 +147,18 @@ ws task-next workstation_control_plane
 
 Generated tasks go to `D:\_ai_brain\tasks\generated` by default. Use `--to-inbox` to promote them into `tasks\inbox`. After splitting, run `ws task-next` to choose the next task and use `ws build <project> <task_file> --plan-only --max-tasks 1` before any apply run.
 
+## 9. Closed-Loop Auto Runner
+
+Use `ws auto` when you want the workstation to run a bounded task loop end to end without mid-run manual decisions.
+
+```bash
+ws auto workstation_control_plane <task_file> --plan-only --max-tasks 1
+ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --max-attempts 2 --max-files 5 --stop-on-fail
+ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --max-attempts 2 --max-cloud-attempts 1 --max-files 5 --stop-on-fail --auto-escalate codex
+```
+
+Use plan-only first, review the auto run report, then move to a supervised apply. Codex escalation is explicit only. Gemini stays manual packet review only, and Claude remains disabled. No auto-commit or auto-push happens.
+
 ## Important Constraints
 - **Do not graph massive raw datasets** (e.g., inside Kaggle folders). Let the AI read your Python *logic*, not your raw Parquet files. `.graphifyignore` handles this automatically.
 - **Do not blindly increase context above 8k**. It will tank performance on your 8GB GPU.

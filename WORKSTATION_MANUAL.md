@@ -190,6 +190,38 @@ By default, generated tasks are written under `D:\_ai_brain\tasks\generated`. Us
 
 The `--llm` flag is only a placeholder for future freeform PRD splitting. It is not implemented in this phase.
 
+## Closed-Loop Auto Runner
+
+`ws auto` is the bounded closed-loop runner for a single task or a small task batch. It keeps the loop local first, applies only bounded changes, and escalates to Codex only when you explicitly allow it.
+
+Plan-only:
+
+```bash
+ws auto workstation_control_plane /mnt/d/_ai_brain/tasks/generated/workstation_control_plane_task_001_stabilize_ws_command_documentation.md --plan-only --max-tasks 1
+```
+
+Supervised apply:
+
+```bash
+ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --max-attempts 2 --max-files 5 --stop-on-fail
+```
+
+Closed-loop apply with Codex escalation:
+
+```bash
+ws auto workstation_control_plane <task_file> --apply --branch --max-tasks 1 --max-attempts 2 --max-cloud-attempts 1 --max-files 5 --stop-on-fail --auto-escalate codex
+```
+
+Rules:
+- No auto-commit.
+- No auto-push.
+- Codex is used only when `--auto-escalate codex` is present.
+- Gemini remains manual packet review only for now.
+- Claude stays disabled.
+- `qwen2.5:32b` remains lab-only and is not loaded automatically.
+- `ws auto` writes a full run folder under `D:\_ai_brain\auto_runs`.
+- Review `final_report.md`, `local_attempts.md`, `test_output.md`, and `final_diff.patch` before taking the next step.
+
 ## Example Usage
 ```bash
 # What projects do I have?
