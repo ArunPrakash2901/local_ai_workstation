@@ -310,7 +310,7 @@ function Get-ChangedFiles([string]$RepoPath) {
 
     $paths = @()
     foreach ($line in ($result.StdOut -split "`r?`n")) {
-        if (-not $line.Trim()) { continue }
+        if ([string]::IsNullOrWhiteSpace($line)) { continue }
         $match = [Regex]::Match($line, '^(?<status>.{2}) (?<path>.+)$')
         if (-not $match.Success) {
             $errors += "Unrecognized git status --porcelain output: $line"
@@ -328,7 +328,7 @@ function Get-ChangedFiles([string]$RepoPath) {
 
 function Save-CanaryCache([string]$Status, [string]$Run, [string]$Notes) {
     $existing = if (Test-Path -LiteralPath $CanaryCache) { Get-Content -LiteralPath $CanaryCache -Raw | ConvertFrom-Json } else { $null }
-    
+
     $latestPass = $null
     if ($existing) {
         if (($existing.PSObject.Properties.Name -contains 'latest_pass_utc') -and $existing.latest_pass_utc) {
@@ -339,7 +339,7 @@ function Save-CanaryCache([string]$Status, [string]$Run, [string]$Notes) {
             }
         }
     }
-    
+
     if ($Status -eq 'AGENT_CANARY_PASSED') {
         $latestPass = (Get-Date).ToUniversalTime().ToString('o')
     }
@@ -532,12 +532,12 @@ function Run-Import([string]$Folder) {
 function Write-Status {
     $launcher = Get-CodexLauncherText
     $cache = if (Test-Path -LiteralPath $CanaryCache) { Get-Content -LiteralPath $CanaryCache -Raw | ConvertFrom-Json } else { $null }
-    
+
     $statusText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'status')) { $cache.status } else { 'not_run' }
     $timeText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'timestamp_utc')) { $cache.timestamp_utc } else { 'none' }
     $passText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'latest_pass_utc') -and $cache.latest_pass_utc) { $cache.latest_pass_utc } else { 'none' }
     $unattendedEnabled = if ($cache -and ($cache.PSObject.Properties.Name -contains 'status') -and $cache.status -eq 'AGENT_CANARY_PASSED') { 'yes' } else { 'no' }
-    
+
     $lines = @(
         'Windows Agent Orchestrator Status',
         '---------------------------------',
@@ -556,8 +556,8 @@ try {
     Ensure-Dir $ScratchRoot
     switch ($Command) {
         'Status' { Write-Status }
-        'Canary' { 
-            $run = Run-Canary 
+        'Canary' {
+            $run = Run-Canary
             $status = (Get-Content -LiteralPath (Join-Path $run 'status.txt') -Raw).Trim()
             Write-Output "$status`: $run"
         }
