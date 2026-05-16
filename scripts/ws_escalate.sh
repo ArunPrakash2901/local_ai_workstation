@@ -123,32 +123,11 @@ if [ "$PROVIDER" = "claude" ]; then
 fi
 
 if [ "$PROVIDER" = "gemini" ]; then
-    if ! command -v gemini >/dev/null 2>&1; then
-        write_manual "Gemini CLI command was not found in WSL." "gemini -p \"\$(Get-Content -Raw -LiteralPath '$PACKET_WIN')\""
-        exit 3
-    fi
-    set +e
-    GEMINI_HELP=$(timeout 10 gemini --help 2>&1)
-    GEMINI_HELP_CODE=$?
-    set -e
-    {
-        echo "Gemini help probe exit: $GEMINI_HELP_CODE"
-        printf "%s\n" "$GEMINI_HELP" | sed -n '1,40p'
-    } >> "$LOG"
-    if [ "$GEMINI_HELP_CODE" -ne 0 ] || printf "%s\n" "$GEMINI_HELP" | grep -qi "node: not found\|Failed to relaunch\|EPERM"; then
-        write_manual "Gemini CLI is detected, but this environment cannot run it safely non-interactively." "gemini -p \"\$(Get-Content -Raw -LiteralPath '$PACKET_WIN')\""
-        exit 3
-    fi
-    if ! printf "%s\n" "$GEMINI_HELP" | grep -Eq '(^|[[:space:]])-p([,[:space:]]|$)|--prompt'; then
-        write_manual "Gemini CLI help did not confirm a non-interactive prompt flag." "gemini -p \"\$(Get-Content -Raw -LiteralPath '$PACKET_WIN')\""
-        exit 3
-    fi
-    echo "Sending SAFE packet to Gemini CLI..."
-    set +e
-    timeout 180 bash -lc 'gemini -p "$(cat "$1")"' _ "$PACKET" > "$RESPONSE" 2>> "$LOG"
-    SEND_CODE=$?
-    set -e
-elif [ "$PROVIDER" = "codex" ]; then
+    write_manual "Gemini escalation is manual-only until safety integration is finalized." "gemini -p \"\$(Get-Content -Raw -LiteralPath '$PACKET_WIN')\""
+    exit 3
+fi
+
+if [ "$PROVIDER" = "codex" ]; then
     set +e
     CODEX_HELP=$(powershell.exe -NoProfile -Command "codex exec --help | Select-Object -First 80" 2>&1)
     CODEX_HELP_CODE=$?

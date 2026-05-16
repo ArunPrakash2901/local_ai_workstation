@@ -170,16 +170,17 @@ ws packet gsp "Prepare a review packet for the modelling flow."
 ws escalate codex <packet>
 ```
 
-Always run `ws redact <packet>` before any manual escalation. `ws escalate` also runs redaction automatically and refuses to send unless the result is `SAFE`. Responses are saved under `D:\_ai_brain\frontier\responses`; logs are saved under `D:\_ai_brain\frontier\logs`.
+Always run `ws redact <packet>` before any manual escalation. `ws escalate` also runs redaction automatically and refuses to send unless the result is `SAFE`. Escalation packets now include a **Constraints** section (e.g., 8k context, no direct mutation) to guide the frontier model. 
+
+Responses are saved under `D:\_ai_brain\frontier\responses`; logs are saved under `D:\_ai_brain\frontier\logs`.
 
 Supported explicit send commands:
 
 ```bash
-ws escalate gemini latest
 ws escalate codex latest
 ```
 
-Claude currently reports unavailable unless the CLI is installed. If a provider CLI cannot safely run non-interactively, the workstation writes a response note with the exact manual command instead of hanging.
+Gemini and Claude escalation is currently **manual-only** until safety integration is finalized. If you attempt to escalate to these providers, the workstation will provide the exact command for manual execution rather than sending it automatically.
 
 ## Workstation Audit And Cleanup
 

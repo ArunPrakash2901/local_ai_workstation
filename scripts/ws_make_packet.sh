@@ -164,6 +164,12 @@ user requested frontier-ready packet
 ## Local Model Notes
 {chr(10).join(local_notes)}
 
+## Constraints
+- Max context: 8192 tokens.
+- No direct file system mutation unless requested.
+- Exclude all credentials, secrets, and raw datasets.
+- Prefer explicit reasoning over code generation.
+
 ## Relevant Error or Test Output
 blank unless provided
 
