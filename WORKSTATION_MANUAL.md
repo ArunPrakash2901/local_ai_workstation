@@ -10,6 +10,7 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 - `prompts/` - Markdown templates for different AI tasks.
 - `scripts/` - Bash scripts (WSL) to execute workstation commands.
 - `runs/` - Timestamped artifacts from every AI interaction.
+- `worktrees/` - Generated runtime Git worktrees for isolated loops; keep ignored by Git.
 
 ## Daily Workflow
 Use the unified `ws` command from WSL for normal workstation operation:
