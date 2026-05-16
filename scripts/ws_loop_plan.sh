@@ -54,21 +54,28 @@ fi
 CLASSIFICATION="UNKNOWN"
 REASON=""
 
+to_wsl_path() {
+    case "$1" in
+        /*) printf '%s' "$1" ;;
+        *) wslpath -u "$1" 2>/dev/null || printf '%s' "$1" ;;
+    esac
+}
+
 if [ -z "$PROJECT_PATH" ]; then
     CLASSIFICATION="BLOCKED_PROJECT_NOT_FOUND"
     REASON="Project '$PROJECT_KEY' not found in registry."
 else
     # 2. Check Repo Path Exists
-    WSL_PROJECT_PATH=$(wslpath -u "$PROJECT_PATH" 2>/dev/null || echo "")
+    WSL_PROJECT_PATH=$(to_wsl_path "$PROJECT_PATH")
     if [ -z "$WSL_PROJECT_PATH" ] || [ ! -d "$WSL_PROJECT_PATH" ]; then
         CLASSIFICATION="BLOCKED_PROJECT_NOT_FOUND"
         REASON="Directory for project '$PROJECT_KEY' not found at '$PROJECT_PATH'."
     else
         # 3. Check Task File
-        WSL_TASK_FILE=$(wslpath -u "$TASK_FILE" 2>/dev/null || echo "$TASK_FILE")
+        WSL_TASK_FILE=$(to_wsl_path "$TASK_FILE")
         if [ ! -f "$WSL_TASK_FILE" ]; then
              CLASSIFICATION="BLOCKED_MISSING_ALLOWED_FILES"
-             REASON="Task file not found."
+             REASON="Task file not found at '$WSL_TASK_FILE'."
         else
             if ! grep -q 'Allowed Files:' "$WSL_TASK_FILE"; then
                 CLASSIFICATION="BLOCKED_MISSING_ALLOWED_FILES"
