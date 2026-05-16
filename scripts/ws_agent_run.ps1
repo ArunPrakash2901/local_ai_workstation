@@ -327,13 +327,31 @@ function Get-ChangedFiles([string]$RepoPath) {
 }
 
 function Save-CanaryCache([string]$Status, [string]$Run, [string]$Notes) {
+    $existing = if (Test-Path -LiteralPath $CanaryCache) { Get-Content -LiteralPath $CanaryCache -Raw | ConvertFrom-Json } else { $null }
+    
+    $latestPass = $null
+    if ($existing) {
+        if (($existing.PSObject.Properties.Name -contains 'latest_pass_utc') -and $existing.latest_pass_utc) {
+            $latestPass = $existing.latest_pass_utc
+        } elseif (($existing.PSObject.Properties.Name -contains 'status') -and $existing.status -eq 'AGENT_CANARY_PASSED') {
+            if ($existing.PSObject.Properties.Name -contains 'timestamp_utc') {
+                $latestPass = $existing.timestamp_utc
+            }
+        }
+    }
+    
+    if ($Status -eq 'AGENT_CANARY_PASSED') {
+        $latestPass = (Get-Date).ToUniversalTime().ToString('o')
+    }
+
     $payload = [ordered]@{
         status = $Status
         timestamp_utc = (Get-Date).ToUniversalTime().ToString('o')
         run_folder = $Run
         notes = $Notes
+        latest_pass_utc = $latestPass
     }
-    Write-Text $CanaryCache ($payload | ConvertTo-Json -Depth 4)
+    Write-Text $CanaryCache ($payload | ConvertTo-Json -Depth 4 -Compress)
 }
 
 function Run-Canary {
@@ -383,7 +401,6 @@ function Run-Canary {
         Write-Text (Join-Path $run 'status.txt') "$status`n"
     }
     Write-RunSummary $run $status 'canary' $notes @() @() 'Inspect canary artifacts before enabling unattended runs.'
-    Write-Output "$status`: $run"
     return $run
 }
 
@@ -515,13 +532,20 @@ function Run-Import([string]$Folder) {
 function Write-Status {
     $launcher = Get-CodexLauncherText
     $cache = if (Test-Path -LiteralPath $CanaryCache) { Get-Content -LiteralPath $CanaryCache -Raw | ConvertFrom-Json } else { $null }
+    
+    $statusText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'status')) { $cache.status } else { 'not_run' }
+    $timeText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'timestamp_utc')) { $cache.timestamp_utc } else { 'none' }
+    $passText = if ($cache -and ($cache.PSObject.Properties.Name -contains 'latest_pass_utc') -and $cache.latest_pass_utc) { $cache.latest_pass_utc } else { 'none' }
+    $unattendedEnabled = if ($cache -and ($cache.PSObject.Properties.Name -contains 'status') -and $cache.status -eq 'AGENT_CANARY_PASSED') { 'yes' } else { 'no' }
+    
     $lines = @(
         'Windows Agent Orchestrator Status',
         '---------------------------------',
         "Selected launcher: $launcher",
-        "Canary cache: " + $(if ($cache) { $cache.status } else { 'not_run' }),
-        "Canary timestamp: " + $(if ($cache) { $cache.timestamp_utc } else { 'none' }),
-        "Unattended Codex execution enabled: " + $(if ($cache -and $cache.status -eq 'AGENT_CANARY_PASSED') { 'yes' } else { 'no' })
+        "Canary cache (latest attempt): $statusText",
+        "Canary timestamp: $timeText",
+        "Canary latest pass: $passText",
+        "Unattended Codex execution enabled: $unattendedEnabled"
     )
     Write-Output ($lines -join "`n")
 }
@@ -532,7 +556,11 @@ try {
     Ensure-Dir $ScratchRoot
     switch ($Command) {
         'Status' { Write-Status }
-        'Canary' { Run-Canary | Out-Host }
+        'Canary' { 
+            $run = Run-Canary 
+            $status = (Get-Content -LiteralPath (Join-Path $run 'status.txt') -Raw).Trim()
+            Write-Output "$status`: $run"
+        }
         'Import' { Run-Import $RunFolder | Out-Host }
         default {
             $run = Run-Agent
