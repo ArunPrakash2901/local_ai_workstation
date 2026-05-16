@@ -203,8 +203,8 @@ function Invoke-Codex {
     }
 }
 
-function Invoke-Git([string]$RepoPath, [string[]]$Args) {
-    return Invoke-Process -FileName 'git' -ArgumentList (@('-C', $RepoPath) + $Args) -WorkingDirectory $RepoPath -TimeoutSeconds 60
+function Invoke-Git([string]$RepoPath, [string[]]$GitArgs) {
+    return Invoke-Process -FileName 'git' -ArgumentList (@('-C', $RepoPath) + $GitArgs) -WorkingDirectory $RepoPath -TimeoutSeconds 60
 }
 
 function Get-ProjectPath([string]$Key) {
@@ -245,7 +245,17 @@ function New-RunFolder([string]$ProjectKey, [psobject]$Task, [string]$Suffix) {
     return Join-Path $AutoRoot "$stamp`_$ProjectKey`_$($Task.TaskNum.ToString('000'))`_$slug`_$Suffix"
 }
 
-function Write-RunSummary([string]$Run, [string]$Status, [string]$ModeLabel, [string]$Notes, [string[]]$Changed, [string[]]$Unsafe, [string]$ManualInstruction) {
+function Write-RunSummary(
+    [string]$Run,
+    [string]$Status,
+    [string]$ModeLabel,
+    [string]$Notes,
+    [string[]]$Changed,
+    [string[]]$Unsafe,
+    [string]$ManualInstruction,
+    [string]$AllowedFilesCheck = 'not applicable',
+    [string[]]$ChangeDetectionErrors = @()
+) {
     $lines = @(
         '# Windows Agent Orchestrator Report',
         '',
@@ -260,6 +270,12 @@ function Write-RunSummary([string]$Run, [string]$Status, [string]$ModeLabel, [st
     $lines += ''
     $lines += '## Unsafe Files'
     if ($Unsafe.Count) { $lines += $Unsafe | ForEach-Object { "- $_" } } else { $lines += '- none' }
+    $lines += ''
+    $lines += '## Allowed Files Check'
+    $lines += "- $AllowedFilesCheck"
+    $lines += ''
+    $lines += '## Change Detection Errors'
+    if ($ChangeDetectionErrors.Count) { $lines += $ChangeDetectionErrors | ForEach-Object { "- $_" } } else { $lines += '- none' }
     $lines += ''
     $lines += '## Manual Instruction'
     $lines += $(if ($ManualInstruction) { $ManualInstruction } else { 'none' })
@@ -276,19 +292,38 @@ function Ensure-CodexArtifacts([string]$Run, [object]$Result, [string]$FallbackN
 }
 
 function Get-ChangedFiles([string]$RepoPath) {
-    $porcelain = (Invoke-Git $RepoPath @('status', '--porcelain')).StdOut
-    $paths = @()
-    foreach ($line in ($porcelain -split "`r?`n")) {
-        if (-not $line.Trim()) { continue }
-        if ($line.StartsWith('?? ')) {
-            $paths += $line.Substring(3).Trim()
-        } else {
-            $path = ($line -split '\s+', 2)[1].Trim()
-            if ($path -match ' -> ') { $path = ($path -split ' -> ', 2)[1].Trim() }
-            $paths += $path
+    $result = Invoke-Git $RepoPath @('status', '--porcelain')
+    $errors = @()
+    if ($result.TimedOut) {
+        $errors += 'git status --porcelain timed out.'
+    }
+    if ($result.ExitCode -ne 0) {
+        $stderr = if ($result.StdErr) { $result.StdErr } else { 'no stderr captured' }
+        $errors += "git status --porcelain failed with exit code $($result.ExitCode): $stderr"
+    }
+    if ($errors.Count) {
+        return [pscustomobject]@{
+            Paths = @()
+            Errors = $errors
         }
     }
-    return @($paths)
+
+    $paths = @()
+    foreach ($line in ($result.StdOut -split "`r?`n")) {
+        if (-not $line.Trim()) { continue }
+        $match = [Regex]::Match($line, '^(?<status>.{2}) (?<path>.+)$')
+        if (-not $match.Success) {
+            $errors += "Unrecognized git status --porcelain output: $line"
+            continue
+        }
+        $path = $match.Groups['path'].Value.Trim()
+        if ($path -match ' -> ') { $path = ($path -split ' -> ', 2)[1].Trim() }
+        $paths += $path
+    }
+    return [pscustomobject]@{
+        Paths = @($paths)
+        Errors = @($errors)
+    }
 }
 
 function Save-CanaryCache([string]$Status, [string]$Run, [string]$Notes) {
@@ -444,12 +479,22 @@ function Run-Agent {
         return $run
     }
 
-    $changed = Get-ChangedFiles $repo
+    $changeResult = Get-ChangedFiles $repo
+    $changed = @($changeResult.Paths)
+    $changeErrors = @($changeResult.Errors)
     $unsafe = @($changed | Where-Object { $task.Allowed -notcontains $_ })
     Write-Text (Join-Path $run 'changed_files.txt') (($changed -join "`n") + "`n")
     Write-Text (Join-Path $run 'unsafe_files.txt') (($unsafe -join "`n") + "`n")
+    Write-Text (Join-Path $run 'change_detection_errors.txt') (($changeErrors -join "`n") + "`n")
     Write-Text (Join-Path $run 'status.txt') "CODEX_COMPLETED`n"
-    Write-RunSummary $run 'CODEX_COMPLETED' 'codex' 'Codex process completed; review diff validation artifacts.' $changed $unsafe 'Review diff and task allowlist before marking complete.'
+    $allowedFilesCheck = if ($changeErrors.Count) {
+        'unknown: changed-file detection failed; review change_detection_errors.txt'
+    } elseif ($unsafe.Count) {
+        'failed: one or more changed files were outside Allowed Files'
+    } else {
+        'passed: all detected changed files stayed within Allowed Files'
+    }
+    Write-RunSummary $run 'CODEX_COMPLETED' 'codex' 'Codex process completed; review diff validation artifacts.' $changed $unsafe 'Review diff and task allowlist before marking complete.' $allowedFilesCheck $changeErrors
     return $run
 }
 
