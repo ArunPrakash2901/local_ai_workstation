@@ -19,11 +19,13 @@ Start from WSL with the unified `ws` command:
 ws daily
 ws warm
 ws status
+ws ready
 ```
 
 - `ws daily` restores the safe daily model and KV-cache profile.
 - `ws warm` preloads the active model so the first request is fast.
 - `ws status` checks workstation health and shows the active model.
+- `ws ready` runs a full readiness check and saves a timestamped report.
 
 Ollama should start with Windows. If it is not running, open the Ollama app first, then rerun the commands above.
 

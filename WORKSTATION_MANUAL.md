@@ -18,6 +18,7 @@ Use the unified `ws` command from WSL for normal workstation operation:
 ws daily
 ws warm
 ws status
+ws ready
 ws task-status
 ws task-next <project_key>
 ws build <project_key> <task_file> --plan-only --max-tasks 1

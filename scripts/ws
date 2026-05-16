@@ -41,6 +41,7 @@ case "$SUBCOMMAND" in
         echo "  kvuse <profile>     Switch active KV cache profile"
         echo "  daily               Restore safe daily profile"
         echo "  moe                 List MoE/big-model lab profiles"
+        echo "  ready               Run daily readiness check and save report"
         echo ""
         echo "Frontier Escalation:"
         echo "  frontier            Show status of frontier providers"
@@ -197,6 +198,9 @@ case "$SUBCOMMAND" in
         ;;
     daily)
         bash "$SCRIPTS_DIR/ai_daily_restore.sh" "$@"
+        ;;
+    ready)
+        bash "$SCRIPTS_DIR/ws_readiness.sh" "$@"
         ;;
     moe)
         # Assuming ai_moe_list.sh was supposed to be implemented or we use ai_models with filter
