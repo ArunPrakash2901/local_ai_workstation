@@ -17,6 +17,7 @@ reports/AGENT_CONTRACT_VALIDATION_*.md
 reports/AGENT_HYGIENE_*.md
 reports/LOOP_PLAN_*.md
 reports/LOOP_STATUS_*.md
+reports/LOOP_START_*.md
 __pycache__/
 *.pyc
 *.log

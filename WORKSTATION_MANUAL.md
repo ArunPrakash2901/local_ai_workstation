@@ -263,13 +263,19 @@ Closed loop:
 7. Mark the task complete or blocked.
 8. Move to the next task with `ws task-next`.
 
-## Independent Loops (Design Only)
+## Independent Loops (MVP)
 
-Independent, unattended agent loops (local-first with cloud-fallback awareness) have been designed but are not yet enabled. Do not attempt to run fully unattended loops; stick to supervised bounded apply (`ws agent-run`) and manual handoffs.
+Independent, unattended agent loops (local-first with cloud-fallback awareness) are currently in an MVP state.
 
-The supervised single-loop start command (`ws loop-start`) is fully designed but deferred until R9.
+The supervised single-loop start command (`ws loop-start`) is active but strictly restricted to local-only planning loops for safety.
 
-Use the read-only planner to check eligibility for independent loops:
+```bash
+ws loop-start <project_key> <task_file> --mode local-plan
+```
+
+This command enforces strict boundaries, generates a plan using the local model, but **does not** apply codebase mutations, create branches, or invoke Codex. For cloud apply, use the supervised bounded `ws agent-run` flow.
+
+Use the read-only tools to check eligibility for independent loops:
 
 ```bash
 ws loop-plan <project_key> <task_file>
