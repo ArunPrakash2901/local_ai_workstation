@@ -29,6 +29,18 @@ Ollama should start with Windows. If it is not running, open the Ollama app firs
 
 The older `ai*` shell aliases are still supported for compatibility, but they are legacy names. Prefer `ws ...` commands for daily work and use `ws aliases` only when you need to inspect those old aliases.
 
+For normal product work, continue from startup into the same daily flow:
+
+```bash
+ws task-status
+ws task-next <project_key>
+ws build <project_key> <task_file> --plan-only --max-tasks 1
+ws open-build latest
+ws agent-run <project_key> <task_file> --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
+```
+
+That sequence is the default operator path: restore the workstation, choose one task, inspect the local plan, then run the bounded apply step only when ready.
+
 ---
 
 ## 2. Using Graphify (Project Brain)

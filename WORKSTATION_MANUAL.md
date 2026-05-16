@@ -86,10 +86,14 @@ ws agent-import <run>
 - `ws open-build <id>`
 - `ws agent-status`
 - `ws agent-canary`
+- `ws apply-ready <project_key> <task_file>`
 - `ws agent-run <project_key> <task_file>`
 - `ws agent-import <run>`
 - `ws agent-validate`
 - `ws agent-hygiene`
+- `ws loop-plan <project_key> <task_file>`
+- `ws loop-status`
+- `ws loop-start <project_key> <task_file>`
 - `ws task-new`
 - `ws task-split <prd>`
 - `ws task-status`
@@ -98,7 +102,7 @@ ws agent-import <run>
 - `ws task-complete <file>`
 - `ws task-block <file>`
 
-Run `ws help` for the canonical live command list and usage summary.
+Run `ws help` for the canonical live public command list and usage summary.
 
 ## Legacy Aliases
 
