@@ -1,6 +1,6 @@
 # AI Workstation Control Centre
 
-Welcome to your optimized local AI workstation. 
+Welcome to your optimized local AI workstation.
 Everything is configured for stable, low-latency AI assistance on your RTX 4070 (8GB).
 
 ## Core Philosophy

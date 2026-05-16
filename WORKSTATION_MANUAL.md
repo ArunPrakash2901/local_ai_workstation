@@ -12,7 +12,6 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 - `runs/` - Timestamped artifacts from every AI interaction.
 
 ## Daily Workflow
-
 Use the unified `ws` command from WSL for normal workstation operation:
 
 ```bash
@@ -91,6 +90,7 @@ ws agent-import <run>
 - `ws agent-import <run>`
 - `ws agent-validate`
 - `ws agent-hygiene`
+- `ws agent-mark-stale-reviewed <run>`
 - `ws loop-plan <project_key> <task_file>`
 - `ws loop-status`
 - `ws loop-start <project_key> <task_file>`
@@ -98,9 +98,9 @@ ws agent-import <run>
 - `ws task-split <prd>`
 - `ws task-status`
 - `ws task-next [project]`
-- `ws task-review <file>`
-- `ws task-complete <file>`
-- `ws task-block <file>`
+- `ws task-review <file> --with codex`
+- `ws task-complete <file> [note]`
+- `ws task-block <file> <reason>`
 
 Run `ws help` for the canonical live public command list and usage summary.
 
@@ -238,9 +238,7 @@ Plan-only versus apply:
 - `ws build --apply` remains secondary/local-diff-only behavior, not the normal apply workflow.
 - No commits are made automatically.
 
-Older `ws auto`, `ws codex-apply`, Codex packet escalation loops, and related patch-generation flows are legacy or experimental unless a later report says otherwise. Gemini remains manual packet review only. Avoid unattended runs: review reports and diffs, keep task boundaries explicit, and run project tests yourself when risk is medium or higher.
-
-Before attempting longer independent runs, use `ws agent-validate` to check the current dispatcher, PowerShell parse health, canary refresh, dry-run terminal state, task allowlist guard, and Git ignore contract. Use `ws agent-hygiene` when you need a read-only report of agent branches, worktrees, run-folder statuses, stale `CODEX_RUNNING` artifacts, and generated-report noise. Timestamped `AGENT_CONTRACT_VALIDATION_*` and `AGENT_HYGIENE_*` reports are generated runtime evidence and ignored by Git; curated summary reports stay tracked.
+Older `ws auto`, `ws codex-apply`, Codex packet escalation loops, and related patch-generation flows are legacy or experimental unless a later report says otherwise. Gemini remains manual packet review only for now, and older `ws auto` / Codex patch flows are legacy or experimental rather than the operator default.
 
 ## Task Lifecycle And Closed Loop Workflow
 
@@ -248,7 +246,7 @@ All task sources should flow into the canonical task folders under `D:\_ai_brain
 
 ```bash
 ws task-new --project workstation_control_plane --title "Clarify daily docs" --goal "Make the daily workflow obvious"
-ws task-split D:\_ai_brain\tasks\workstation_control_plane_prd.md
+ws task-split D:\_ai_brain\tasks\workstation_control_plane_prd.md --project workstation_control_plane
 ws task-status
 ws task-next workstation_control_plane
 ws task-review <task_file> --with codex
@@ -277,7 +275,7 @@ The supervised single-loop start command (`ws loop-start`) is active but strictl
 ws loop-start <project_key> <task_file> --mode local-plan
 ```
 
-This command enforces strict boundaries, generates a plan using the local model, but **does not** apply codebase mutations, create branches, or invoke Codex. 
+This command enforces strict boundaries, generates a plan using the local model, but **does not** apply codebase mutations, create branches, or invoke Codex.
 
 ### Reviewing a Local Loop
 When `ws loop-start` completes, it will output paths to its artifacts. To review the loop and decide if it is ready for cloud apply:
@@ -312,7 +310,7 @@ ws task-split /mnt/d/_ai_brain/tasks/workstation_control_plane_prd.md --project 
 ws task-split /mnt/d/_ai_brain/tasks/workstation_control_plane_prd.md --project workstation_control_plane --to-inbox
 ```
 
-By default, generated tasks are written under `D:\_ai_brain\tasks\generated`. Use `--to-inbox` when you want the generated tasks promoted into `tasks/inbox` for manual selection. Use `ws task-next` to pick the next task, then run `ws build <project> <task_file> --plan-only --max-tasks 1` before any apply run.
+By default, generated tasks are written under `D:\_ai_brain\tasks\generated`. Use `--to-inbox` when you want the generated tasks promoted into `tasks\inbox` for manual selection. Use `ws task-next` to pick the next task, then run `ws build <project> <task_file> --plan-only --max-tasks 1` before any apply run.
 
 The `--llm` flag is only a placeholder for future freeform PRD splitting. It is not implemented in this phase.
 
