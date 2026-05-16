@@ -21,6 +21,7 @@ reports/LOOP_STATUS_*.md
 reports/LOOP_START_*.md
 reports/APPLY_READY_*.md
 reports/WORKTREE_PLAN_*.md
+reports/WORKTREE_STATUS_*.md
 __pycache__/
 *.pyc
 *.log
