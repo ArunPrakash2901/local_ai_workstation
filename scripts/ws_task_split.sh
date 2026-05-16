@@ -25,12 +25,49 @@ fi
 BASE="$WS_HOME"
 TASK_ROOT="$BASE/tasks"
 PYTHON="$BASE/runtimes/workstation_venv/bin/python3"
+ACTIVE_MODEL_YAML="$BASE/registry/active_model.yaml"
+SCRIPTS="$BASE/scripts"
 
 mkdir -p "$TASK_ROOT/generated" "$TASK_ROOT/inbox"
 
 if [ ! -f "$PRD_FILE" ]; then
     echo "PRD file not found: $PRD_FILE"
     exit 1
+fi
+
+LLM_MODE=false
+for arg in "$@"; do
+    if [ "$arg" == "--llm" ]; then
+        LLM_MODE=true
+        break
+    fi
+done
+
+if [ "$LLM_MODE" = true ]; then
+    echo "Using local LLM to split PRD into structured tasks..."
+    USER_PROMPT=$(mktemp)
+    echo "PRD Content:" > "$USER_PROMPT"
+    cat "$PRD_FILE" >> "$USER_PROMPT"
+
+    SYSTEM_PROMPT="$BASE/prompts/task_splitter.md"
+    MODEL=$("$PYTHON" - "$ACTIVE_MODEL_YAML" <<'PY'
+import sys, yaml
+active = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+print(active.get("active_model", "hermes3:8b"))
+PY
+)
+    OLLAMA_HOST=${OLLAMA_HOST:-"http://localhost:11434"}
+
+    LLM_PRD=$(mktemp)
+    if ! "$PYTHON" "$SCRIPTS/ollama_call.py" "$OLLAMA_HOST" "$MODEL" "$SYSTEM_PROMPT" "$USER_PROMPT" > "$LLM_PRD"; then
+        echo "Error: LLM task splitting failed. Check if Ollama is running."
+        rm -f "$USER_PROMPT" "$LLM_PRD"
+        exit 1
+    fi
+    PRD_FILE="$LLM_PRD"
+    rm -f "$USER_PROMPT"
+    # Ensure temporary file is cleaned up on exit
+    trap 'rm -f "$LLM_PRD"' EXIT
 fi
 
 "$PYTHON" - "$PRD_FILE" "$TASK_ROOT" "$@" <<'PY'
@@ -53,10 +90,6 @@ parser.add_argument("--llm", action="store_true")
 opts, extras = parser.parse_known_args(argv)
 if extras:
     print(f"Unrecognized arguments: {' '.join(extras)}", file=sys.stderr)
-    sys.exit(2)
-
-if opts.llm:
-    print("Freeform LLM splitting is not implemented yet. Deterministic parser only.", file=sys.stderr)
     sys.exit(2)
 
 text = prd_file.read_text(encoding="utf-8", errors="replace")

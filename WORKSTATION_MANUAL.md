@@ -299,7 +299,7 @@ ws loop-status
 
 These commands only inspect the workstation state, Git status, canary status, and task file boundaries. They will write reports and classify the loop eligibility. They do not start any loops.
 
-## Deterministic PRD Task Splitting
+## Deterministic & LLM PRD Task Splitting
 
 Structured PRDs and task queues are parsed without an LLM when they already contain task headings such as `## Task 001: Title`, `## Task 002 - Title`, or `## Task 003 Title`.
 
@@ -311,9 +311,13 @@ ws task-split /mnt/d/_ai_brain/tasks/workstation_control_plane_prd.md --project 
 ws task-split /mnt/d/_ai_brain/tasks/workstation_control_plane_prd.md --project workstation_control_plane --to-inbox
 ```
 
-By default, generated tasks are written under `D:\_ai_brain\tasks\generated`. Use `--to-inbox` when you want the generated tasks promoted into `tasks\inbox` for manual selection. Use `ws task-next` to pick the next task, then run `ws build <project> <task_file> --plan-only --max-tasks 1` before any apply run.
+For unstructured PRDs, use the `--llm` mode to decompose the document using the local model:
 
-The `--llm` flag is only a placeholder for future freeform PRD splitting. It is not implemented in this phase.
+```bash
+ws task-split /mnt/d/_ai_brain/tasks/unstructured_prd.md --project my_project --llm
+```
+
+By default, generated tasks are written under `D:\_ai_brain\tasks\generated`. Use `--to-inbox` when you want the generated tasks promoted into `tasks\inbox` for manual selection. Use `ws task-next` to pick the next task, then run `ws build <project> <task_file> --plan-only --max-tasks 1` before any apply run.
 
 ## Example Usage
 ```bash
