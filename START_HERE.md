@@ -13,19 +13,21 @@ Everything is configured for stable, low-latency AI assistance on your RTX 4070 
 
 ## 1. How to Start Daily Work
 
-1. **Verify Ollama is Running**:
-   Ollama should start with Windows. If not, just open the Ollama app.
-   To verify it's working and the model is hot, run this in PowerShell:
-   ```powershell
-   D:\_ai_brain\scripts\check_health.ps1
-   ```
+Start from WSL with the unified `ws` command:
 
-2. **Load the Model (Keep it Hot)**:
-   The system is configured to keep models loaded in VRAM for 30 minutes (`OLLAMA_KEEP_ALIVE=30m`). 
-   Run this script to preload `hermes3:8b` so your first query of the day is instant:
-   ```powershell
-   D:\_ai_brain\scripts\warm_model.ps1
-   ```
+```bash
+ws daily
+ws warm
+ws status
+```
+
+- `ws daily` restores the safe daily model and KV-cache profile.
+- `ws warm` preloads the active model so the first request is fast.
+- `ws status` checks workstation health and shows the active model.
+
+Ollama should start with Windows. If it is not running, open the Ollama app first, then rerun the commands above.
+
+The older `ai*` shell aliases are still supported for compatibility, but they are legacy names. Prefer `ws ...` commands for daily work and use `ws aliases` only when you need to inspect those old aliases.
 
 ---
 
@@ -99,24 +101,25 @@ Run `ws cleanup-plan` first and read the generated markdown. `ws cleanup-apply` 
 
 ## 6. Daily Product-Building Flow
 
-Use the bounded build loop when you want the workstation to turn a task queue into a plan or a small guarded change.
+Use the local planner first, then the Windows-native bounded apply path. The normal daily sequence is:
 
 ```bash
 ws daily
 ws warm
-ws build <project> <task_file> --plan-only --max-tasks 1
+ws task-status
+ws task-next workstation_control_plane
+ws build <project_key> <task_file> --plan-only --max-tasks 1
 ws open-build latest
-ws build <project> <task_file> --apply --branch --max-tasks 1
-ws open-build latest
+ws agent-run <project_key> <task_file> --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
 ```
 
-After the apply run, review `final_diff.patch`, `test_output.md`, and `build_report.md`. If local Hermes gets stuck and the packet is safe, explicitly opt into Codex:
+Planning stays local-first through `ws build --plan-only`. For the primary apply path, the operator still runs `ws` from WSL, but `ws agent-run` crosses into Windows PowerShell and launches Codex through the Windows `codex.cmd` bridge. Review the agent run report and diff before keeping changes.
 
 ```bash
-ws build <project> <task_file> --apply --branch --max-tasks 1 --escalate codex
+ws agent-import <run>
 ```
 
-Gemini is manual packet review only for now because its CLI is not safe non-interactively from WSL.
+Use `ws agent-import <run>` as the fallback/manual handoff review path when unattended execution is not available. `ws build --apply` is a secondary local-diff-only path, not the normal apply workflow. Gemini remains manual packet review only for now, and older `ws auto` / Codex patch flows are legacy or experimental rather than the operator default.
 
 ## 7. Task Lifecycle
 

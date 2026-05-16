@@ -11,25 +11,102 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 - `scripts/` - Bash scripts (WSL) to execute workstation commands.
 - `runs/` - Timestamped artifacts from every AI interaction.
 
+## Daily Workflow
+
+Use the unified `ws` command from WSL for normal workstation operation:
+
+```bash
+ws daily
+ws warm
+ws status
+ws task-status
+ws task-next <project_key>
+ws build <project_key> <task_file> --plan-only --max-tasks 1
+ws open-build latest
+```
+
+After reviewing the plan, run the bounded apply step only when you are ready:
+
+```bash
+ws agent-run <project_key> <task_file> --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
+```
+
+The operator runs `ws` from WSL. `ws agent-run` then crosses into Windows PowerShell and launches Codex through the Windows `codex.cmd` bridge for the bounded apply step. If unattended execution is unavailable or a manual handoff is needed, inspect the resulting run with:
+
+```bash
+ws agent-import <run>
+```
+
 ## Core Commands (WSL)
 
-### Project Management
-- **List Projects**: `bash /mnt/d/_ai_brain/scripts/ai_list_projects.sh`
-- **View Project Info**: `bash /mnt/d/_ai_brain/scripts/ai_project.sh <project_key>`
+### Projects
+- **List Projects**: `ws projects`
+- **View Project Info**: `ws project <project_key>`
 
-### Codebase Intelligence (Read-Only)
-- **Global Question**: `bash /mnt/d/_ai_brain/scripts/ai_global_ask.sh "<question>"`
-  - Queries the global graph across all indexed projects.
-- **Project Question**: `bash /mnt/d/_ai_brain/scripts/ai_ask.sh <project_key> "<question>"`
-  - Uses the project's specific Graphify graph.
-- **Debug Error**: `bash /mnt/d/_ai_brain/scripts/ai_debug.sh <project_key> <path_to_error_log>`
-  - Analyzes logs with project context.
-- **Audit Project**: `bash /mnt/d/_ai_brain/scripts/ai_audit.sh <project_key>`
-  - Generates an architectural and quality report.
+### Intelligence
+- **Project Question**: `ws ask <project_key> "<question>"`
+- **Global Question**: `ws global "<question>"`
+- **Direct Graph Query**: `ws graph <project_key|global>`
+- **Audit Project**: `ws audit <project_key>`
+- **Debug Error**: `ws debug <project_key> <path_to_error_log>`
+- **Run Task**: `ws task <project_key> <path_to_task_file>`
+- **Run Build Loop**: `ws build <project_key> <path_to_task_file>`
 
-### Feature Development
-- **Run Task**: `bash /mnt/d/_ai_brain/scripts/ai_run_task.sh <project_key> <path_to_task_file>`
-  - Generates an implementation plan based on the task description.
+### Models And KV
+- `ws model`
+- `ws models`
+- `ws use <profile>`
+- `ws warm [profile]`
+- `ws unload`
+- `ws kv`
+- `ws kvuse <profile>`
+- `ws daily`
+- `ws moe`
+
+### Frontier Escalation
+- `ws frontier`
+- `ws packet <project_key> "<question>"`
+- `ws redact <packet>`
+- `ws escalate <gemini|codex> <packet>`
+- `ws review <project_key> <run>` - reserved; do not use until explicitly enabled
+- `ws stuck <project_key> <run>` - reserved; do not use until explicitly enabled
+
+### System And Task Lifecycle
+- `ws status`
+- `ws runs`
+- `ws open-run <id>`
+- `ws aliases`
+- `ws paths`
+- `ws audit-workstation`
+- `ws cleanup-plan`
+- `ws cleanup-apply --apply`
+- `ws cleanup-status`
+- `ws build-status`
+- `ws build-runs`
+- `ws open-build <id>`
+- `ws agent-status`
+- `ws agent-canary`
+- `ws agent-run <project_key> <task_file>`
+- `ws agent-import <run>`
+- `ws task-new`
+- `ws task-split <prd>`
+- `ws task-status`
+- `ws task-next [project]`
+- `ws task-review <file>`
+- `ws task-complete <file>`
+- `ws task-block <file>`
+
+Run `ws help` for the canonical live command list and usage summary.
+
+## Legacy Aliases
+
+The older `ai*` aliases remain available only for compatibility with earlier workflows:
+
+```bash
+ws aliases
+```
+
+They currently include `ailist`, `aiproj`, `aiask`, `aiglobal`, `aigraph`, `aiaudit`, `aidebug`, `aitask`, `aimodels`, `aimodel`, `aiuse`, `aikv`, and `aidaily`. Prefer the matching `ws ...` commands in new documentation, shell history, and daily use.
 
 ## Adding a New Project
 1.  Open `D:\_ai_brain\registry\projects.yaml`.
@@ -40,7 +117,7 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 ## Safety Rules
 - **No Secrets**: Never read `.env` files or credentials.
 - **No Raw Data**: `.graphifyignore` blocks large datasets to prevent graph bloat.
-- **Local First**: All processing happens on your RTX 4070. No code or data is sent to the cloud.
+- **Local First**: Local models and local context are the default. Cloud models are explicit orchestrators or consultants only when intentionally invoked.
 
 ## Path Abstraction And Future Migration
 
@@ -103,12 +180,10 @@ Review the cleanup plan before applying it. The cleanup system does not touch pr
 
 ## Bounded Product Build Loop
 
-`ws build` is a controlled local-first engineering loop. It reads a markdown task queue, builds a compact Graphify context pack, asks local Hermes for a plan, and writes a build run under `D:\_ai_brain\build_runs`. Plan-only is the default and does not modify files.
+`ws build` is the local planning path. It reads a markdown task queue, builds a compact Graphify context pack, asks local Hermes for a plan, and writes a build run under `D:\_ai_brain\build_runs`. Use plan-only as the normal path; it does not modify files.
 
 ```bash
 ws build portfolio_website D:\_ai_brain\tasks\MY_TASKS.md --plan-only --max-tasks 1
-ws build portfolio_website D:\_ai_brain\tasks\MY_TASKS.md --apply --branch --max-tasks 1
-ws build portfolio_website D:\_ai_brain\tasks\MY_TASKS.md --apply --branch --max-tasks 1 --escalate codex
 ws build-status
 ws build-runs
 ws open-build latest
@@ -141,12 +216,12 @@ low
 Plan-only versus apply:
 
 - `--plan-only` creates context and a local Hermes plan only.
-- `--apply` allows bounded changes, but only if the local plan contains a machine-checkable unified diff.
-- `--branch` creates/uses `ai-build/<project>/<task>-<timestamp>`.
+- `ws agent-run <project_key> <task_file> --mode detect --branch --max-files <n> --max-minutes <n> --stop-on-fail` is the primary bounded apply path.
+- `ws agent-import <run>` is the fallback/manual handoff inspection path.
+- `ws build --apply` remains secondary/local-diff-only behavior, not the normal apply workflow.
 - No commits are made automatically.
-- `--max-tasks`, `--max-attempts`, `--max-files`, and `--max-minutes` bound the loop.
 
-Codex escalation is opt-in with `--escalate codex`. The loop creates/redacts a packet and sends it only after local attempts fail. Gemini remains manual packet review only until its CLI is safe non-interactively from WSL. Avoid unattended runs: use `--max-tasks 1`, review `build_report.md`, inspect `final_diff.patch`, and run project tests yourself when risk is medium or higher.
+Older `ws auto`, `ws codex-apply`, Codex packet escalation loops, and related patch-generation flows are legacy or experimental unless a later report says otherwise. Gemini remains manual packet review only. Avoid unattended runs: review reports and diffs, keep task boundaries explicit, and run project tests yourself when risk is medium or higher.
 
 ## Task Lifecycle And Closed Loop Workflow
 
@@ -167,12 +242,11 @@ Closed loop:
 1. Create or split tasks.
 2. Run `ws build <project> <task_file> --plan-only --max-tasks 1`.
 3. Review `local_plan.md`.
-4. Run `ws build <project> <task_file> --apply --branch --max-tasks 1`.
-5. Review tests and diff.
-6. If stuck, run `ws task-review <task_file> --with codex`, inspect/redact the packet, then explicitly run `ws escalate codex latest` only if needed.
-7. Apply a bounded fix.
-8. Mark the task complete or blocked.
-9. Move to the next task with `ws task-next`.
+4. Run `ws agent-run <project> <task_file> --mode detect --branch --max-files <n> --max-minutes <n> --stop-on-fail`.
+5. Review the agent report and diff.
+6. If a manual handoff or later review is needed, inspect it with `ws agent-import <run>`.
+7. Mark the task complete or blocked.
+8. Move to the next task with `ws task-next`.
 
 ## Deterministic PRD Task Splitting
 
@@ -193,11 +267,11 @@ The `--llm` flag is only a placeholder for future freeform PRD splitting. It is 
 ## Example Usage
 ```bash
 # What projects do I have?
-bash /mnt/d/_ai_brain/scripts/ai_list_projects.sh
+ws projects
 
 # Ask about the GSP project
-bash /mnt/d/_ai_brain/scripts/ai_ask.sh gsp "How is the quarterly estimation implemented?"
+ws ask gsp "How is the quarterly estimation implemented?"
 
 # Debug a simulation error
-bash /mnt/d/_ai_brain/scripts/ai_debug.sh simulation ./error.log
+ws debug simulation ./error.log
 ```
