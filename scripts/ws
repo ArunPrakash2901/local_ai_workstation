@@ -163,6 +163,9 @@ case "$SUBCOMMAND" in
     agent-hygiene)
         bash "$SCRIPTS_DIR/ws_agent_hygiene.sh" "$@"
         ;;
+    agent-mark-stale-reviewed)
+        bash "$SCRIPTS_DIR/ws_agent_mark_stale_reviewed.sh" "$@"
+        ;;
     model)
         bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
         ;;

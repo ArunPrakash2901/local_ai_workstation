@@ -102,8 +102,10 @@ else
                             for d in "$WS_HOME/auto_runs"/*; do
                                 if [ -d "$d" ] && [ -f "$d/status.txt" ]; then
                                     if grep -q "CODEX_RUNNING" "$d/status.txt"; then
-                                        STALE_RUN="$d"
-                                        break
+                                        if [ ! -f "$d/stale_reviewed.md" ]; then
+                                            STALE_RUN="$d"
+                                            break
+                                        fi
                                     fi
                                 fi
                             done

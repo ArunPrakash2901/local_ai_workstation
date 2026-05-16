@@ -54,8 +54,10 @@ done < <(git -C "$WS_HOME" worktree list 2>/dev/null || true)
 declare -A STATUS_COUNTS
 RUN_ROWS=()
 STALE_ROWS=()
+REVIEWED_STALE_ROWS=()
 TOTAL_RUNS=0
 STALE_RUNNING_COUNT=0
+REVIEWED_STALE_COUNT=0
 
 if [ -d "$AUTO_RUNS_DIR" ]; then
     while IFS= read -r run_dir; do
@@ -79,8 +81,13 @@ if [ -d "$AUTO_RUNS_DIR" ]; then
         [ -f "$run_dir/codex_exit_code.txt" ] && exit_code='yes'
         RUN_ROWS+=("| \`$run_name\` | $status | $timestamp | $final_report |")
         if [ "$status" = "CODEX_RUNNING" ]; then
-            STALE_RUNNING_COUNT=$((STALE_RUNNING_COUNT + 1))
-            STALE_ROWS+=("| \`$run_name\` | $status | $timestamp | $final_report | $stdout | $stderr | $exit_code |")
+            if [ -f "$run_dir/stale_reviewed.md" ]; then
+                REVIEWED_STALE_COUNT=$((REVIEWED_STALE_COUNT + 1))
+                REVIEWED_STALE_ROWS+=("| \`$run_name\` | $status | $timestamp | $final_report | $stdout | $stderr | $exit_code |")
+            else
+                STALE_RUNNING_COUNT=$((STALE_RUNNING_COUNT + 1))
+                STALE_ROWS+=("| \`$run_name\` | $status | $timestamp | $final_report | $stdout | $stderr | $exit_code |")
+            fi
         fi
     done < <(find "$AUTO_RUNS_DIR" -mindepth 1 -maxdepth 1 -type d | sort)
 fi
@@ -118,7 +125,8 @@ fi
     echo "- Branches pointing to same commit as main: $SAME_AS_MAIN_COUNT"
     echo "- Branches with unique commits: $UNIQUE_BRANCH_COUNT"
     echo "- auto_runs folders scanned: $TOTAL_RUNS"
-    echo "- stale CODEX_RUNNING folders: $STALE_RUNNING_COUNT"
+    echo "- Unresolved stale CODEX_RUNNING folders: $STALE_RUNNING_COUNT"
+    echo "- Reviewed stale CODEX_RUNNING folders: $REVIEWED_STALE_COUNT"
     echo "- auto_runs ignored by Git: $AUTO_RUNS_IGNORED"
     echo "- validation reports found: $VALIDATION_REPORT_COUNT"
     echo "- validation reports ignored by Git: $VALIDATION_REPORT_IGNORED"
@@ -149,7 +157,7 @@ fi
     echo "| --- | --- | --- | --- |"
     printf '%s\n' "${RUN_ROWS[@]}"
     echo
-    echo "## Stale CODEX_RUNNING Folders"
+    echo "## Unresolved Stale CODEX_RUNNING Folders"
     if [ "$STALE_RUNNING_COUNT" -gt 0 ]; then
         echo "| run folder | status | timestamp | final report | stdout | stderr | exit code |"
         echo "| --- | --- | --- | --- | --- | --- | --- |"
@@ -158,11 +166,20 @@ fi
         echo "- none"
     fi
     echo
+    echo "## Reviewed Stale CODEX_RUNNING Folders"
+    if [ "$REVIEWED_STALE_COUNT" -gt 0 ]; then
+        echo "| run folder | status | timestamp | final report | stdout | stderr | exit code |"
+        echo "| --- | --- | --- | --- | --- | --- | --- |"
+        printf '%s\n' "${REVIEWED_STALE_ROWS[@]}"
+    else
+        echo "- none"
+    fi
+    echo
     echo "## Recommendations"
     echo "- Keep current and main branches until their purpose is clear."
     echo "- Keep runs with terminal reports when they are still needed for diagnosis or audit trail."
     echo "- Later review branches that point to the same commit as main before deleting them manually."
-    echo "- Later review stale CODEX_RUNNING folders manually; do not delete them until the failure history is no longer needed."
+    echo "- Later review stale CODEX_RUNNING folders manually using 'ws agent-mark-stale-reviewed <run>'; do not delete them until the failure history is no longer needed."
     echo "- Retain curated summary reports such as R3/R4/R4.5; recurring AGENT_CONTRACT_VALIDATION and AGENT_HYGIENE reports follow the generated-report policy."
     echo "- No cleanup was performed by this command."
 } > "$REPORT"
@@ -170,7 +187,8 @@ fi
 echo "Agent hygiene report: $REPORT"
 echo "Current branch: $CURRENT_BRANCH"
 echo "Agent branches: $AGENT_BRANCH_COUNT"
-echo "Stale CODEX_RUNNING folders: $STALE_RUNNING_COUNT"
+echo "Unresolved CODEX_RUNNING folders: $STALE_RUNNING_COUNT"
+echo "Reviewed CODEX_RUNNING folders: $REVIEWED_STALE_COUNT"
 echo "auto_runs ignored by Git: $AUTO_RUNS_IGNORED"
 echo "Validation reports ignored by Git: $VALIDATION_REPORT_IGNORED"
 echo "Hygiene reports ignored by Git: $HYGIENE_REPORT_IGNORED"
