@@ -65,6 +65,7 @@ case "$SUBCOMMAND" in
         echo "  open-build <id>     Show artifacts for a build run"
         echo "  agent-status        Show Windows agent orchestrator status"
         echo "  agent-canary        Run Windows-native Codex canary"
+        echo "  apply-ready <k> <t> Check if task is ready for agent-run"
         echo "  agent-run <k> <t>   Run bounded Windows-native agent task"
         echo "  agent-import <run>  Inspect an agent run folder"
         echo "  agent-validate      Run workstation agent contract validation"
@@ -340,4 +341,5 @@ case "$SUBCOMMAND" in
         echo "Try 'ws help' for usage."
         exit 1
         ;;
+esac
 esac

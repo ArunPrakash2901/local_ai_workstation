@@ -18,6 +18,7 @@ reports/AGENT_HYGIENE_*.md
 reports/LOOP_PLAN_*.md
 reports/LOOP_STATUS_*.md
 reports/LOOP_START_*.md
+reports/APPLY_READY_*.md
 __pycache__/
 *.pyc
 *.log

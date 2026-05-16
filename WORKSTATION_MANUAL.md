@@ -280,7 +280,8 @@ When `ws loop-start` completes, it will output paths to its artifacts. To review
 1. Inspect the loop-start report for the exact terminal state.
 2. Read `local_plan.md` in the generated build folder to see the proposed codebase changes.
 3. Read `build_report.md` for any issues found during the local execution.
-4. If the plan looks correct, proceed to cloud apply using the supervised bounded `ws agent-run` flow:
+4. Run `ws apply-ready <project_key> <task_file>` as a final read-only check.
+5. If the plan looks correct and `apply-ready` passes, proceed to cloud apply using the supervised bounded `ws agent-run` flow:
 
 ```bash
 ws agent-run <project_key> <task_file> --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail
