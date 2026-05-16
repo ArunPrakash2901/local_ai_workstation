@@ -114,6 +114,9 @@ case "$SUBCOMMAND" in
     agent-canary)
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_canary.ps1")" "$@"
         ;;
+    apply-ready)
+        bash "$SCRIPTS_DIR/ws_apply_ready.sh" "$@"
+        ;;
     agent-run)
         if [ $# -lt 2 ]; then
             echo "Usage: ws agent-run <project_key> <task_file> [flags]"
@@ -341,5 +344,4 @@ case "$SUBCOMMAND" in
         echo "Try 'ws help' for usage."
         exit 1
         ;;
-esac
 esac
