@@ -125,6 +125,10 @@ STALE_COUNT=${#STALE_DIRS[@]}
 echo "Worktree Status Summary"
 echo "-----------------------"
 echo "Active worktrees: $ACTIVE_COUNT"
+if [ $ACTIVE_COUNT -gt 0 ]; then
+    echo "Active worktree paths:"
+    printf '%s\n' "${ACTIVE_WORKTREES[@]}" | sed 's/^/  - /'
+fi
 echo "Future worktree root: $WORKTREE_ROOT_WINDOWS ($ROOT_EXISTS)"
 echo "Recent plans: ${#PLAN_REPORTS[@]}"
 echo "Planned worktrees: $READY_PLAN_COUNT"

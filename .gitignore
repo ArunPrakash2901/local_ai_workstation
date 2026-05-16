@@ -23,6 +23,7 @@ reports/APPLY_READY_*.md
 reports/WORKTREE_PLAN_*.md
 reports/WORKTREE_STATUS_*.md
 reports/WORKTREE_CREATE_DRY_RUN_*.md
+reports/WORKTREE_CREATE_*.md
 __pycache__/
 *.pyc
 *.log

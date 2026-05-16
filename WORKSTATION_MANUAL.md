@@ -95,6 +95,7 @@ ws agent-import <run>
 - `ws loop-plan <project_key> <task_file>`
 - `ws worktree-plan <project_key> <task_file>`
 - `ws worktree-create <project_key> <task_file> --dry-run`
+- `ws worktree-create <project_key> <task_file> --apply --from-report <report>`
 - `ws worktree-status`
 - `ws loop-status`
 - `ws loop-start <project_key> <task_file>`
@@ -302,11 +303,12 @@ Use the read-only tools to check eligibility for independent loops:
 ws loop-plan <project_key> <task_file>
 ws worktree-plan <project_key> <task_file>
 ws worktree-create <project_key> <task_file> --dry-run
+ws worktree-create <project_key> <task_file> --apply --from-report <dry_run_report>
 ws worktree-status
 ws loop-status
 ```
 
-These commands only inspect workstation state, Git status, task boundaries, and future worktree eligibility. `ws worktree-plan` is read-only: it reports the future branch and worktree path but does not create either one. `ws worktree-create` currently supports `--dry-run` only; it previews the later Git commands but does not create branches or worktrees. Actual creation is designed separately but remains disabled. `ws worktree-status` is also read-only: it summarizes current worktrees and recent plans but does not prune or delete worktrees. They will write reports and classify eligibility without starting loops.
+These commands inspect workstation state, Git status, task boundaries, and future worktree eligibility. `ws worktree-plan` is read-only: it reports the future branch and worktree path but does not create either one. `ws worktree-create --dry-run` previews the later Git commands; `ws worktree-create --apply --from-report <dry_run_report>` creates isolation only after supervised checks pass. It does not run tasks or modify project source files. After creation, inspect the result with `ws worktree-status`. `ws worktree-status` remains read-only: it summarizes current worktrees and recent plans but does not prune or delete worktrees.
 
 ## Future: Night-Run Autonomous Workflow
 
