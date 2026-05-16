@@ -71,6 +71,7 @@ case "$SUBCOMMAND" in
         echo "  agent-mark-stale-reviewed <run> Mark stuck run as historical"
         echo "  loop-plan <k> <t>   Check local-loop eligibility without starting it"
         echo "  worktree-plan <k> <t> Preview future isolated worktree without creating it"
+        echo "  worktree-create <k> <t> --dry-run Preview creation commands only"
         echo "  worktree-status     Summarize read-only worktree state and recent plans"
         echo "  loop-status         Show latest local-loop status"
         echo "  loop-start <k> <t>  Start supervised local-only planning loop"
@@ -343,6 +344,9 @@ case "$SUBCOMMAND" in
         ;;
     worktree-plan)
         bash "$SCRIPTS_DIR/ws_worktree_plan.sh" "$@"
+        ;;
+    worktree-create)
+        bash "$SCRIPTS_DIR/ws_worktree_create.sh" "$@"
         ;;
     worktree-status)
         bash "$SCRIPTS_DIR/ws_worktree_status.sh" "$@"
