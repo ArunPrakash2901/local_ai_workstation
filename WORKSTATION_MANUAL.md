@@ -267,6 +267,8 @@ Closed loop:
 
 Independent, unattended agent loops (local-first with cloud-fallback awareness) have been designed but are not yet enabled. Do not attempt to run fully unattended loops; stick to supervised bounded apply (`ws agent-run`) and manual handoffs.
 
+The supervised single-loop start command (`ws loop-start`) is fully designed but deferred until R9.
+
 Use the read-only planner to check eligibility for independent loops:
 
 ```bash
