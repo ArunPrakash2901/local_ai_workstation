@@ -311,6 +311,9 @@ case "$SUBCOMMAND" in
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;
+    loop-status)
+        bash "$SCRIPTS_DIR/ws_loop_status.sh" "$@"
+        ;;
     frontier)
         bash "$SCRIPTS_DIR/ws_frontier_status.sh"
         ;;

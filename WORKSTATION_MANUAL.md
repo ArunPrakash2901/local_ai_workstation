@@ -271,9 +271,10 @@ Use the read-only planner to check eligibility for independent loops:
 
 ```bash
 ws loop-plan <project_key> <task_file>
+ws loop-status
 ```
 
-This command only inspects the workstation state, Git status, canary status, and task file boundaries. It will write a report and classify the loop eligibility. It does not start any loops.
+These commands only inspect the workstation state, Git status, canary status, and task file boundaries. They will write reports and classify the loop eligibility. They do not start any loops.
 
 ## Deterministic PRD Task Splitting
 
