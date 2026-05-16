@@ -93,6 +93,7 @@ ws agent-import <run>
 - `ws agent-hygiene`
 - `ws agent-mark-stale-reviewed <run>`
 - `ws loop-plan <project_key> <task_file>`
+- `ws worktree-plan <project_key> <task_file>`
 - `ws loop-status`
 - `ws loop-start <project_key> <task_file>`
 - `ws task-new`
@@ -297,10 +298,11 @@ Use the read-only tools to check eligibility for independent loops:
 
 ```bash
 ws loop-plan <project_key> <task_file>
+ws worktree-plan <project_key> <task_file>
 ws loop-status
 ```
 
-These commands only inspect the workstation state, Git status, canary status, and task file boundaries. They will write reports and classify the loop eligibility. They do not start any loops.
+These commands only inspect workstation state, Git status, task boundaries, and future worktree eligibility. `ws worktree-plan` is read-only: it reports the future branch and worktree path but does not create either one. They will write reports and classify eligibility without starting loops.
 
 ## Future: Night-Run Autonomous Workflow
 
