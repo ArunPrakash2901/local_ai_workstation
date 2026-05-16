@@ -11,6 +11,8 @@ scratch/
 graphify-out/
 runtimes/
 models/
+auto_runs/
+reports/agent_canary_status.json
 __pycache__/
 *.pyc
 *.log
