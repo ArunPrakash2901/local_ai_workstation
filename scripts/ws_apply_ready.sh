@@ -98,20 +98,47 @@ else
                             CLASSIFICATION="BLOCKED_CANARY_FAILED"
                             REASON="Cloud canary status is $CANARY_STATUS. Supervised cloud apply is blocked."
                         else
-                            STALE_RUN=""
+                            STALE_RUNS=()
+                            HISTORICAL_RUNS=()
+                            now=$(date +%s)
                             for d in "$WS_HOME/auto_runs"/*; do
                                 if [ -d "$d" ] && [ -f "$d/status.txt" ]; then
                                     if grep -q "CODEX_RUNNING" "$d/status.txt"; then
                                         if [ ! -f "$d/stale_reviewed.md" ]; then
-                                            STALE_RUN="$d"
-                                            break
+                                            # Parse project and task title from task.md
+                                            run_project=$(grep -A 1 "Project:" "$d/task.md" 2>/dev/null | tail -n 1 | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                                            original_title=$(grep -m 1 "^# Task" "$WSL_TASK_FILE" 2>/dev/null | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                                            run_title=$(grep -m 1 "^# Task" "$d/task.md" 2>/dev/null | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+                                            is_match=false
+                                            d_base=$(basename "$d")
+                                            
+                                            if [ "$run_project" = "$PROJECT_KEY" ] && [ "$original_title" = "$run_title" ] && [ -n "$run_project" ]; then
+                                                is_match=true
+                                            elif [[ "$d_base" == *"_$PROJECT_KEY_"* ]] && [ -z "$run_project" ]; then
+                                                # Conservative fallback
+                                                is_match=true
+                                            fi
+                                            
+                                            if $is_match; then
+                                                mtime=$(stat -c %Y "$d/heartbeat.log" 2>/dev/null || stat -c %Y "$d/status.txt" 2>/dev/null || echo 0)
+                                                age=$(( now - mtime ))
+                                                
+                                                if [ "$age" -lt 7200 ]; then
+                                                    STALE_RUNS+=("$d_base")
+                                                else
+                                                    HISTORICAL_RUNS+=("$d_base")
+                                                fi
+                                            fi
                                         fi
                                     fi
                                 fi
                             done
-                            if [ -n "$STALE_RUN" ]; then
+                            
+                            if [ ${#STALE_RUNS[@]} -gt 0 ]; then
                                 CLASSIFICATION="BLOCKED_STALE_RUNNING_RUN"
-                                REASON="A stale CODEX_RUNNING folder was found: $(basename "$STALE_RUN"). Please run ws agent-hygiene."
+                                REASON="Recent active/stale CODEX_RUNNING folder(s) found for this task: $(printf '%s ' "${STALE_RUNS[@]}")"
+                                REASON="${REASON% }"
                             else
                                 BUILD_LATEST=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
                                 if [ -n "$BUILD_LATEST" ] && [ -d "$BUILD_LATEST" ] && [ -f "$BUILD_LATEST/local_plan.md" ]; then
@@ -124,6 +151,9 @@ else
                                 else
                                     CLASSIFICATION="APPLY_READY"
                                     REASON="All preflight checks passed. Task is ready for supervised cloud apply."
+                                    if [ ${#HISTORICAL_RUNS[@]} -gt 0 ]; then
+                                        REASON="$REASON (Note: ${#HISTORICAL_RUNS[@]} historical unresolved runs found for this task, but they are older than 2 hours and ignored.)"
+                                    fi
                                 fi
                             fi
                         fi
