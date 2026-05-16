@@ -21,9 +21,11 @@ REPORT="$RUN_DIR/build_report.md"
 {
     echo "# Build Report"
     echo ""
+    echo "## Summary"
     echo "- Status: $STATUS"
-    echo "- Run Folder: $RUN_DIR"
+    echo "- Project: $([ -f "$RUN_DIR/project_metadata.md" ] && grep "^- Key:" "$RUN_DIR/project_metadata.md" | cut -d: -f2 | xargs || echo "unknown")"
     echo "- Generated: $(date -Is)"
+    echo "- Run Folder: $RUN_DIR"
     echo ""
     echo "## Artifacts"
     for f in task.md project_metadata.md graph_context.md context_pack.md local_plan.md attempts.md test_output.md codex_packet.md codex_response.md final_diff.patch status.txt; do
@@ -32,23 +34,34 @@ REPORT="$RUN_DIR/build_report.md"
         fi
     done
     echo ""
-    echo "## Status"
+    echo "## Final Status"
     if [ -f "$RUN_DIR/status.txt" ]; then
-        cat "$RUN_DIR/status.txt"
+        echo "\`$(cat "$RUN_DIR/status.txt")\`"
     else
-        echo "$STATUS"
+        echo "\`$STATUS\`"
+    fi
+    echo ""
+    echo "## Proposed Plan"
+    if [ -f "$RUN_DIR/local_plan.md" ]; then
+        # Extract the first paragraph or non-code block text as summary
+        (grep -v "^#" "$RUN_DIR/local_plan.md" | grep -v "^ " | grep -v "^$" | head -n 3 | sed 's/^/> /') || echo "> (no plan summary available)"
+    else
+        echo "No local plan generated."
     fi
     echo ""
     echo "## Task Lifecycle Recommendation"
     case "$STATUS" in
-        COMPLETE|PASSED|passed)
+        passed|PASSED)
             echo "Recommended next step: review the diff/tests, then run \`ws task-complete <task_file>\` if the task is done."
             ;;
-        BLOCKED|FAILED|failed)
+        failed|FAILED)
             echo "Recommended next step: inspect attempts/test output, then run \`ws task-block <task_file> \"reason\"\` or create a review packet."
             ;;
-        PLAN_ONLY|planned|PLANNED)
+        planned|PLANNED)
             echo "Recommended next step: review \`local_plan.md\`; do not mark complete until an apply/test cycle succeeds."
+            ;;
+        blocked|BLOCKED)
+            echo "Recommended next step: check if Ollama is running, check context limits, or clarify task goals."
             ;;
         *)
             echo "Recommended next step: review artifacts before changing task lifecycle status."

@@ -294,17 +294,26 @@ case "$SUBCOMMAND" in
             echo "Build run not found: $RUN_ID"
             exit 1
         fi
-        echo "Build Run:     $TARGET"
-        echo "Status:        $TARGET/status.txt"
-        echo "Task:          $TARGET/task.md"
-        echo "Metadata:      $TARGET/project_metadata.md"
-        echo "Graph Context: $TARGET/graph_context.md"
-        echo "Context Pack:  $TARGET/context_pack.md"
-        echo "Local Plan:    $TARGET/local_plan.md"
-        echo "Attempts:      $TARGET/attempts.md"
-        echo "Tests:         $TARGET/test_output.md"
-        echo "Diff:          $TARGET/final_diff.patch"
-        echo "Report:        $TARGET/build_report.md"
+        echo "-----------------------------------------"
+        echo " Build Run Summary: $(basename "$TARGET")"
+        echo "-----------------------------------------"
+        if [ -f "$TARGET/build_report.md" ]; then
+            # Print Summary section (exclude the header itself and stop at Artifacts)
+            sed -n '/## Summary/,/## Artifacts/p' "$TARGET/build_report.md" | grep -v "##" | sed '/^[[:space:]]*$/d'
+            echo ""
+            # Print Final Status
+            echo -n "Final Status: "
+            cat "$TARGET/status.txt" 2>/dev/null || echo "unknown"
+            echo ""
+            # Print Recommendation
+            echo "Recommendation:"
+            sed -n '/## Task Lifecycle Recommendation/,$p' "$TARGET/build_report.md" | grep -v "##" | sed '/^[[:space:]]*$/d'
+        else
+            echo "Status: $(cat "$TARGET/status.txt" 2>/dev/null || echo "unknown")"
+            echo "Report missing: $TARGET/build_report.md"
+        fi
+        echo "-----------------------------------------"
+        echo "All artifacts in: $TARGET"
         ;;
     task-new)
         bash "$SCRIPTS_DIR/ws_task_new.sh" "$@"

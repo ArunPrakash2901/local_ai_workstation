@@ -153,14 +153,14 @@ PY
 )
     OLLAMA_HOST=${OLLAMA_HOST:-"http://localhost:11434"}
     timeout $((MAX_MINUTES * 60)) "$PYTHON" "$SCRIPTS/ollama_call.py" "$OLLAMA_HOST" "$MODEL" "$SYSTEM_PROMPT" "$USER_PROMPT" > "$RUN_DIR/local_plan.md" || {
-        echo "BLOCKED: local Hermes planning failed or timed out." > "$RUN_DIR/status.txt"
-        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "BLOCKED" >/dev/null
+        echo "blocked" > "$RUN_DIR/status.txt"
+        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "blocked" >/dev/null
         $STOP_ON_FAIL && exit 1 || continue
     }
 
     if [ "$PLAN_ONLY" = true ]; then
-        echo "PLAN_ONLY" > "$RUN_DIR/status.txt"
-        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "PLAN_ONLY" >/dev/null
+        echo "planned" > "$RUN_DIR/status.txt"
+        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "planned" >/dev/null
         echo "Plan-only run: $RUN_DIR"
         continue
     fi
@@ -201,8 +201,8 @@ PY
         APPLIED=true
         if bash "$SCRIPTS/ws_test_runner.sh" "$PROJECT_DIR" "$RUN_DIR" "$TEST_COMMAND" "$MAX_MINUTES" >> "$RUN_DIR/attempts.md" 2>&1; then
             git -C "$PROJECT_DIR" diff > "$RUN_DIR/final_diff.patch"
-            echo "COMPLETE" > "$RUN_DIR/status.txt"
-            bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "COMPLETE" >/dev/null
+            echo "passed" > "$RUN_DIR/status.txt"
+            bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "passed" >/dev/null
             echo "Build run complete: $RUN_DIR"
             break
         fi
@@ -224,9 +224,9 @@ PY
             fi
         fi
         [ "$APPLIED" = true ] && git -C "$PROJECT_DIR" diff > "$RUN_DIR/final_diff.patch"
-        echo "BLOCKED" > "$RUN_DIR/status.txt"
-        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "BLOCKED" >/dev/null
-        echo "Build run blocked: $RUN_DIR"
+        echo "failed" > "$RUN_DIR/status.txt"
+        bash "$SCRIPTS/ws_build_report.sh" "$RUN_DIR" "failed" >/dev/null
+        echo "Build run failed: $RUN_DIR"
         $STOP_ON_FAIL && exit 1
     fi
 done
