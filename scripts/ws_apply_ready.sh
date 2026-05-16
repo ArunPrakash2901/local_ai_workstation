@@ -115,7 +115,7 @@ else
                                             
                                             if [ "$run_project" = "$PROJECT_KEY" ] && [ "$original_title" = "$run_title" ] && [ -n "$run_project" ]; then
                                                 is_match=true
-                                            elif [[ "$d_base" == *"_$PROJECT_KEY_"* ]] && [ -z "$run_project" ]; then
+                                            elif [[ "$d_base" == *"_${PROJECT_KEY}_"* ]] && [ -z "$run_project" ]; then
                                                 # Conservative fallback
                                                 is_match=true
                                             fi
