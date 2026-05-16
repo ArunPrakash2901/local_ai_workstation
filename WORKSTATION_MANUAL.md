@@ -184,7 +184,9 @@ Gemini and Claude escalation is currently **manual-only** until safety integrati
 
 ## Workstation Audit And Cleanup
 
-Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. Nothing is deleted automatically; `cleanup-apply` only archives high-confidence candidates under `D:\_ai_brain\archive\cleanup_<timestamp>` and only when `--apply` is provided.
+Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.
+
+Nothing is deleted automatically; `cleanup-apply` only archives high-confidence candidates under `D:\_ai_brain\archive\cleanup_<timestamp>` and only when `--apply` is provided.
 
 Use this flow:
 

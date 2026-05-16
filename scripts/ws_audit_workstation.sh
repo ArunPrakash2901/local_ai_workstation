@@ -42,7 +42,13 @@ ws_routed = {
     "ai_model_use.sh", "ai_model_warm.sh", "ai_model_unload.sh", "ai_kv_profiles.sh",
     "ai_kv_use.sh", "ai_daily_restore.sh", "ws_frontier_status.sh", "ws_make_packet.sh",
     "ws_redact_packet.sh", "ws_audit_workstation.sh", "ws_cleanup_plan.sh",
-    "ws_cleanup_apply.sh", "ws_cleanup_status.sh",
+    "ws_cleanup_apply.sh", "ws_cleanup_status.sh", "ws_build.sh", "ws_build_report.sh",
+    "ws_apply_ready.sh", "ws_agent_hygiene.sh", "ws_agent_mark_stale_reviewed.sh",
+    "ws_agent_validate.sh", "ws_task_new.sh", "ws_task_split.sh", "ws_task_status.sh",
+    "ws_task_next.sh", "ws_task_review_packet.sh", "ws_task_complete.sh", "ws_task_block.sh",
+    "ws_loop_plan.sh", "ws_loop_status.sh", "ws_loop_start.sh", "ws_path_status.sh",
+    "ws_readiness.sh", "ws_env.sh", "ws_apply_guard.sh", "ws_test_runner.sh",
+    "ws_context_pack.sh", "ws_task_parser.sh"
 }
 
 def rel(p):
@@ -304,55 +310,91 @@ def table(headers, rows):
         out.append("| " + " | ".join(str(x).replace("\n", " ") for x in row) + " |")
     return "\n".join(out)
 
+# Group findings by severity
+high = []
+medium = []
+low = []
+
+for name, status in registry_status:
+    if status != "exists":
+        high.append(f"Registry {name} is {status}")
+for script, ref, fix in missing_refs:
+    high.append(f"Broken reference in {script}: {ref} ({fix})")
+for script in crlf_scripts:
+    high.append(f"CRLF line endings in bash script {script}")
+for script, line, risk in ollama_call_risks:
+    high.append(f"Ollama call risk in {script}:{line} - {risk}")
+
+if not active_safe:
+    medium.append("Active daily profile is NOT the safe default (hermes_default/stable_default)")
+for script in missing_shebang:
+    medium.append(f"Missing shebang in {script}")
+for alias, count in duplicate_aliases:
+    medium.append(f"Duplicate alias '{alias}' found {count} times")
+if qwen_risks:
+    medium.append(f"Found {len(qwen_risks)} references to qwen2.5:32b (hardware bottleneck)")
+for script in legacy_scripts:
+    medium.append(f"Legacy script (not routed via ws): {script}")
+
+if empty_runs:
+    low.append(f"Found {len(empty_runs)} empty run folders")
+if old_runs:
+    low.append(f"Found {len(old_runs)} run folders older than 30 days")
+if curl_without_timeout:
+    low.append(f"Found {len(curl_without_timeout)} curl calls without timeout")
+
+# Cleanup Candidates
+cleanup_candidates = []
+for run in empty_runs: cleanup_candidates.append((run, "Empty run folder"))
+for run in old_runs: cleanup_candidates.append((run, "Old run folder (>30d)"))
+for script in legacy_scripts: cleanup_candidates.append((script, "Legacy script"))
+for path, size, status in scratch_rows:
+    if "temporary/log" in status or "empty" in status:
+        cleanup_candidates.append((path, f"Temporary file ({status})"))
+
 md = []
 md.append("# Workstation Audit Report\n")
 md.append(f"Generated: {audit['timestamp']}\n")
 md.append("Scope: `D:\\_ai_brain` infrastructure only. Project repos, raw datasets, secrets, project Graphify outputs, and model files were not modified.\n")
-md.append("## Summary\n")
-md.append(f"- Total files scanned: {len(all_files)}")
-md.append(f"- D:\\_ai_brain size: {audit['brain_size']}")
-md.append(f"- D:\\ollama\\models size: {audit['ollama_models_size']}")
-md.append(f"- Secret-looking filenames detected: {len(secret_looking)}")
-md.append(f"- Broken/missing references found: {len(missing_refs)}")
-md.append(f"- Duplicate aliases found: {len(duplicate_aliases)}")
-md.append(f"- Active daily profile safe: {'yes' if active_safe else 'no'}\n")
-md.append("## Script Health\n")
+
+md.append("## Issues by Severity\n")
+if high:
+    md.append("### 🔴 HIGH\n")
+    for item in high: md.append(f"- {item}")
+if medium:
+    md.append("\n### 🟡 MEDIUM\n")
+    for item in medium: md.append(f"- {item}")
+if low:
+    md.append("\n### 🟢 LOW\n")
+    for item in low: md.append(f"- {item}")
+if not high and not medium and not low:
+    md.append("No issues detected.")
+
+md.append("\n## Cleanup Candidates\n")
+md.append("The following items are recommended for archival via `ws cleanup-plan`. They are NOT deleted automatically.\n")
+if cleanup_candidates:
+    md.append(table(["Path", "Reason"], cleanup_candidates[:50]))
+else:
+    md.append("No cleanup candidates found.")
+
+md.append("\n## Protected Files (DO NOT TOUCH)\n")
+md.append("The following files are classified as sensitive or critical and are ignored by cleanup tools.\n")
+protected = [(p, "Secret-looking filename") for p in audit["secret_looking"]]
+for name, status in registry_status: protected.append((f"registry/{name}", "Critical Registry"))
+protected.append(("scripts/ws", "Primary Orchestrator"))
+md.append(table(["Path", "Classification"], protected))
+
+md.append("\n## Script Health\n")
 md.append(table(["script", "executable", "CRLF", "shebang"], script_rows))
-md.append("\n### Script Issues\n")
-md.append(f"- CRLF scripts: {', '.join(crlf_scripts) if crlf_scripts else 'none'}")
-md.append(f"- Missing shebangs: {', '.join(missing_shebang) if missing_shebang else 'none'}")
-md.append(f"- Legacy/unrouted WSL scripts: {', '.join(legacy_scripts) if legacy_scripts else 'none'}")
-md.append(f"- Curl calls without timeout: {len(curl_without_timeout)}")
-md.append(f"- Ollama warm/generate risk findings: {len(ollama_call_risks)}")
-md.append(f"- qwen2.5:32b references: {len(qwen_risks)}")
-md.append(f"- Direct frontier CLI call findings: {len(frontier_direct_calls)}\n")
-md.append("## Registry Health\n")
+
+md.append("\n## Registry Health\n")
 md.append(table(["registry", "status"], registry_status))
 md.append("\n### Registered Project Paths\n")
 md.append(table(["key", "project path", "exists", "graph path", "graph exists"], project_path_rows))
-md.append("\n### Model Profiles vs Ollama Tags\n")
-md.append(table(["profile", "model", "installed"], model_rows))
-md.append("\n## Alias Health\n")
-md.append(table(["alias", "count"], alias_rows))
-if duplicate_aliases:
-    md.append("\nDuplicate aliases:\n" + table(["alias", "count"], duplicate_aliases))
-md.append("\n## Runs And Logs\n")
-md.append(table(["run", "files", "size", "status"], run_rows[:30]))
-md.append("\n## Frontier Packets\n")
-md.append(table(["packet", "size", "redaction status"], packet_rows))
-md.append("\n## Reports And Benchmarks\n")
-md.append(table(["file", "size", "status"], report_rows))
-md.append("\n## Scratch/Temp\n")
-md.append(table(["file", "size", "status"], scratch_rows) if scratch_rows else "No scratch files found.")
-md.append("\n## Safety Scan By Filename\n")
-md.append(table(["path", "classification"], [(p, "unsafe_to_touch") for p in audit["secret_looking"]]) if secret_looking else "No secret-looking filenames found under scanned workstation paths.")
-md.append("\n## Top Large Files In D:\\_ai_brain\n")
-md.append(table(["size", "path"], audit["top_large"]))
-md.append("\n## Broken References\n")
-md.append(table(["script/config", "missing target", "recommended fix"], missing_refs) if missing_refs else "No broken references found by static scan.")
+
 md.append("\n## Notes\n")
 md.append("- This audit is read-only.")
-md.append("- Cleanup candidates are generated separately by `ws cleanup-plan`.")
+md.append("- Use `ws cleanup-plan` to generate a structured archive plan for candidates.")
 md.append("- No cloud/frontier CLI was called.")
 
 report_path.write_text("\n".join(md) + "\n", encoding="utf-8", newline="\n")
