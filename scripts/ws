@@ -67,6 +67,7 @@ case "$SUBCOMMAND" in
         echo "  agent-canary        Run Windows-native Codex canary"
         echo "  agent-run <k> <t>   Run bounded Windows-native agent task"
         echo "  agent-import <run>  Inspect an agent run folder"
+        echo "  agent-validate      Run workstation agent contract validation"
         echo "  task-new            Create canonical task in tasks/inbox"
         echo "  task-split <prd>    Split structured PRDs into generated tasks"
         echo "  task-status         Show task lifecycle counts and recent tasks"
@@ -150,6 +151,9 @@ case "$SUBCOMMAND" in
         ;;
     agent-import)
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_import.ps1")" "$@"
+        ;;
+    agent-validate)
+        bash "$SCRIPTS_DIR/ws_agent_validate.sh" "$@"
         ;;
     model)
         bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"

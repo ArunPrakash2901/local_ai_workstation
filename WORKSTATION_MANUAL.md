@@ -88,6 +88,7 @@ ws agent-import <run>
 - `ws agent-canary`
 - `ws agent-run <project_key> <task_file>`
 - `ws agent-import <run>`
+- `ws agent-validate`
 - `ws task-new`
 - `ws task-split <prd>`
 - `ws task-status`
@@ -222,6 +223,8 @@ Plan-only versus apply:
 - No commits are made automatically.
 
 Older `ws auto`, `ws codex-apply`, Codex packet escalation loops, and related patch-generation flows are legacy or experimental unless a later report says otherwise. Gemini remains manual packet review only. Avoid unattended runs: review reports and diffs, keep task boundaries explicit, and run project tests yourself when risk is medium or higher.
+
+Before attempting longer independent runs, use `ws agent-validate` to check the current dispatcher, PowerShell parse health, canary refresh, dry-run terminal state, task allowlist guard, and Git ignore contract.
 
 ## Task Lifecycle And Closed Loop Workflow
 
