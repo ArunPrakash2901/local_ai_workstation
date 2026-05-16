@@ -21,8 +21,10 @@ Generated: $STAMP
 
 EOF
 
-echo "Loop Status Summary"
-echo "-------------------"
+echo "Loop Status Summary (Read-Only Plans)"
+echo "-------------------------------------"
+echo "Note: This summarizes LOOP_PLAN_*.md reports. For execution details, inspect LOOP_START_*.md directly."
+echo ""
 
 # Find latest 5 loop plans
 PLANS=$(find "$REPORTS_DIR" -maxdepth 1 -name "LOOP_PLAN_*.md" -type f -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 5 | cut -d' ' -f2-)

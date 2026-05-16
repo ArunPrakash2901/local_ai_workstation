@@ -92,14 +92,36 @@ bash "$SCRIPTS_DIR/ws_build.sh" "$PROJECT_KEY" "$TASK_FILE" --plan-only
 
 BUILD_LATEST=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
 
+LOCAL_PLAN_PATH=""
+BUILD_REPORT_PATH=""
+
+if [ -n "$BUILD_LATEST" ] && [ -d "$BUILD_LATEST" ]; then
+    if [ -f "$BUILD_LATEST/local_plan.md" ]; then
+        LOCAL_PLAN_PATH="$BUILD_LATEST/local_plan.md"
+    fi
+    if [ -f "$BUILD_LATEST/build_report.md" ]; then
+        BUILD_REPORT_PATH="$BUILD_LATEST/build_report.md"
+    fi
+fi
+
 cat <<EOF >> "$REPORT"
 ## Execution
-- Build Run: $BUILD_LATEST
+- Build Run Folder: ${BUILD_LATEST:-Not detected}
+- Local Plan Path: ${LOCAL_PLAN_PATH:-Not detected}
+- Build Report Path: ${BUILD_REPORT_PATH:-Not detected}
 EOF
 
 echo "Terminal State: $TERMINAL_STATE"
-echo "Report: $(wslpath -w "$REPORT" 2>/dev/null || echo "$REPORT")"
+echo "Loop Start Report: $(wslpath -w "$REPORT" 2>/dev/null || echo "$REPORT")"
 if [ -n "$BUILD_LATEST" ]; then
-    echo "Build Output: $(wslpath -w "$BUILD_LATEST" 2>/dev/null || echo "$BUILD_LATEST")"
+    echo "Build Run Folder: $(wslpath -w "$BUILD_LATEST" 2>/dev/null || echo "$BUILD_LATEST")"
+    if [ -n "$LOCAL_PLAN_PATH" ]; then
+        echo "Local Plan: $(wslpath -w "$LOCAL_PLAN_PATH" 2>/dev/null || echo "$LOCAL_PLAN_PATH")"
+    fi
+    if [ -n "$BUILD_REPORT_PATH" ]; then
+        echo "Build Report: $(wslpath -w "$BUILD_REPORT_PATH" 2>/dev/null || echo "$BUILD_REPORT_PATH")"
+    fi
+else
+    echo "Build Run Folder: Not detected"
 fi
-echo "Next safe operator action: review local plan and proceed to ws agent-run if ready."
+echo "Next safe operator action: inspect local_plan.md and decide whether to proceed to ws agent-run."
