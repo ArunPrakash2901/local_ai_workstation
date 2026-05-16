@@ -19,7 +19,9 @@ Acceptance Criteria:
 - no scripts changed unless necessary
 
 Allowed Files:
-- not specified
+- START_HERE.md
+- WORKSTATION_MANUAL.md
+- scripts/ws
 
 Denied Files:
 - .env
@@ -38,6 +40,11 @@ low
 
 Escalation:
 none
+
+Notes:
+- Planning and dry-run may inspect broader context.
+- Apply mode is restricted to the explicit Allowed Files list above.
+- Change scripts/ws only if its help text must match the documentation.
 
 Original Task Content:
 ```markdown
