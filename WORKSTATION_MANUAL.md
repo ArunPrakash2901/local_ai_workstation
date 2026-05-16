@@ -263,6 +263,10 @@ Closed loop:
 7. Mark the task complete or blocked.
 8. Move to the next task with `ws task-next`.
 
+## Independent Loops (Design Only)
+
+Independent, unattended agent loops (local-first with cloud-fallback awareness) have been designed but are not yet enabled. Do not attempt to run fully unattended loops; stick to supervised bounded apply (`ws agent-run`) and manual handoffs.
+
 ## Deterministic PRD Task Splitting
 
 Structured PRDs and task queues are parsed without an LLM when they already contain task headings such as `## Task 001: Title`, `## Task 002 - Title`, or `## Task 003 Title`.
