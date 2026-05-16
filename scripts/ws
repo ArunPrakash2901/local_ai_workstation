@@ -68,6 +68,7 @@ case "$SUBCOMMAND" in
         echo "  agent-run <k> <t>   Run bounded Windows-native agent task"
         echo "  agent-import <run>  Inspect an agent run folder"
         echo "  agent-validate      Run workstation agent contract validation"
+        echo "  agent-hygiene       Audit agent branches and run folders"
         echo "  task-new            Create canonical task in tasks/inbox"
         echo "  task-split <prd>    Split structured PRDs into generated tasks"
         echo "  task-status         Show task lifecycle counts and recent tasks"
@@ -154,6 +155,9 @@ case "$SUBCOMMAND" in
         ;;
     agent-validate)
         bash "$SCRIPTS_DIR/ws_agent_validate.sh" "$@"
+        ;;
+    agent-hygiene)
+        bash "$SCRIPTS_DIR/ws_agent_hygiene.sh" "$@"
         ;;
     model)
         bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"

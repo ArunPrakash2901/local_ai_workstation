@@ -89,6 +89,7 @@ ws agent-import <run>
 - `ws agent-run <project_key> <task_file>`
 - `ws agent-import <run>`
 - `ws agent-validate`
+- `ws agent-hygiene`
 - `ws task-new`
 - `ws task-split <prd>`
 - `ws task-status`
@@ -224,7 +225,7 @@ Plan-only versus apply:
 
 Older `ws auto`, `ws codex-apply`, Codex packet escalation loops, and related patch-generation flows are legacy or experimental unless a later report says otherwise. Gemini remains manual packet review only. Avoid unattended runs: review reports and diffs, keep task boundaries explicit, and run project tests yourself when risk is medium or higher.
 
-Before attempting longer independent runs, use `ws agent-validate` to check the current dispatcher, PowerShell parse health, canary refresh, dry-run terminal state, task allowlist guard, and Git ignore contract.
+Before attempting longer independent runs, use `ws agent-validate` to check the current dispatcher, PowerShell parse health, canary refresh, dry-run terminal state, task allowlist guard, and Git ignore contract. Use `ws agent-hygiene` when you need a read-only report of agent branches, worktrees, run-folder statuses, stale `CODEX_RUNNING` artifacts, and generated-report noise.
 
 ## Task Lifecycle And Closed Loop Workflow
 

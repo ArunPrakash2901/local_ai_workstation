@@ -45,7 +45,7 @@ else
     record_fail "scripts/ws exists"
 fi
 
-for cmd in build agent-status agent-canary agent-run agent-import agent-validate; do
+for cmd in build agent-status agent-canary agent-run agent-import agent-validate agent-hygiene; do
     if grep -q "^[[:space:]]*$cmd)" "$WS_SCRIPT"; then
         record_pass "scripts/ws dispatches $cmd"
     else
@@ -99,7 +99,7 @@ record_detail "agent-canary output: ${CANARY_OUTPUT//$'\n'/ | }"
 
 DRY_RUN_OUTPUT=$(
     bash "$WS_SCRIPT" agent-run workstation_control_plane "$TASK_FILE" \
-        --dry-run --mode detect --branch --max-files 5 --max-minutes 10 --stop-on-fail 2>&1
+        --dry-run --mode detect --max-files 5 --max-minutes 10 --stop-on-fail 2>&1
 )
 DRY_RUN_NORMALIZED=$(printf '%s\n' "$DRY_RUN_OUTPUT" | tr -d '\r')
 RUN_WIN=$(printf '%s\n' "$DRY_RUN_NORMALIZED" | grep -E '^[A-Za-z]:\\.*_agent_run$' | tail -n 1 || true)
