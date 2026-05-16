@@ -302,6 +302,10 @@ ws loop-status
 
 These commands only inspect the workstation state, Git status, canary status, and task file boundaries. They will write reports and classify the loop eligibility. They do not start any loops.
 
+## Future: Night-Run Autonomous Workflow
+
+The design for a bounded autonomous overnight workflow (`ws night-run`) is documented in `plans/NIGHT_RUN_DESIGN.md`. This command is not yet enabled and remains in the design phase. It focuses on safety lanes, strict resource monitoring, and automated redaction guards for multi-task autonomous execution.
+
 ## Deterministic & LLM PRD Task Splitting
 
 Structured PRDs and task queues are parsed without an LLM when they already contain task headings such as `## Task 001: Title`, `## Task 002 - Title`, or `## Task 003 Title`.
