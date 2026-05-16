@@ -94,8 +94,17 @@ VALIDATION_REPORT_COUNT=$(find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_C
 VALIDATION_REPORT_IGNORED='no'
 if find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_CONTRACT_VALIDATION_*.md' -print -quit 2>/dev/null | grep -q .; then
     sample_validation_report=$(find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_CONTRACT_VALIDATION_*.md' | head -n 1)
-    if git -C "$WS_HOME" check-ignore -q "$sample_validation_report"; then
+    if git -C "$WS_HOME" check-ignore --no-index -q "$sample_validation_report"; then
         VALIDATION_REPORT_IGNORED='yes'
+    fi
+fi
+
+HYGIENE_REPORT_COUNT=$(find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_HYGIENE_*.md' 2>/dev/null | wc -l | tr -d ' ')
+HYGIENE_REPORT_IGNORED='no'
+if find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_HYGIENE_*.md' -print -quit 2>/dev/null | grep -q .; then
+    sample_hygiene_report=$(find "$REPORTS_DIR" -maxdepth 1 -type f -name 'AGENT_HYGIENE_*.md' | head -n 1)
+    if git -C "$WS_HOME" check-ignore --no-index -q "$sample_hygiene_report"; then
+        HYGIENE_REPORT_IGNORED='yes'
     fi
 fi
 
@@ -113,6 +122,8 @@ fi
     echo "- auto_runs ignored by Git: $AUTO_RUNS_IGNORED"
     echo "- validation reports found: $VALIDATION_REPORT_COUNT"
     echo "- validation reports ignored by Git: $VALIDATION_REPORT_IGNORED"
+    echo "- hygiene reports found: $HYGIENE_REPORT_COUNT"
+    echo "- hygiene reports ignored by Git: $HYGIENE_REPORT_IGNORED"
     echo
     echo "## Branches"
     echo "| branch | commit | category | relation to main |"
@@ -152,9 +163,7 @@ fi
     echo "- Keep runs with terminal reports when they are still needed for diagnosis or audit trail."
     echo "- Later review branches that point to the same commit as main before deleting them manually."
     echo "- Later review stale CODEX_RUNNING folders manually; do not delete them until the failure history is no longer needed."
-    if [ "$VALIDATION_REPORT_IGNORED" = "no" ] && [ "$VALIDATION_REPORT_COUNT" -gt 0 ]; then
-        echo "- AGENT_CONTRACT_VALIDATION reports are not ignored and may become untracked noise unless a later policy decides whether to keep or ignore them."
-    fi
+    echo "- Retain curated summary reports such as R3/R4/R4.5; recurring AGENT_CONTRACT_VALIDATION and AGENT_HYGIENE reports follow the generated-report policy."
     echo "- No cleanup was performed by this command."
 } > "$REPORT"
 
@@ -164,3 +173,4 @@ echo "Agent branches: $AGENT_BRANCH_COUNT"
 echo "Stale CODEX_RUNNING folders: $STALE_RUNNING_COUNT"
 echo "auto_runs ignored by Git: $AUTO_RUNS_IGNORED"
 echo "Validation reports ignored by Git: $VALIDATION_REPORT_IGNORED"
+echo "Hygiene reports ignored by Git: $HYGIENE_REPORT_IGNORED"
