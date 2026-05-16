@@ -267,6 +267,14 @@ Closed loop:
 
 Independent, unattended agent loops (local-first with cloud-fallback awareness) have been designed but are not yet enabled. Do not attempt to run fully unattended loops; stick to supervised bounded apply (`ws agent-run`) and manual handoffs.
 
+Use the read-only planner to check eligibility for independent loops:
+
+```bash
+ws loop-plan <project_key> <task_file>
+```
+
+This command only inspects the workstation state, Git status, canary status, and task file boundaries. It will write a report and classify the loop eligibility. It does not start any loops.
+
 ## Deterministic PRD Task Splitting
 
 Structured PRDs and task queues are parsed without an LLM when they already contain task headings such as `## Task 001: Title`, `## Task 002 - Title`, or `## Task 003 Title`.

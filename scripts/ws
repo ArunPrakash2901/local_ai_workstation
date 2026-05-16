@@ -308,6 +308,9 @@ case "$SUBCOMMAND" in
     task-block)
         bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
         ;;
+    loop-plan)
+        bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
+        ;;
     frontier)
         bash "$SCRIPTS_DIR/ws_frontier_status.sh"
         ;;
