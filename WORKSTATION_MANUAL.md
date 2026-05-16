@@ -121,6 +121,17 @@ They currently include `ailist`, `aiproj`, `aiask`, `aiglobal`, `aigraph`, `aiau
 - **No Raw Data**: `.graphifyignore` blocks large datasets to prevent graph bloat.
 - **Local First**: Local models and local context are the default. Cloud models are explicit orchestrators or consultants only when intentionally invoked.
 
+## Local + Cloud MVP Model
+
+Local-first does not mean local-only. The normal split is:
+
+- local Ollama + Graphify handle planning, summarization, task understanding, and privacy-sensitive first-pass work
+- `ws build --plan-only` is the local planning lane
+- `ws agent-run` is the explicit bounded Codex apply lane
+- `ws agent-import` and packet workflows are fallback or review paths
+
+Codex, Gemini, and Claude are orchestrators or frontier consultants only when intentionally invoked. They are not uncontrolled background agents, and they should never receive secrets, raw datasets, or model files.
+
 ## Path Abstraction And Future Migration
 
 The live workstation still runs from `D:\_ai_brain` and `/mnt/d/_ai_brain`. Phase 3 added path variables for future migration:
