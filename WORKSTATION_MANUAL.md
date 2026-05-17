@@ -311,7 +311,7 @@ ws worktree-status
 ws loop-status
 ```
 
-These commands inspect workstation state, Git status, task boundaries, and future worktree eligibility. `ws worktree-plan` is read-only: it reports the future branch and worktree path but does not create either one. `ws worktree-create --dry-run` previews the later Git commands; `ws worktree-create --apply --from-report <dry_run_report>` creates isolation only after supervised checks pass. It does not run tasks or modify project source files. `ws worktree-review` is read-only and should be used before relying on a created worktree. After creation, inspect the result with `ws worktree-status`. `ws worktree-status` remains read-only: it summarizes current worktrees and recent plans but does not prune or delete worktrees.
+These commands inspect workstation state, Git status, task boundaries, and future worktree eligibility. `ws worktree-plan` is read-only: it reports the future branch and worktree path but does not create either one. `ws worktree-create --dry-run` previews the later Git commands; `ws worktree-create --apply --from-report <dry_run_report>` creates isolation only after supervised checks pass. It does not run tasks or modify project source files. `ws worktree-review` is read-only and should be used before relying on a created worktree. Worktree sync remains design-only and is not enabled yet. After creation, inspect the result with `ws worktree-status`. `ws worktree-status` remains read-only: it summarizes current worktrees and recent plans but does not prune or delete worktrees.
 
 ## Future: Night-Run Autonomous Workflow
 
