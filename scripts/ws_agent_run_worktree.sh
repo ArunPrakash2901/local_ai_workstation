@@ -298,7 +298,7 @@ if is_apply:
     
     # Return signal to Bash to proceed with execution
     # Output: SIGNAL|WORKTREE_PATH_WIN|TASK_FILE_WIN|MAX_FILES|MAX_MINUTES|STOP_ON_FAIL|ALLOWED_FILES_JSON
-    print(f"PROCEED|{to_win(worktree_path)}|{to_win(task_path)}|{max_files}|{max_minutes}|{stop_on_fail}|{json.dumps(allowed_files)}")
+    print(f"PROCEED|{to_win(worktree_path)}|{to_win(task_path)}|{max_files}|{max_minutes}|{1 if stop_on_fail else 0}|{json.dumps(allowed_files)}")
     sys.exit(0)
 PY
 )
@@ -330,6 +330,7 @@ if [[ "$RESULT_INFO" == PROCEED* ]]; then
     
     # Extract the run folder from stdout
     # ws_agent_run.ps1 outputs: STATUS \n RUN_FOLDER \n REPORT_PATH
+    RUN_STATUS_RAW=$(tail -n 3 /tmp/codex_stdout.log | head -n 1 | tr -d '\r')
     RUN_DIR_WIN=$(tail -n 2 /tmp/codex_stdout.log | head -n 1 | tr -d '\r')
     RUN_DIR_WSL=$(to_wsl_path "$RUN_DIR_WIN")
     
@@ -349,8 +350,11 @@ if [[ "$RESULT_INFO" == PROCEED* ]]; then
     CLASSIFICATION="CODEX_COMPLETED_SAFE_DIFF"
     UNSAFE_FILES=""
     
-    # Use Python for strict set intersection logic
-    $PYTHON -c "
+    if [ "$RUN_STATUS_RAW" == "CODEX_FAILED" ] || [ "$RUN_STATUS_RAW" == "CODEX_NOT_STARTED" ] || [ "$RUN_STATUS_RAW" == "AGENT_TIMEOUT" ]; then
+        CLASSIFICATION="CODEX_FAILED_PROVIDER"
+    else
+        # Use Python for strict set intersection logic
+        $PYTHON -c "
 import json
 import sys
 allowed = set(json.loads(sys.argv[1]))
@@ -363,17 +367,18 @@ elif not changed:
 else:
     print('SAFE')
 " "$ALLOWED_JSON" "$CHANGED_FILES" > /tmp/check_result.txt
-    
-    VAL_RES=$(cat /tmp/check_result.txt)
-    if [[ "$VAL_RES" == UNSAFE* ]]; then
-        CLASSIFICATION="CODEX_COMPLETED_UNSAFE_DIFF"
-        UNSAFE_FILES=${VAL_RES#UNSAFE|}
-    elif [ "$VAL_RES" == "NODIFF" ]; then
-        CLASSIFICATION="CODEX_COMPLETED_NO_DIFF"
+        
+        VAL_RES=$(cat /tmp/check_result.txt)
+        if [[ "$VAL_RES" == UNSAFE* ]]; then
+            CLASSIFICATION="CODEX_COMPLETED_UNSAFE_DIFF"
+            UNSAFE_FILES=${VAL_RES#UNSAFE|}
+        elif [ "$VAL_RES" == "NODIFF" ]; then
+            CLASSIFICATION="CODEX_COMPLETED_NO_DIFF"
+        fi
     fi
     
-    if [ "$EXIT_CODE" -ne 0 ]; then
-        CLASSIFICATION="CODEX_FAILED_PROVIDER"
+    if [ "$EXIT_CODE" -ne 0 ] && [ "$CLASSIFICATION" != "CODEX_FAILED_PROVIDER" ]; then
+        CLASSIFICATION="AGENT_INTERRUPTED"
     fi
     
     echo "$CLASSIFICATION" > "$RUN_DIR_WSL/status.txt"
