@@ -207,7 +207,7 @@ ws handoff-status
 
 ## Feature Strongholds
 
-A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-plan` refreshes `current_plan.md` from local feature files, Git state, and workstation reports only; `ws feature-validate` records local readiness evidence and blocks on failed safety checks; `ws feature-handoff` creates a local feature-aware packet without invoking a provider; `ws feature-report` synthesizes a local summary into `final_report.md`; `ws feature-status` lists existing feature strongholds. `ws feature-run` performs a read-only supervised preflight check to prove the feature is ready for future mutation. Planning, validation, handoff generation, and reporting do not run providers or apply behavior. Execution loops and browser automation come later.
+A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-plan` refreshes `current_plan.md` from local feature files, Git state, and workstation reports only; `ws feature-validate` records local readiness evidence and blocks on failed safety checks; `ws feature-handoff` creates a local feature-aware packet without invoking a provider; `ws feature-report` synthesizes a local summary into `final_report.md`; `ws feature-status` lists existing feature strongholds. `ws feature-run --dry-run` performs a read-only supervised preflight check to prove the feature is ready for future mutation. `ws feature-run --apply` generates a final execution handoff (without running autonomous agents) after strictly verifying worktree alignment and dry-run evidence. Planning, validation, handoff generation, and reporting do not run providers or apply behavior. Execution loops and browser automation come later.
 
 ```bash
 ws feature-new <project_key> --title "<title>" --from-task <task_file>
@@ -217,6 +217,7 @@ ws feature-handoff <feature_id_or_path> --target chatgpt --purpose <purpose>
 ws feature-report <feature_id_or_path>
 ws feature-status
 ws feature-run <feature_id_or_path> --dry-run
+ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <feature_run_dry_report>
 ```
 
 ## Workstation Audit And Cleanup
