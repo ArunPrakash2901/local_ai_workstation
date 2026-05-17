@@ -199,6 +199,8 @@ ws handoff-status
 
 `ws handoff-status` lists recent local handoff folders and their current states.
 
+`ws handoff-copy <latest|handoff_id_or_path>` copies only the selected packet's `prompt.md` into the Windows clipboard. It does not submit anything to a browser, and browser use remains manual.
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.
