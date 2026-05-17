@@ -62,6 +62,7 @@ case "$SUBCOMMAND" in
         echo ""
         echo "Feature Strongholds:"
         echo "  feature-new <k>     Create a local-only feature stronghold"
+        echo "  feature-plan <id>   Build/update a local-only feature plan"
         echo "  feature-status      List recent feature strongholds"
         echo ""
         echo "Agent & Loops:"
@@ -349,6 +350,9 @@ case "$SUBCOMMAND" in
         ;;
     feature-new)
         bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
+        ;;
+    feature-plan)
+        bash "$SCRIPTS_DIR/ws_feature_plan.sh" "$@"
         ;;
     feature-status)
         bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
