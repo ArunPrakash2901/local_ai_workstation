@@ -207,13 +207,14 @@ ws handoff-status
 
 ## Feature Strongholds
 
-A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-plan` refreshes `current_plan.md` from local feature files, Git state, and workstation reports only; `ws feature-validate` records local readiness evidence and blocks on failed safety checks; `ws feature-handoff` creates a local feature-aware packet without invoking a provider; `ws feature-status` lists existing feature strongholds. Planning, validation, and handoff generation do not run providers or apply behavior. Execution loops and browser automation come later.
+A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-plan` refreshes `current_plan.md` from local feature files, Git state, and workstation reports only; `ws feature-validate` records local readiness evidence and blocks on failed safety checks; `ws feature-handoff` creates a local feature-aware packet without invoking a provider; `ws feature-report` synthesizes a local summary into `final_report.md`; `ws feature-status` lists existing feature strongholds. Planning, validation, handoff generation, and reporting do not run providers or apply behavior. Execution loops and browser automation come later.
 
 ```bash
 ws feature-new <project_key> --title "<title>" --from-task <task_file>
 ws feature-plan <feature_id_or_path>
 ws feature-validate <feature_id_or_path>
 ws feature-handoff <feature_id_or_path> --target chatgpt --purpose <purpose>
+ws feature-report <feature_id_or_path>
 ws feature-status
 ```
 

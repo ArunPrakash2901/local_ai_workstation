@@ -65,6 +65,7 @@ case "$SUBCOMMAND" in
         echo "  feature-plan <id>   Build/update a local-only feature plan"
         echo "  feature-validate <id> Validate local-only feature readiness"
         echo "  feature-handoff <id> Create a feature-aware local handoff packet"
+        echo "  feature-report <id> Generate a local feature summary report"
         echo "  feature-status      List recent feature strongholds"
         echo ""
         echo "Agent & Loops:"
@@ -363,6 +364,9 @@ case "$SUBCOMMAND" in
         ;;
     feature-handoff)
         bash "$SCRIPTS_DIR/ws_feature_handoff.sh" "$@"
+        ;;
+    feature-report)
+        bash "$SCRIPTS_DIR/ws_feature_report.sh" "$@"
         ;;
     feature-status)
         bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
