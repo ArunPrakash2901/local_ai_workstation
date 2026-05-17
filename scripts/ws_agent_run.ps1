@@ -15,7 +15,8 @@ param(
     [switch]$StopOnFail,
     [switch]$DryRun,
     [string]$Tests = '',
-    [string]$RunFolder = ''
+    [string]$RunFolder = '',
+    [string]$RepoOverride = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -208,6 +209,9 @@ function Invoke-Git([string]$RepoPath, [string[]]$GitArgs) {
 }
 
 function Get-ProjectPath([string]$Key) {
+    if ($RepoOverride) {
+        return Resolve-ExistingPath $RepoOverride
+    }
     $text = Get-Content -LiteralPath $ProjectsYaml -Raw
     $match = [Regex]::Match($text, "(?ms)^\s{2}$([Regex]::Escape($Key)):\s*$\r?\n(?<block>(?:^\s{4}.*\r?\n?)*)")
     if (-not $match.Success) { throw "Project key not found: $Key" }
