@@ -359,7 +359,7 @@ if is_apply:
         for rmd in review_mds:
             rc = rmd.read_text(encoding="utf-8")
             # Basic heuristic: does the latest review report for this branch say READY?
-            if wt_branch in rc and "Result: READY" in rc:
+            if wt_branch in rc and "Classification: READY" in rc:
                 worktree_review_ready = True
                 break
                 
