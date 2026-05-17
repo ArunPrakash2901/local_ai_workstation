@@ -339,6 +339,7 @@ ws worktree-create <project_key> <task_file> --dry-run
 ws worktree-create <project_key> <task_file> --apply --from-report <dry_run_report>
 ws worktree-review <worktree_path>
 ws worktree-sync <worktree_path> --dry-run
+ws worktree-sync <worktree_path> --apply --from-report <dry_run_report>
 ws worktree-status
 ws loop-status
 ```

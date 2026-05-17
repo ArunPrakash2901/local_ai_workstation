@@ -11,8 +11,10 @@ WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
 REPORTS_DIR="$WS_HOME/reports"
 WORKTREE_ROOT="$WS_HOME/worktrees"
 
-TARGET_INPUT=${1:-}
+TARGET_INPUT=""
 DRY_RUN=0
+APPLY=0
+FROM_REPORT=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -20,6 +22,14 @@ while [[ $# -gt 0 ]]; do
         --dry-run)
             DRY_RUN=1
             shift
+            ;;
+        --apply)
+            APPLY=1
+            shift
+            ;;
+        --from-report)
+            FROM_REPORT="${2:-}"
+            shift 2
             ;;
         *)
             if [ -z "$TARGET_INPUT" ] || [[ "$1" != --* ]]; then
@@ -31,20 +41,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$TARGET_INPUT" ]; then
-    echo "Usage: ws worktree-sync <worktree_path> --dry-run"
+    echo "Usage: ws worktree-sync <worktree_path> [--dry-run | --apply --from-report <report>]"
     exit 1
 fi
 
-if [ "$DRY_RUN" -eq 0 ]; then
-    echo "Error: --dry-run is mandatory for worktree-sync MVP."
+if [ "$DRY_RUN" -eq 0 ] && [ "$APPLY" -eq 0 ]; then
+    echo "Error: Must specify either --dry-run or --apply --from-report <report>."
+    exit 1
+fi
+
+if [ "$DRY_RUN" -eq 1 ] && [ "$APPLY" -eq 1 ]; then
+    echo "Error: Cannot combine --dry-run and --apply."
+    exit 1
+fi
+
+if [ "$APPLY" -eq 1 ] && [ -z "$FROM_REPORT" ]; then
+    echo "Error: --apply requires --from-report <report>."
+    exit 1
+fi
+
+if [ "$DRY_RUN" -eq 1 ] && [ -n "$FROM_REPORT" ]; then
+    echo "Error: --from-report is only valid with --apply."
     exit 1
 fi
 
 STAMP=$(date -u +%Y%m%d_%H%M%S)
-REPORT="$REPORTS_DIR/WORKTREE_SYNC_DRY_RUN_$STAMP.md"
 
 CLASSIFICATION="BLOCKED_UNSUPPORTED_STATE"
-REASON="Unable to complete dry-run checks."
+REASON="Unable to complete checks."
 TARGET_PATH=""
 TARGET_PATH_WINDOWS=""
 MAIN_PATH=""
@@ -82,7 +106,7 @@ fi
 WORKTREE_ROOT_CANON=$(canon_path "$WORKTREE_ROOT")
 MAIN_PATH=$(canon_path "$WS_HOME")
 
-check_dry_run() {
+check_state() {
     if [ ! -d "$TARGET_PATH" ]; then
         CLASSIFICATION="BLOCKED_INVALID_WORKTREE"
         REASON="Path does not exist or is not a directory."
@@ -160,24 +184,26 @@ check_dry_run() {
     fi
 }
 
-check_dry_run
+check_state
 
-echo "Classification: $CLASSIFICATION"
-echo "Report: $(to_windows_path "$REPORT")"
-echo "Branch: ${BRANCH:-none}"
-echo "Ahead: $AHEAD, Behind: $BEHIND"
+if [ "$DRY_RUN" -eq 1 ]; then
+    REPORT="$REPORTS_DIR/WORKTREE_SYNC_DRY_RUN_$STAMP.md"
+    echo "Classification: $CLASSIFICATION"
+    echo "Report: $(to_windows_path "$REPORT")"
+    echo "Branch: ${BRANCH:-none}"
+    echo "Ahead: $AHEAD, Behind: $BEHIND"
 
-PREVIEW_COMMAND="None"
-if [ "$CLASSIFICATION" = "WORKTREE_SYNC_DRY_RUN_READY" ]; then
-    PREVIEW_COMMAND="git -C $TARGET_PATH_WINDOWS merge --ff-only main"
-    echo "Next safe action: A future sync path would run '$PREVIEW_COMMAND'."
-elif [ "$CLASSIFICATION" = "WORKTREE_SYNC_NOT_NEEDED" ]; then
-    echo "Next safe action: No sync needed."
-else
-    echo "Next safe action: Resolve blockers before sync."
-fi
+    PREVIEW_COMMAND="None"
+    if [ "$CLASSIFICATION" = "WORKTREE_SYNC_DRY_RUN_READY" ]; then
+        PREVIEW_COMMAND="git -C $TARGET_PATH_WINDOWS merge --ff-only main"
+        echo "Next safe action: A future sync path would run '$PREVIEW_COMMAND'."
+    elif [ "$CLASSIFICATION" = "WORKTREE_SYNC_NOT_NEEDED" ]; then
+        echo "Next safe action: No sync needed."
+    else
+        echo "Next safe action: Resolve blockers before sync."
+    fi
 
-cat <<EOF > "$REPORT"
+    cat <<EOF > "$REPORT"
 # Worktree Sync Dry-Run
 
 - Timestamp: $STAMP
@@ -204,3 +230,111 @@ cat <<EOF > "$REPORT"
 ## Next Safe Action
 $(if [ "$CLASSIFICATION" = "WORKTREE_SYNC_DRY_RUN_READY" ]; then echo "A future sync path would run '$PREVIEW_COMMAND'."; elif [ "$CLASSIFICATION" = "WORKTREE_SYNC_NOT_NEEDED" ]; then echo "No sync needed."; else echo "Resolve blockers before sync."; fi)
 EOF
+    exit 0
+fi
+
+if [ "$APPLY" -eq 1 ]; then
+    REPORT="$REPORTS_DIR/WORKTREE_SYNC_$STAMP.md"
+    FROM_REPORT_WSL=$(to_wsl_path "$FROM_REPORT")
+    
+    if [ ! -f "$FROM_REPORT_WSL" ]; then
+        CLASSIFICATION="BLOCKED_MISSING_FROM_REPORT"
+        REASON="Report file not found: $FROM_REPORT"
+    else
+        REPORT_CONTENT=$(cat "$FROM_REPORT_WSL")
+        
+        # Check classification
+        if ! echo "$REPORT_CONTENT" | grep -q "Result: WORKTREE_SYNC_DRY_RUN_READY"; then
+            CLASSIFICATION="BLOCKED_REPORT_MISMATCH"
+            REASON="Report does not indicate WORKTREE_SYNC_DRY_RUN_READY."
+        # Check path
+        elif ! echo "$REPORT_CONTENT" | grep -q "Target Path: $TARGET_PATH"; then
+            CLASSIFICATION="BLOCKED_REPORT_MISMATCH"
+            REASON="Report target path does not match current target path."
+        # Check commits
+        elif ! echo "$REPORT_CONTENT" | grep -q "HEAD commit: $HEAD_COMMIT"; then
+            CLASSIFICATION="BLOCKED_STALE_DRY_RUN_REPORT"
+            REASON="Report HEAD commit does not match current HEAD."
+        elif ! echo "$REPORT_CONTENT" | grep -q "Main commit: $MAIN_COMMIT"; then
+            CLASSIFICATION="BLOCKED_STALE_DRY_RUN_REPORT"
+            REASON="Report Main commit does not match current Main."
+        fi
+    fi
+    
+    if [ "$CLASSIFICATION" != "WORKTREE_SYNC_DRY_RUN_READY" ]; then
+        echo "Classification: $CLASSIFICATION"
+        echo "Reason: $REASON"
+        echo "Report: $(to_windows_path "$REPORT")"
+        echo "Sync aborted due to preflight failure."
+        
+        cat <<EOF > "$REPORT"
+# Worktree Sync Apply
+
+- Timestamp: $STAMP
+- Target Path: $TARGET_PATH
+- From Report: $FROM_REPORT
+
+## Classification
+- Result: $CLASSIFICATION
+- Reason: $REASON
+EOF
+        exit 1
+    fi
+    
+    # Ready to merge
+    echo "Classification: WORKTREE_SYNC_APPLY_IN_PROGRESS"
+    echo "Executing fast-forward merge..."
+    
+    SYNC_OUTPUT=""
+    SYNC_ERR=""
+    set +e
+    SYNC_OUTPUT=$(git -C "$TARGET_PATH" merge --ff-only main 2>&1)
+    SYNC_EXIT=$?
+    set -e
+    
+    if [ $SYNC_EXIT -eq 0 ]; then
+        CLASSIFICATION="WORKTREE_SYNCED"
+        REASON="Fast-forward merge successful."
+        echo "Classification: $CLASSIFICATION"
+    else
+        CLASSIFICATION="FAILED_SYNC"
+        REASON="Fast-forward merge failed with exit code $SYNC_EXIT."
+        echo "Classification: $CLASSIFICATION"
+        echo "Error output:"
+        echo "$SYNC_OUTPUT"
+    fi
+    
+    NEW_HEAD=$(git -C "$TARGET_PATH" rev-parse HEAD 2>/dev/null || echo "unknown")
+    
+    cat <<EOF > "$REPORT"
+# Worktree Sync Apply
+
+- Timestamp: $STAMP
+- Target Path: $TARGET_PATH
+- Target Path (Windows): $TARGET_PATH_WINDOWS
+- From Report: $FROM_REPORT
+
+## Classification
+- Result: $CLASSIFICATION
+- Reason: $REASON
+
+## Execution
+- Command: \`git -C $TARGET_PATH merge --ff-only main\`
+- Exit Code: $SYNC_EXIT
+- Output:
+\`\`\`text
+$SYNC_OUTPUT
+\`\`\`
+
+## Post-Sync State
+- Branch: ${BRANCH:-none}
+- Final HEAD commit: $NEW_HEAD
+EOF
+
+    echo "Report: $(to_windows_path "$REPORT")"
+    
+    if [ "$CLASSIFICATION" != "WORKTREE_SYNCED" ]; then
+        exit 1
+    fi
+    exit 0
+fi
