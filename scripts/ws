@@ -182,6 +182,9 @@ case "$SUBCOMMAND" in
         done
         powershell.exe "${AGENT_ARGS[@]}"
         ;;
+    agent-run-worktree)
+        bash "$SCRIPTS_DIR/ws_agent_run_worktree.sh" "$@"
+        ;;
     agent-import)
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_import.ps1")" "$@"
         ;;
