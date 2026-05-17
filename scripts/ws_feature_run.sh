@@ -219,7 +219,7 @@ if worktrees_dir.is_dir():
         worktree_status = "exists"
 
 # Write run report
-runs_dir = ws_home / "runs"
+runs_dir = feature_dir / "runs"
 runs_dir.mkdir(parents=True, exist_ok=True)
 run_report_path = runs_dir / f"feature_run_dry_run_{now_ts}.md"
 
