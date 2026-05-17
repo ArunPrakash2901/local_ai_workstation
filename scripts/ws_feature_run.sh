@@ -400,8 +400,15 @@ if is_apply:
     if handoffs_dir.is_dir():
         matched_handoffs = []
         for hd in handoffs_dir.iterdir():
-            if hd.is_dir() and feature_id in hd.name:
-                matched_handoffs.append(hd)
+            if hd.is_dir():
+                meta_path = hd / "metadata.json"
+                if meta_path.is_file():
+                    try:
+                        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                        if meta.get("feature_id") == feature_id:
+                            matched_handoffs.append(hd)
+                    except Exception:
+                        pass
         if matched_handoffs:
             matched_handoffs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
             latest_handoff = str(to_win(str(matched_handoffs[0])))
