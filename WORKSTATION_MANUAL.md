@@ -188,6 +188,17 @@ ws escalate codex latest
 
 Gemini and Claude escalation is currently **manual-only** until safety integration is finalized. If you attempt to escalate to these providers, the workstation will provide the exact command for manual execution rather than sending it automatically.
 
+## Local Handoff Packets
+
+`ws handoff-new` creates a local prompt packet under `D:\_ai_brain\handoffs` for later manual use with browser or CLI lanes. Browser use remains manual, and creating a packet does not invoke ChatGPT, Gemini, Codex, Claude, or any browser automation.
+
+```bash
+ws handoff-new <project_key> <task_file> --target chatgpt --purpose next-step
+ws handoff-status
+```
+
+`ws handoff-status` lists recent local handoff folders and their current states.
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.

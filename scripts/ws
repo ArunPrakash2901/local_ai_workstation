@@ -76,6 +76,8 @@ case "$SUBCOMMAND" in
         echo "  worktree-status     Summarize read-only worktree state and recent plans"
         echo "  loop-status         Show latest local-loop status"
         echo "  loop-start <k> <t>  Start supervised local-only planning loop"
+        echo "  handoff-new <k> <t> Create local-only handoff packet artifacts"
+        echo "  handoff-status      List recent local handoff packets"
         echo ""
         echo "System:"
         echo "  status              High-level health/status check"
@@ -360,6 +362,12 @@ case "$SUBCOMMAND" in
         ;;
     loop-start)
         bash "$SCRIPTS_DIR/ws_loop_start.sh" "$@"
+        ;;
+    handoff-new)
+        bash "$SCRIPTS_DIR/ws_handoff_new.sh" "$@"
+        ;;
+    handoff-status)
+        bash "$SCRIPTS_DIR/ws_handoff_status.sh" "$@"
         ;;
     frontier)
         bash "$SCRIPTS_DIR/ws_frontier_status.sh"
