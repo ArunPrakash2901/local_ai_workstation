@@ -25,6 +25,7 @@ reports/LOOP_START_*.md
 reports/APPLY_READY_*.md
 reports/WORKTREE_PLAN_*.md
 reports/WORKTREE_REVIEW_*.md
+reports/WORKTREE_SYNC_DRY_RUN_*.md
 reports/WORKTREE_STATUS_*.md
 reports/WORKTREE_CREATE_DRY_RUN_*.md
 reports/WORKTREE_CREATE_*.md

@@ -82,6 +82,7 @@ case "$SUBCOMMAND" in
         echo "  worktree-plan <k> <t> Preview future isolated worktree without creating it"
         echo "  worktree-create <k> <t> Preview or apply supervised isolated worktree creation"
         echo "  worktree-review <path> Review an existing worktree without modifying it"
+        echo "  worktree-sync <path> --dry-run Preview what is needed to sync a worktree"
         echo "  worktree-status     Summarize read-only worktree state and recent plans"
         echo "  loop-status         Show latest local-loop status"
         echo "  loop-start <k> <t>  Start supervised local-only planning loop"
@@ -386,6 +387,9 @@ case "$SUBCOMMAND" in
         ;;
     worktree-review)
         bash "$SCRIPTS_DIR/ws_worktree_review.sh" "$@"
+        ;;
+    worktree-sync)
+        bash "$SCRIPTS_DIR/ws_worktree_sync.sh" "$@"
         ;;
     worktree-status)
         bash "$SCRIPTS_DIR/ws_worktree_status.sh" "$@"
