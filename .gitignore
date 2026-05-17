@@ -14,6 +14,7 @@ models/
 auto_runs/
 worktrees/
 handoffs/
+features/
 reports/agent_canary_status.json
 reports/AGENT_CONTRACT_VALIDATION_*.md
 reports/AGENT_HYGIENE_*.md

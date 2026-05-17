@@ -201,6 +201,15 @@ ws handoff-status
 
 `ws handoff-copy <latest|handoff_id_or_path>` copies only the selected packet's `prompt.md` into the Windows clipboard. It does not submit anything to a browser, and browser use remains manual.
 
+## Feature Strongholds
+
+A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-status` lists existing feature strongholds. Execution loops, applies, providers, and browser automation come later.
+
+```bash
+ws feature-new <project_key> --title "<title>" --from-task <task_file>
+ws feature-status
+```
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.

@@ -60,6 +60,10 @@ case "$SUBCOMMAND" in
         echo "  task-complete <f> [n] Mark task completed"
         echo "  task-block <f> <r>  Mark task blocked with reason"
         echo ""
+        echo "Feature Strongholds:"
+        echo "  feature-new <k>     Create a local-only feature stronghold"
+        echo "  feature-status      List recent feature strongholds"
+        echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
         echo "  agent-run <k> <t> [flags] Run bounded Windows-native agent task"
@@ -342,6 +346,12 @@ case "$SUBCOMMAND" in
         ;;
     task-block)
         bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
+        ;;
+    feature-new)
+        bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
+        ;;
+    feature-status)
+        bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
