@@ -85,6 +85,7 @@ case "$SUBCOMMAND" in
         echo "  loop-start <k> <t>  Start supervised local-only planning loop"
         echo "  handoff-new <k> <t> Create local-only handoff packet artifacts"
         echo "  handoff-copy <id>   Copy a local handoff prompt to Windows clipboard"
+        echo "  handoff-import <id> Import clipboard text into a local handoff packet"
         echo "  handoff-status      List recent local handoff packets"
         echo ""
         echo "System:"
@@ -391,6 +392,9 @@ case "$SUBCOMMAND" in
         ;;
     handoff-copy)
         bash "$SCRIPTS_DIR/ws_handoff_copy.sh" "$@"
+        ;;
+    handoff-import)
+        bash "$SCRIPTS_DIR/ws_handoff_import.sh" "$@"
         ;;
     handoff-status)
         bash "$SCRIPTS_DIR/ws_handoff_status.sh" "$@"

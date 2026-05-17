@@ -201,6 +201,8 @@ ws handoff-status
 
 `ws handoff-copy <latest|handoff_id_or_path>` copies only the selected packet's `prompt.md` into the Windows clipboard. It does not submit anything to a browser, and browser use remains manual.
 
+`ws handoff-import <latest|handoff_id_or_path> --from-clipboard` imports the current clipboard text into the selected packet's `response.md`, updates local handoff evidence, and still does not invoke any provider or browser automation.
+
 ## Feature Strongholds
 
 A Feature Stronghold is the feature-level source of truth for one product increment. `ws feature-new` creates the local folder and contract artifacts only; `ws feature-plan` refreshes `current_plan.md` from local feature files, Git state, and workstation reports only; `ws feature-validate` records local readiness evidence and blocks on failed safety checks; `ws feature-handoff` creates a local feature-aware packet without invoking a provider; `ws feature-status` lists existing feature strongholds. Planning, validation, and handoff generation do not run providers or apply behavior. Execution loops and browser automation come later.
