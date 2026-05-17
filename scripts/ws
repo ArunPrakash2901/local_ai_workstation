@@ -67,6 +67,7 @@ case "$SUBCOMMAND" in
         echo "  feature-handoff <id> Create a feature-aware local handoff packet"
         echo "  feature-report <id> Generate a local feature summary report"
         echo "  feature-status      List recent feature strongholds"
+        echo "  feature-run <id> --dry-run Preview future supervised run eligibility"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -370,6 +371,9 @@ case "$SUBCOMMAND" in
         ;;
     feature-status)
         bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
+        ;;
+    feature-run)
+        bash "$SCRIPTS_DIR/ws_feature_run.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
