@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -64,8 +65,13 @@ class LearningStronghold:
     latest_answer_template: str | None = None
     latest_imported_answers: str | None = None
     latest_assessment: str | None = None
-    latest_decision: str | None = None
+    latest_normal_decision: str | None = None
     latest_review_plan: str | None = None
+    latest_review_tutor_session: str | None = None
+    latest_review_answer_template: str | None = None
+    latest_review_answers: str | None = None
+    latest_review_assessment: str | None = None
+    latest_review_decision: str | None = None
     
     # Provenance
     linked_tutor_session: str | None = None
@@ -79,41 +85,173 @@ class LearningStronghold:
     def next_action_command(self) -> str:
         return self.compute_next_action()[1]
 
+    @property
+    def decision_warning(self) -> str | None:
+        review_decision = self.artifact_timestamp(
+            "last_learning_review_decision_at",
+            self.latest_review_decision,
+        )
+        if not review_decision:
+            return None
+
+        latest_normal_cycle = self.latest_timestamp(
+            self.artifact_timestamp("last_tutor_session_at", self.latest_tutor_session),
+            self.artifact_timestamp(
+                "last_learning_answers_imported_at",
+                self.latest_imported_answers,
+            ),
+            self.artifact_timestamp(
+                "last_learning_assessment_at",
+                self.latest_assessment,
+            ),
+            self.artifact_timestamp(
+                "last_learning_decision_at",
+                self.latest_normal_decision,
+            ),
+        )
+        if latest_normal_cycle and review_decision <= latest_normal_cycle:
+            return "Decision artifact may be stale; advancement preview suppressed."
+        return None
+
     def to_win(self, p: str | Path | None) -> str | None:
         if not p:
             return None
         # Simple heuristic for TUI display; real commands use wslpath
         return str(p).replace("/mnt/d/", "D:\\").replace("/", "\\")
 
+    def artifact_timestamp(self, state_key: str, artifact_path: str | None) -> datetime | None:
+        explicit = self.parse_timestamp(self.state.get(state_key))
+        if explicit:
+            return explicit
+        return self.timestamp_from_path(artifact_path)
+
+    @staticmethod
+    def parse_timestamp(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value, "%Y%m%d_%H%M%S")
+        except ValueError:
+            return None
+
+    @classmethod
+    def timestamp_from_path(cls, artifact_path: str | None) -> datetime | None:
+        if not artifact_path:
+            return None
+        match = re.search(r"(\d{8}_\d{6})", Path(artifact_path).name)
+        return cls.parse_timestamp(match.group(1)) if match else None
+
+    @staticmethod
+    def latest_timestamp(*values: datetime | None) -> datetime | None:
+        candidates = [value for value in values if value is not None]
+        return max(candidates) if candidates else None
+
+    @staticmethod
+    def is_newer(candidate: datetime | None, baseline: datetime | None) -> bool:
+        return candidate is not None and (baseline is None or candidate > baseline)
+
+    def has_fresh_review_cycle(self) -> bool:
+        normal_decision = self.artifact_timestamp(
+            "last_learning_decision_at",
+            self.latest_normal_decision,
+        )
+        review_plan = self.artifact_timestamp(
+            "last_learning_review_plan_at",
+            self.latest_review_plan,
+        )
+        return self.is_newer(review_plan, normal_decision)
+
+    def review_advance_is_fresh(self) -> bool:
+        if self.state.get("last_learning_review_decision") != "ADVANCE_TO_NEXT_TASK":
+            return False
+
+        review_assessment = self.artifact_timestamp(
+            "last_learning_review_assessment_at",
+            self.latest_review_assessment,
+        )
+        review_decision = self.artifact_timestamp(
+            "last_learning_review_decision_at",
+            self.latest_review_decision,
+        )
+        latest_normal_cycle = self.latest_timestamp(
+            self.artifact_timestamp("last_tutor_session_at", self.latest_tutor_session),
+            self.artifact_timestamp(
+                "last_learning_answers_imported_at",
+                self.latest_imported_answers,
+            ),
+            self.artifact_timestamp(
+                "last_learning_assessment_at",
+                self.latest_assessment,
+            ),
+            self.artifact_timestamp(
+                "last_learning_decision_at",
+                self.latest_normal_decision,
+            ),
+        )
+
+        return (
+            review_assessment is not None
+            and self.is_newer(review_decision, review_assessment)
+            and (latest_normal_cycle is None or review_decision > latest_normal_cycle)
+        )
+
     def compute_next_action(self) -> tuple[str, str]:
-        # Logic from Phase 8.3 requirements
         sid = self.id
-        
-        # 1. Advancement
-        if self.state.get("last_learning_review_decision") == "ADVANCE_TO_NEXT_TASK" or \
-           self.state.get("last_learning_decision") == "ADVANCE_TO_NEXT_TASK":
-            if self.session_status != "ready_for_next_session":
-                return "Advance to next task", f"ws learning-advance {sid}"
+        normal_assessment = self.artifact_timestamp(
+            "last_learning_assessment_at",
+            self.latest_assessment,
+        )
+        normal_decision = self.artifact_timestamp(
+            "last_learning_decision_at",
+            self.latest_normal_decision,
+        )
+        review_assessment = self.artifact_timestamp(
+            "last_learning_review_assessment_at",
+            self.latest_review_assessment,
+        )
+        review_decision = self.artifact_timestamp(
+            "last_learning_review_decision_at",
+            self.latest_review_decision,
+        )
 
-        # 2. Review Loop
+        # A newer current-session assessment invalidates any older normal decision.
+        if self.is_newer(normal_assessment, normal_decision):
+            return "Run learning decision", f"ws learning-decision {sid}"
+
+        # The current normal decision controls entry into a review/remediation lane.
         if self.state.get("last_learning_decision") == "REVIEW_CURRENT_TASK":
-            if not self.state.get("last_learning_review_plan_path"):
-                return "Plan review session", f"ws learning-review-session {sid} --dry-run"
-            
-            review_plan = self.state.get("last_learning_review_plan_path")
-            if not self.state.get("last_review_tutor_session_path"):
-                return "Start review tutor", f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan)}"
-            
-            if self.session_status == "awaiting_review_answers":
-                return "Import review answers", f"ws learning-import-answers {sid} --from-file <answers_file> --review"
-            
-            if self.session_status == "awaiting_review_assessment":
-                return "Assess review answers", f"ws learning-assess {sid} --model hermes3:8b --review"
-            
-            if self.session_status == "review_assessed":
-                return "Record review decision", f"ws learning-decision {sid} --review"
+            if not self.has_fresh_review_cycle():
+                return (
+                    "Generate targeted review session",
+                    f"ws learning-review-session {sid} --dry-run",
+                )
 
-        # 3. Normal Loop
+            review_plan = self.state.get("last_learning_review_plan_path")
+            if self.session_status == "awaiting_review_answers":
+                return (
+                    "Import review answers",
+                    f"ws learning-import-answers {sid} --from-file <answers_file> --review",
+                )
+            if self.session_status == "awaiting_review_assessment":
+                return (
+                    "Assess review answers",
+                    f"ws learning-assess {sid} --model hermes3:8b --review",
+                )
+            if self.is_newer(review_assessment, review_decision) or self.session_status == "review_assessed":
+                return "Run review learning decision", f"ws learning-decision {sid} --review"
+            if self.review_advance_is_fresh():
+                return "Advance to next task", f"ws learning-advance {sid}"
+            if review_plan and not self.latest_review_tutor_session:
+                return (
+                    "Start review tutor",
+                    f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan)}",
+                )
+            return "Inspect learning state / run decision", f"ws learning-decision {sid}"
+
+        if self.review_advance_is_fresh():
+            return "Advance to next task", f"ws learning-advance {sid}"
+
+        # Normal loop
         if self.next_task and self.session_status in ["ready_for_next_session", "unknown", "LOCAL_CHECKLIST_READY"]:
             # Check if current plan focus matches next_task
             plan_path = self.state.get("last_learning_session_plan_path")
@@ -139,7 +277,7 @@ class LearningStronghold:
             if self.session_status == "assessed":
                 return "Record decision", f"ws learning-decision {sid}"
 
-        return "No clear next action", "Review stronghold status manually"
+        return "Inspect learning state / run decision", f"ws learning-decision {sid}"
 
 
 @dataclass
@@ -204,8 +342,10 @@ def discover_learning_strongholds() -> list[LearningStronghold]:
             latest_answer_template=state.get("last_tutor_session_path"),
             latest_imported_answers=state.get("last_learning_answers_path"),
             latest_assessment=state.get("last_learning_assessment_path"),
-            latest_decision=state.get("last_learning_decision"),
             latest_review_plan=state.get("last_learning_review_plan_path"),
+            latest_review_tutor_session=state.get("last_review_tutor_session_path"),
+            latest_review_answers=state.get("last_learning_review_answers_path"),
+            latest_review_assessment=state.get("last_learning_review_assessment_path"),
             linked_tutor_session=state.get("last_learning_answers_for_tutor_session_path"),
             import_success=state.get("last_learning_answers_import_success", False)
         )
@@ -215,9 +355,51 @@ def discover_learning_strongholds() -> list[LearningStronghold]:
             if Path(tmpl).is_file():
                 sh.latest_answer_template = tmpl
 
+        if sh.latest_review_tutor_session:
+            review_tmpl = sh.latest_review_tutor_session.replace(
+                "_review_tutor_session.md",
+                "_review_answer_template.md",
+            )
+            if Path(review_tmpl).is_file():
+                sh.latest_review_answer_template = review_tmpl
+
+        sh.latest_normal_decision = resolve_decision_report(
+            sh.path,
+            state.get("last_learning_decision_at"),
+            "learning_decision",
+        )
+        sh.latest_review_decision = resolve_decision_report(
+            sh.path,
+            state.get("last_learning_review_decision_at"),
+            "learning_review_decision",
+        )
+
         strongholds.append(sh)
     
     return sorted(strongholds, key=lambda x: x.id)
+
+
+def report_sort_key(path: Path) -> tuple[datetime, str]:
+    timestamp = LearningStronghold.timestamp_from_path(str(path))
+    return (timestamp or datetime.min, path.name)
+
+
+def resolve_decision_report(
+    stronghold_path: Path,
+    state_timestamp: str | None,
+    prefix: str,
+) -> str | None:
+    reports_dir = stronghold_path / "reports"
+    if not reports_dir.is_dir():
+        return None
+
+    if state_timestamp:
+        state_candidate = reports_dir / f"{prefix}_{state_timestamp}.md"
+        if state_candidate.is_file():
+            return str(state_candidate)
+
+    matches = sorted(reports_dir.glob(f"{prefix}_*.md"), key=report_sort_key, reverse=True)
+    return str(matches[0]) if matches else None
 
 
 def run_status_command(label: str, args: tuple[str, ...], command_log: list[str]) -> CommandResult:
@@ -281,14 +463,19 @@ def render_learning_cockpit(strongholds: list[LearningStronghold]) -> str:
         if sh.latest_assessment:
             lines.append(f"    Assess:    {sh.to_win(sh.latest_assessment)}")
         if sh.latest_review_plan:
-            lines.append(f"    Review:    {sh.to_win(sh.latest_review_plan)}")
-
-        # Decision report path
-        reports_dir = sh.path / "reports"
-        if reports_dir.is_dir():
-            dec_reports = sorted(list(reports_dir.glob("learning*_decision_*.md")), reverse=True)
-            if dec_reports:
-                lines.append(f"    Decision:  {sh.to_win(dec_reports[0])}")
+            lines.append(f"    Review Plan: {sh.to_win(sh.latest_review_plan)}")
+        if sh.latest_normal_decision:
+            lines.append(f"    Decision:  {sh.to_win(sh.latest_normal_decision)}")
+        if sh.latest_review_tutor_session:
+            lines.append(f"    Review Tutor: {sh.to_win(sh.latest_review_tutor_session)}")
+        if sh.latest_review_answer_template:
+            lines.append(f"    Review Template: {sh.to_win(sh.latest_review_answer_template)}")
+        if sh.latest_review_answers:
+            lines.append(f"    Review Answers: {sh.to_win(sh.latest_review_answers)}")
+        if sh.latest_review_assessment:
+            lines.append(f"    Review Assess: {sh.to_win(sh.latest_review_assessment)}")
+        if sh.latest_review_decision:
+            lines.append(f"    Review Decision: {sh.to_win(sh.latest_review_decision)}")
 
         if sh.latest_tutor_session and sh.latest_imported_answers:
             linked = sh.to_win(sh.linked_tutor_session)
@@ -297,6 +484,9 @@ def render_learning_cockpit(strongholds: list[LearningStronghold]) -> str:
             lines.append(f"  Provenance: {status}")
             if linked != current:
                 lines.append(f"    Answers link to: {linked or 'None'}")
+
+        if sh.decision_warning:
+            lines.append(f"  Warning:    {sh.decision_warning}")
 
         lines.append(f"  Recommended Next: {sh.next_action_label}")
         lines.append(f"  Command Preview:  {sh.next_action_command}")

@@ -141,7 +141,7 @@ ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <fe
 
 ### TUI & Dashboards
 `ws tui [--snapshot | --plain | --textual]`: Launch the read-only operator dashboard.
-- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides a state-aware analysis of the active learning stronghold and previews the recommended next command.
+- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides freshness-aware analysis of the active learning stronghold, keeps normal and review decisions separate, suppresses stale advancement previews, and shows the recommended next command without executing it.
 - **Safety**: The TUI is strictly read-only and does not execute actions or invoke providers.
 
 ## Workstation Audit And Cleanup
