@@ -41,7 +41,7 @@ ws tui --plain
 ws tui --textual
 ```
 
-`ws tui --snapshot` prints the dashboard and exits. `ws tui --plain` opens the dependency-free visual shell with a header, navigation sidebar, breadcrumbs, learning cards, artifact viewer, and human-readable action buttons. Backend `ws` commands are hidden by default and can be revealed on demand. `ws tui --textual` requires Textual explicitly. Current policy: Textual is optional, no dependency is installed automatically, and plain/snapshot mode must always remain available.
+`ws tui --snapshot` prints the dashboard and exits. `ws tui --plain` opens the dependency-free terminal-native cockpit with a compact status line, active focus, next action, recent events, artifact shortcuts, and a paged artifact browser. The layout adapts to wide, medium, and narrow terminals. Backend `ws` commands are hidden by default and can be revealed on demand. `WS_TUI_ICONS=ascii|unicode|auto` controls icon style. `ws tui --textual` requires Textual explicitly. Current policy: Textual is optional, no dependency is installed automatically, and plain/snapshot mode must always remain available.
 
 ---
 
@@ -141,9 +141,9 @@ ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <fe
 
 ### TUI & Dashboards
 `ws tui [--snapshot | --plain | --textual]`: Launch the operator dashboard.
-- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides freshness-aware analysis of the active learning stronghold, keeps normal and review decisions separate, suppresses stale advancement previews, and presents the recommended next action as a human-readable card.
+- **Learning Cockpit**: A dedicated terminal-native view within the TUI for tracking study progress. It provides freshness-aware analysis of the active learning stronghold, keeps normal and review decisions separate, suppresses stale advancement previews, and presents the recommended next action as a human-readable operator step.
 - **Plain-mode execution**: `ws tui --plain` can execute only the currently recommended safe dry-run planner action through the numbered button flow or `x`, limited to `learning-run --session --dry-run` and `learning-review-session --dry-run`.
-- **Artifact viewing**: Plain mode can open the latest plan or assessment only when the artifact resolves inside the selected learning stronghold.
+- **Artifact viewing**: Plain mode includes a learning artifact menu for plans, tutor sessions, answer templates, answers, assessments, decisions, and progress/practice logs. The paged viewer only opens markdown files that resolve inside the selected learning stronghold.
 - **Safety**: Snapshot mode stays read-only. Learning model execution, assessment, import, advance, providers, and browser automation remain disabled from the TUI.
 
 ## Workstation Audit And Cleanup

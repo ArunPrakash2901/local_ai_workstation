@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -48,9 +49,6 @@ PLAIN_CONTROLS = (
     "h show help",
     "q quit",
 )
-APP_WIDTH = 108
-SIDEBAR_WIDTH = 24
-CONTENT_WIDTH = APP_WIDTH - SIDEBAR_WIDTH - 3
 UNSAFE_ARTIFACT_PARTS = {
     ".env",
     "credentials",
@@ -79,6 +77,78 @@ LEARNING_DRY_RUN_WRITES = {
         "state.json",
     ),
 }
+DEFAULT_STATUS_TIMEOUT_SECONDS = 12
+DEBUG_ENABLED = os.environ.get("WS_TUI_DEBUG", "").strip() == "1"
+
+
+def debug_log(phase: str) -> None:
+    if DEBUG_ENABLED:
+        print(f"[DEBUG] {phase}", file=sys.stderr, flush=True)
+
+
+def status_timeout_seconds() -> int:
+    raw = os.environ.get("WS_TUI_STATUS_TIMEOUT", str(DEFAULT_STATUS_TIMEOUT_SECONDS)).strip()
+    try:
+        seconds = int(raw)
+    except ValueError:
+        return DEFAULT_STATUS_TIMEOUT_SECONDS
+    return max(1, min(seconds, 120))
+
+
+def normalize_subprocess_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        try:
+            return value.decode("utf-8", errors="replace")
+        except Exception:
+            return value.decode(errors="replace")
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def command_log_status(result: "CommandResult") -> str:
+    if result.returncode == 124:
+        return "TIMEOUT"
+    if result.returncode == 0:
+        return "OK"
+    return "FAIL"
+
+
+def readiness_badge(result: "CommandResult") -> str:
+    if result.returncode == 124:
+        return "TIMEOUT"
+    if result.returncode != 0:
+        return "CHECK"
+    if "[FAIL]" in result.stdout or "[FAIL]" in result.stderr:
+        return "DEGRADED"
+    return "READY"
+
+
+def append_command_log_entry(command_log: list[str], status: str, command_text: str) -> None:
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    command_log.append(f"[{timestamp}] {status} {command_text}")
+
+
+@dataclass(frozen=True)
+class LayoutSpec:
+    mode: str
+    width: int
+    content_width: int
+    sidebar_width: int
+
+
+@dataclass(frozen=True)
+class IconSet:
+    ok: str
+    warning: str
+    blocked: str
+    run: str
+    dry_run: str
+    linked: str
+    artifact: str
+    disabled: str
 
 
 @dataclass(frozen=True)
@@ -89,6 +159,16 @@ class LearningAction:
     risk_class: str
     expected_writes: tuple[str, ...] = ()
     executable: bool = False
+
+
+@dataclass(frozen=True)
+class LearningArtifact:
+    key: str
+    label: str
+    path: str | None
+    timestamp: datetime | None
+    exists: bool
+    relative_path: str
 
 
 @dataclass
@@ -483,6 +563,25 @@ class CommandResult:
     def display_text(self) -> str:
         if self.returncode == 0:
             return self.stdout.strip() or "(no output)"
+        if self.returncode == 124:
+            timeout_line = ""
+            stderr_lines: list[str] = []
+            for line in self.stderr.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("[TIMEOUT]") and not timeout_line:
+                    timeout_line = stripped
+                    continue
+                stderr_lines.append(stripped)
+            parts: list[str] = []
+            if timeout_line:
+                parts.append(timeout_line)
+            if self.stdout.strip():
+                parts.append(self.stdout.strip())
+            if stderr_lines:
+                parts.append("\n".join(stderr_lines))
+            return "\n".join(parts) or f"[TIMEOUT] {self.command_text} timed out."
         parts = [f"Command failed with exit code {self.returncode}."]
         if self.stdout.strip():
             parts.append(self.stdout.strip())
@@ -592,23 +691,54 @@ def resolve_decision_report(
 
 def run_status_command(label: str, args: tuple[str, ...], command_log: list[str]) -> CommandResult:
     command_text = "ws " + " ".join(args)
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    command_log.append(f"[{timestamp}] {command_text}")
-    completed = subprocess.run(
-        ["bash", str(WS_SCRIPT), *args],
-        cwd=WS_HOME,
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return CommandResult(
+    timeout_seconds = status_timeout_seconds()
+    debug_log(f"collecting status: {command_text}")
+    try:
+        completed = subprocess.run(
+            ["bash", str(WS_SCRIPT), *args],
+            cwd=WS_HOME,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        timeout_message = f"[TIMEOUT] {command_text} did not complete within {timeout_seconds}s"
+        partial_stdout = normalize_subprocess_text(exc.stdout)
+        partial_stderr = normalize_subprocess_text(exc.stderr)
+        stderr_parts = [timeout_message]
+        if partial_stderr.strip():
+            stderr_parts.append(partial_stderr.strip())
+        result = CommandResult(
+            label=label,
+            args=args,
+            stdout=partial_stdout,
+            stderr="\n".join(stderr_parts),
+            returncode=124,
+        )
+        append_command_log_entry(command_log, command_log_status(result), command_text)
+        return result
+    except OSError as exc:
+        launch_message = f"[ERROR] {command_text} failed to start: {exc}"
+        result = CommandResult(
+            label=label,
+            args=args,
+            stdout="",
+            stderr=launch_message,
+            returncode=127,
+        )
+        append_command_log_entry(command_log, command_log_status(result), command_text)
+        return result
+    result = CommandResult(
         label=label,
         args=args,
-        stdout=completed.stdout,
-        stderr=completed.stderr,
+        stdout=normalize_subprocess_text(completed.stdout),
+        stderr=normalize_subprocess_text(completed.stderr),
         returncode=completed.returncode,
     )
+    append_command_log_entry(command_log, command_log_status(result), command_text)
+    return result
 
 
 def is_allowlisted_learning_dry_run(args: tuple[str, ...]) -> bool:
@@ -636,8 +766,8 @@ def run_learning_action(action: LearningAction) -> CommandResult:
     return CommandResult(
         label=action.label,
         args=action.args,
-        stdout=completed.stdout,
-        stderr=completed.stderr,
+        stdout=normalize_subprocess_text(completed.stdout),
+        stderr=normalize_subprocess_text(completed.stderr),
         returncode=completed.returncode,
     )
 
@@ -685,14 +815,16 @@ def write_tui_execution_report(
 
 def collect_dashboard_data(command_log: list[str] | None = None) -> DashboardData:
     log = command_log if command_log is not None else []
-    results = {
-        label: run_status_command(label, args, log)
-        for label, args in STATUS_COMMANDS
-    }
+    debug_log("collecting status")
+    results: dict[str, CommandResult] = {}
+    for label, args in STATUS_COMMANDS:
+        results[label] = run_status_command(label, args, log)
+    debug_log("collecting learning strongholds")
+    learning_strongholds = discover_learning_strongholds()
     return DashboardData(
-        results=results, 
+        results=results,
         command_log=log,
-        learning_strongholds=discover_learning_strongholds()
+        learning_strongholds=learning_strongholds,
     )
 
 
@@ -741,13 +873,86 @@ def panel(title: str, lines: Iterable[str], width: int) -> list[str]:
     return rendered
 
 
-def merge_columns(left: list[str], right: list[str]) -> list[str]:
+def layout_spec() -> LayoutSpec:
+    width = max(shutil.get_terminal_size((108, 24)).columns, 48)
+    if width >= 110:
+        sidebar = min(24, max(18, width // 5))
+        return LayoutSpec(
+            mode="wide",
+            width=width,
+            content_width=max(width - sidebar - 3, 42),
+            sidebar_width=sidebar,
+        )
+    if width >= 78:
+        return LayoutSpec(
+            mode="medium",
+            width=width,
+            content_width=width,
+            sidebar_width=0,
+        )
+    return LayoutSpec(
+        mode="narrow",
+        width=width,
+        content_width=width,
+        sidebar_width=0,
+    )
+
+
+def icon_mode() -> str:
+    requested = os.environ.get("WS_TUI_ICONS", "auto").strip().lower()
+    encoding = sys.stdout.encoding or ""
+    unicode_supported = False
+    if encoding:
+        try:
+            "✓⚠✕▶◇↔▣○".encode(encoding)
+            unicode_supported = True
+        except UnicodeEncodeError:
+            unicode_supported = False
+        except LookupError:
+            unicode_supported = False
+    if requested == "ascii":
+        return "ascii"
+    if requested == "unicode":
+        if unicode_supported:
+            return "unicode"
+        debug_log(
+            f"unicode icons requested but stdout encoding '{encoding or 'unknown'}' cannot render them; using ascii fallback"
+        )
+        return "ascii"
+    return "unicode" if unicode_supported else "ascii"
+
+
+def icons() -> IconSet:
+    if icon_mode() == "unicode":
+        return IconSet(
+            ok="✓",
+            warning="⚠",
+            blocked="✕",
+            run="▶",
+            dry_run="◇",
+            linked="↔",
+            artifact="▣",
+            disabled="○",
+        )
+    return IconSet(
+        ok="[OK]",
+        warning="[!!]",
+        blocked="[X]",
+        run="[Run]",
+        dry_run="[Dry]",
+        linked="[LINK]",
+        artifact="[File]",
+        disabled="[Disabled]",
+    )
+
+
+def merge_columns(left: list[str], right: list[str], spec: LayoutSpec) -> list[str]:
     height = max(len(left), len(right))
     output: list[str] = []
     for index in range(height):
-        left_line = left[index] if index < len(left) else " " * SIDEBAR_WIDTH
-        right_line = right[index] if index < len(right) else " " * CONTENT_WIDTH
-        output.append(f"{left_line.ljust(SIDEBAR_WIDTH)}   {right_line}")
+        left_line = left[index] if index < len(left) else " " * spec.sidebar_width
+        right_line = right[index] if index < len(right) else " " * spec.content_width
+        output.append(f"{left_line.ljust(spec.sidebar_width)}   {right_line}")
     return output
 
 
@@ -772,6 +977,159 @@ def artifact_label(path: str | None) -> str:
     if not path:
         return "none"
     return Path(path).name
+
+
+def format_artifact_timestamp(timestamp: datetime | None) -> str:
+    return timestamp.strftime("%Y-%m-%d %H:%M:%S") if timestamp else "n/a"
+
+
+def artifact_relative_path(sh: LearningStronghold, artifact_path: str | None) -> str:
+    if not artifact_path:
+        return "none"
+    try:
+        return str(Path(artifact_path).resolve().relative_to(sh.path.resolve()))
+    except ValueError:
+        return "outside stronghold"
+
+
+def artifact_file_timestamp(path: str | None) -> datetime | None:
+    if not path:
+        return None
+    candidate = Path(path)
+    if not candidate.is_file():
+        return None
+    return datetime.fromtimestamp(candidate.stat().st_mtime)
+
+
+def learning_artifact_catalog(sh: LearningStronghold) -> list[LearningArtifact]:
+    specs = [
+        (
+            "latest_session_plan",
+            "Latest Session Plan",
+            sh.latest_session_plan,
+            "last_learning_session_plan_at",
+        ),
+        (
+            "latest_tutor_session",
+            "Latest Tutor Session",
+            sh.latest_tutor_session,
+            "last_tutor_session_at",
+        ),
+        (
+            "latest_answer_template",
+            "Latest Answer Template",
+            sh.latest_answer_template,
+            None,
+        ),
+        (
+            "latest_human_answers",
+            "Latest Human Answers",
+            sh.latest_imported_answers,
+            "last_learning_answers_imported_at",
+        ),
+        (
+            "latest_assessment",
+            "Latest Assessment",
+            sh.latest_assessment,
+            "last_learning_assessment_at",
+        ),
+        (
+            "latest_decision",
+            "Latest Decision",
+            sh.latest_normal_decision,
+            "last_learning_decision_at",
+        ),
+        (
+            "latest_review_plan",
+            "Latest Review Plan",
+            sh.latest_review_plan,
+            "last_learning_review_plan_at",
+        ),
+        (
+            "latest_review_tutor_session",
+            "Latest Review Tutor Session",
+            sh.latest_review_tutor_session,
+            "last_review_tutor_session_at",
+        ),
+        (
+            "latest_review_answer_template",
+            "Latest Review Answer Template",
+            sh.latest_review_answer_template,
+            None,
+        ),
+        (
+            "latest_review_answers",
+            "Latest Review Answers",
+            sh.latest_review_answers,
+            "last_learning_review_answers_imported_at",
+        ),
+        (
+            "latest_review_assessment",
+            "Latest Review Assessment",
+            sh.latest_review_assessment,
+            "last_learning_review_assessment_at",
+        ),
+        (
+            "latest_review_decision",
+            "Latest Review Decision",
+            sh.latest_review_decision,
+            "last_learning_review_decision_at",
+        ),
+        (
+            "progress_log",
+            "Progress Log",
+            str(sh.path / "progress.md"),
+            None,
+        ),
+        (
+            "practice_log",
+            "Practice Log",
+            str(sh.path / "practice_log.md"),
+            None,
+        ),
+    ]
+    artifacts: list[LearningArtifact] = []
+    for key, label, path, state_key in specs:
+        candidate = Path(path) if path else None
+        timestamp = (
+            sh.artifact_timestamp(state_key, path)
+            if state_key
+            else LearningStronghold.timestamp_from_path(path)
+        )
+        if timestamp is None:
+            timestamp = artifact_file_timestamp(path)
+        artifacts.append(
+            LearningArtifact(
+                key=key,
+                label=label,
+                path=path,
+                timestamp=timestamp,
+                exists=bool(candidate and candidate.is_file()),
+                relative_path=artifact_relative_path(sh, path),
+            )
+        )
+    return artifacts
+
+
+def artifact_by_key(sh: LearningStronghold, key: str) -> LearningArtifact | None:
+    return next((artifact for artifact in learning_artifact_catalog(sh) if artifact.key == key), None)
+
+
+def latest_catalog_artifact(sh: LearningStronghold, keys: tuple[str, ...]) -> LearningArtifact | None:
+    candidates = [
+        artifact
+        for artifact in learning_artifact_catalog(sh)
+        if artifact.key in keys and artifact.path
+    ]
+    if not candidates:
+        return None
+    return max(
+        candidates,
+        key=lambda item: (
+            item.timestamp or datetime.min,
+            item.path or "",
+        ),
+    )
 
 
 def render_learning_cockpit(strongholds: list[LearningStronghold]) -> str:
@@ -830,11 +1188,15 @@ def render_learning_cockpit(strongholds: list[LearningStronghold]) -> str:
 
 
 def render_snapshot(data: DashboardData) -> str:
+    readiness_state = readiness_badge(data.results["readiness"])
     sections = [
         "Local AI Workstation Operator Dashboard",
         f"Current safety mode: {SAFETY_MODE}",
         "",
-        section("Workstation Readiness", data.results["readiness"].display_text),
+        section(
+            f"Workstation Readiness ({readiness_state})",
+            data.results["readiness"].display_text,
+        ),
         "",
         section("Learning Cockpit (Read-Only)", render_learning_cockpit(data.learning_strongholds)),
         "",
@@ -865,22 +1227,37 @@ def print_textual_missing_message() -> None:
     print("Textual is not installed. Install later with the approved dependency process.")
 
 
-def render_header(title: str, dashboard: DashboardData) -> list[str]:
+def recent_learning_events(sh: LearningStronghold | None) -> list[str]:
+    if sh is None:
+        return ["No learning stronghold discovered."]
+    loop_log = sh.path / "loop_log.md"
+    if not loop_log.is_file():
+        return ["No loop log found."]
+    lines = [line.strip() for line in loop_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return lines[-4:] or ["No recent learning events."]
+
+
+def human_disabled_reason(action: LearningAction) -> str:
+    if action.risk_class == "PURPLE":
+        return "Requires local model execution; future phase."
+    if action.label.startswith("Import"):
+        return "Requires answer file picker; future phase."
+    if action.label.startswith("Advance"):
+        return "Requires manual approval; future phase."
+    return "Requires manual command or a future phase."
+
+
+def render_header(title: str, dashboard: DashboardData, spec: LayoutSpec) -> list[str]:
     readiness = dashboard.results["readiness"]
-    readiness_badge = "READY" if readiness.returncode == 0 else "CHECK"
+    readiness_state = readiness_badge(readiness)
     refreshed = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    headline = f"{title}  {badge(SAFETY_MODE)} {badge('SAFE_DRY_RUN')} {badge(readiness_badge)}"
-    return panel(
-        "Local AI Workstation",
-        [
-            headline,
-            f"Last refresh: {refreshed}",
-        ],
-        APP_WIDTH,
-    )
+    ico = icons()
+    status = ico.ok if readiness_state == "READY" else ico.warning
+    headline = f"{title} | {status} {readiness_state} | {badge(SAFETY_MODE)} {badge('SAFE_DRY_RUN')} | {refreshed}"
+    return [fit_text(headline, spec.width)]
 
 
-def render_sidebar(active: str) -> list[str]:
+def render_sidebar(active: str, spec: LayoutSpec) -> list[str]:
     items = [
         ("home", "Home"),
         ("learning", "Learning"),
@@ -893,20 +1270,20 @@ def render_sidebar(active: str) -> list[str]:
     for key, label in items:
         marker = ">" if key == active else " "
         lines.append(f"{marker} {label}")
-    return panel("Navigation", lines, SIDEBAR_WIDTH)
+    return panel("Nav", lines, spec.sidebar_width)
 
 
-def render_log_drawer(dashboard: DashboardData) -> list[str]:
+def render_log_drawer(dashboard: DashboardData, spec: LayoutSpec) -> list[str]:
     command_lines = dashboard.command_log[-4:] or ["No read-only commands recorded."]
     execution_lines = dashboard.execution_log[-3:] or ["No plain-mode executions recorded."]
     lines = [
-        "Recent backend status reads:",
+        "Status reads:",
         *command_lines,
         "",
-        "Recent learning execution log:",
+        "Execution log:",
         *execution_lines,
     ]
-    return panel("Status / Log Drawer", lines, APP_WIDTH)
+    return panel("Recent Events", lines, spec.width)
 
 
 def render_shell(
@@ -916,71 +1293,81 @@ def render_shell(
     breadcrumbs: str,
     main_lines: list[str],
     controls: str,
+    spec: LayoutSpec,
     notice: str | None = None,
 ) -> str:
     blocks: list[str] = []
     if notice:
-        blocks.extend(panel("Notice", [notice], APP_WIDTH))
-    blocks.extend(render_header("Operator Cockpit", dashboard))
-    blocks.extend(panel("Breadcrumbs", [breadcrumbs], APP_WIDTH))
-    blocks.extend(merge_columns(render_sidebar(active), main_lines))
-    blocks.extend(render_log_drawer(dashboard))
-    blocks.extend(panel("Controls", [controls], APP_WIDTH))
+        blocks.extend(panel("Notice", [notice], spec.width))
+    blocks.extend(render_header("Operator Cockpit", dashboard, spec))
+    blocks.append(f"Path: {fit_text(breadcrumbs, max(spec.width - 6, 1))}")
+    blocks.append("-" * spec.width)
+    if spec.mode == "wide":
+        blocks.extend(merge_columns(render_sidebar(active, spec), main_lines, spec))
+    else:
+        compact_menu = {
+            "home": "[1] Learning  [2] Artifacts  [3] System",
+            "learning": "[1] Learning  [2] Artifacts  [3] System",
+            "artifacts": "[1] Learning  [2] Artifacts  [3] System",
+            "handoffs": "[1] Learning  [2] Artifacts  [3] System",
+            "health": "[1] Learning  [2] Artifacts  [3] System",
+        }.get(active, "[1] Learning  [2] Artifacts  [3] System")
+        blocks.append(compact_menu)
+        blocks.append("-" * spec.width)
+        blocks.extend(main_lines)
+    blocks.extend(render_log_drawer(dashboard, spec))
+    blocks.append(f"Keys: {fit_text(controls, max(spec.width - 6, 1))}")
     return "\n".join(blocks).rstrip() + "\n"
 
 
-def render_home_main(dashboard: DashboardData) -> list[str]:
-    cards: list[str] = []
-    card_lines: list[list[str]] = [
-        panel(
-            "Workstation Readiness",
-            visible_lines(dashboard.results["readiness"].display_text),
-            CONTENT_WIDTH,
-        ),
-        panel(
-            "Strongholds",
-            visible_lines(dashboard.results["strongholds"].display_text),
-            CONTENT_WIDTH,
-        ),
-        panel(
-            "Recent Handoffs",
-            visible_lines(dashboard.results["handoffs"].display_text),
-            CONTENT_WIDTH,
-        ),
-        panel(
-            "Recent Feature Strongholds",
-            visible_lines(dashboard.results["features"].display_text),
-            CONTENT_WIDTH,
-        ),
-        panel(
-            "Agent Hygiene",
-            visible_lines(dashboard.results["agent_hygiene"].display_text),
-            CONTENT_WIDTH,
-        ),
-        panel(
-            "Actions",
+def terminal_section(title: str, lines: Iterable[str], width: int) -> list[str]:
+    rendered = [f"{title}", "-" * min(len(title), width)]
+    rendered.extend(wrap_lines(lines, width))
+    rendered.append("")
+    return rendered
+
+
+def render_home_main(dashboard: DashboardData, spec: LayoutSpec) -> list[str]:
+    width = spec.content_width
+    lines: list[str] = []
+    lines.extend(
+        terminal_section(
+            "System",
+            visible_lines(dashboard.results["readiness"].display_text, limit=5),
+            width,
+        )
+    )
+    lines.extend(
+        terminal_section(
+            "Active Work",
+            visible_lines(dashboard.results["strongholds"].display_text, limit=5),
+            width,
+        )
+    )
+    lines.extend(
+        terminal_section(
+            "Suggested",
             [
-                "[1] Open Learning",
-                "[2] Open Handoffs",
-                "[3] Open System Health",
-                "[0] Quit",
+                "[1] Learning",
+                "[2] Artifacts",
+                "[3] System",
+                "[q] Quit",
             ],
-            CONTENT_WIDTH,
-        ),
-    ]
-    for card in card_lines:
-        cards.extend(card)
-    return cards
+            width,
+        )
+    )
+    return lines
 
 
 def provenance_lines(sh: LearningStronghold) -> list[str]:
+    ico = icons()
     if not sh.latest_tutor_session or not sh.latest_imported_answers:
-        return [f"{badge('MANUAL_REQUIRED')} No linked answers imported for the current session."]
+        return [f"{ico.warning} No linked answers imported for the current session."]
     linked = sh.to_win(sh.linked_tutor_session)
     current = sh.to_win(sh.latest_tutor_session)
     if linked == current and sh.import_success:
-        return [f"{badge('LINKED')} Answers match the current tutor session."]
-    lines = [f"{badge('STALE')} Answers are not linked to the current tutor session."]
+        return [f"{ico.linked} Answers match the current tutor session."]
+    lines = [f"{ico.warning} Answers are not linked to the current tutor session."]
     if linked != current:
         lines.append(f"Linked answers point to: {linked or 'none'}")
     return lines
@@ -990,85 +1377,89 @@ def render_learning_main(
     sh: LearningStronghold | None,
     *,
     show_backend_command: bool,
+    spec: LayoutSpec,
 ) -> list[str]:
     if sh is None:
-        return panel("Learning", ["No learning strongholds discovered."], CONTENT_WIDTH)
+        return terminal_section("Learning", ["No learning strongholds discovered."], spec.content_width)
 
     action = sh.compute_next_action()
-    latest_plan = latest_artifact(sh.latest_session_plan, sh.latest_review_plan)
-    latest_assessment = latest_artifact(sh.latest_assessment, sh.latest_review_assessment)
-    cards: list[str] = []
-    cards.extend(
-        panel(
-            "Current Task",
+    latest_plan = latest_catalog_artifact(
+        sh,
+        ("latest_session_plan", "latest_review_plan"),
+    )
+    latest_assessment = latest_catalog_artifact(
+        sh,
+        ("latest_assessment", "latest_review_assessment"),
+    )
+    ico = icons()
+    width = spec.content_width
+    lines: list[str] = []
+    lines.extend(
+        terminal_section(
+            "Current Focus",
             [
                 sh.title,
-                f"Current task: {sh.next_task or 'none'}",
+                f"Task: {sh.next_task or 'none'}",
                 f"Last completed: {sh.last_completed_task or 'none'}",
-                f"Session status: {sh.session_status}",
+                f"Session: {sh.session_status}",
             ],
-            CONTENT_WIDTH,
+            width,
         )
     )
-    recommended_lines = [
-        f"{badge(action.risk_class)} {action.label}",
-        (
-            f"{badge('SAFE_DRY_RUN')} Ready for controlled execution."
-            if action.executable
-            else f"{badge('DISABLED')} Action requires manual command / future phase."
-        ),
-    ]
+    recommended_lines = [f"{ico.run if action.executable else ico.disabled} {action.label} [{action.risk_class}]"]
+    if action.executable:
+        recommended_lines.append(f"{ico.dry_run} Ready for controlled dry-run execution.")
+    else:
+        recommended_lines.append(human_disabled_reason(action))
     if sh.decision_warning:
-        recommended_lines.append(f"{badge('STALE')} {sh.decision_warning}")
-    cards.extend(panel("Recommended Action", recommended_lines, CONTENT_WIDTH))
-    cards.extend(panel("Provenance", provenance_lines(sh), CONTENT_WIDTH))
-    cards.extend(
-        panel(
-            "Latest Artifacts",
+        recommended_lines.append(f"{ico.warning} {sh.decision_warning}")
+    lines.extend(terminal_section("Next Action", recommended_lines, width))
+    lines.extend(terminal_section("Evidence / Provenance", provenance_lines(sh), width))
+    lines.extend(
+        terminal_section(
+            "Artifact Shortcuts",
             [
-                f"Plan: {artifact_label(latest_plan)}",
-                f"Assessment: {artifact_label(latest_assessment)}",
-                f"Decision: {artifact_label(sh.latest_normal_decision)}",
-                f"Review decision: {artifact_label(sh.latest_review_decision)}",
+                f"{ico.artifact} Plan: {artifact_label(latest_plan.path if latest_plan else None)}",
+                f"{ico.artifact} Assessment: {artifact_label(latest_assessment.path if latest_assessment else None)}",
+                f"{ico.artifact} Decision: {artifact_label(sh.latest_normal_decision)}",
+                f"{ico.artifact} Review decision: {artifact_label(sh.latest_review_decision)}",
             ],
-            CONTENT_WIDTH,
+            width,
         )
     )
-    cards.extend(
-        panel(
-            "Safety",
-            [
-                f"{badge(SAFETY_MODE)} Snapshot remains read-only.",
-                *DISABLED_ACTIONS,
-            ],
-            CONTENT_WIDTH,
-        )
-    )
+    lines.extend(terminal_section("Recent Learning Events", recent_learning_events(sh), width))
     if show_backend_command:
-        cards.extend(panel("Backend Command", [action.command_text], CONTENT_WIDTH))
+        lines.extend(
+            terminal_section(
+                "Backend Command Drawer",
+                [action.command_text],
+                width,
+            )
+        )
     action_lines = [
-        "[1] Run Safe Dry-Run"
+        f"[1] Run safe dry-run"
         if action.executable
-        else "[disabled] Action requires manual command / future phase",
-        "[2] View Latest Plan",
-        "[3] View Latest Assessment",
-        "[4] Hide Backend Command" if show_backend_command else "[4] Show Backend Command",
-        "[5] Refresh",
+        else f"[1 disabled] {human_disabled_reason(action)}",
+        "[2] Open artifact browser",
+        "[3] View Latest Plan",
+        "[4] View Latest Assessment",
+        "[5] Hide Backend Command" if show_backend_command else "[5] Show Backend Command",
+        "[6] Refresh",
         "[0] Back",
     ]
-    cards.extend(panel("Actions", action_lines, CONTENT_WIDTH))
-    return cards
+    lines.extend(terminal_section("Human Actions", action_lines, width))
+    return lines
 
 
-def render_handoffs_main(dashboard: DashboardData) -> list[str]:
-    return panel(
+def render_handoffs_main(dashboard: DashboardData, spec: LayoutSpec) -> list[str]:
+    return terminal_section(
         "Recent Handoffs",
         visible_lines(dashboard.results["handoffs"].display_text, limit=12),
-        CONTENT_WIDTH,
+        spec.content_width,
     )
 
 
-def render_health_main(dashboard: DashboardData) -> list[str]:
+def render_health_main(dashboard: DashboardData, spec: LayoutSpec) -> list[str]:
     lines = [
         "Workstation readiness:",
         *visible_lines(dashboard.results["readiness"].display_text, limit=8),
@@ -1076,7 +1467,7 @@ def render_health_main(dashboard: DashboardData) -> list[str]:
         "Agent hygiene:",
         *visible_lines(dashboard.results["agent_hygiene"].display_text, limit=8),
     ]
-    return panel("System Health", lines, CONTENT_WIDTH)
+    return terminal_section("System Health", lines, spec.content_width)
 
 
 def render_plain_screen(
@@ -1086,6 +1477,7 @@ def render_plain_screen(
     show_backend_command: bool,
     notice: str | None = None,
 ) -> str:
+    spec = layout_spec()
     if screen == "learning":
         sh = first_learning_stronghold(dashboard)
         title = sh.title if sh else "Learning"
@@ -1093,8 +1485,13 @@ def render_plain_screen(
             dashboard,
             active="learning",
             breadcrumbs=f"Home > Learning > {title}",
-            main_lines=render_learning_main(sh, show_backend_command=show_backend_command),
-            controls="1 run | 2 plan | 3 assessment | 4 backend command | 5 refresh | 0 back | q quit",
+            main_lines=render_learning_main(
+                sh,
+                show_backend_command=show_backend_command,
+                spec=spec,
+            ),
+            controls="1 run | 2 artifacts | 3 plan | 4 assessment | 5 command | 6 refresh | 0 back | ? help | q quit",
+            spec=spec,
             notice=notice,
         )
     if screen == "handoffs":
@@ -1102,8 +1499,9 @@ def render_plain_screen(
             dashboard,
             active="handoffs",
             breadcrumbs="Home > Handoffs",
-            main_lines=render_handoffs_main(dashboard),
-            controls="r refresh | 0 back | q quit",
+            main_lines=render_handoffs_main(dashboard, spec),
+            controls="r refresh | 0 back | ? help | q quit",
+            spec=spec,
             notice=notice,
         )
     if screen == "health":
@@ -1111,16 +1509,18 @@ def render_plain_screen(
             dashboard,
             active="health",
             breadcrumbs="Home > System Health",
-            main_lines=render_health_main(dashboard),
-            controls="r refresh | 0 back | q quit",
+            main_lines=render_health_main(dashboard, spec),
+            controls="r refresh | 0 back | ? help | q quit",
+            spec=spec,
             notice=notice,
         )
     return render_shell(
         dashboard,
         active="home",
         breadcrumbs="Home",
-        main_lines=render_home_main(dashboard),
-        controls="1 learning | 2 handoffs | 3 health | r refresh | h help | q quit",
+        main_lines=render_home_main(dashboard, spec),
+        controls="[1] Learning | [2] Artifacts | [3] System | [r] Refresh | [?] Help | [q] Quit",
+        spec=spec,
         notice=notice,
     )
 
@@ -1149,21 +1549,171 @@ def read_learning_artifact(sh: LearningStronghold, artifact_path: str | None) ->
     return candidate, candidate.read_text(encoding="utf-8")
 
 
-def show_learning_artifact(sh: LearningStronghold, label: str, artifact_path: str | None) -> str | None:
+def render_learning_artifact_menu(sh: LearningStronghold, notice: str | None = None) -> str:
+    spec = layout_spec()
+    artifacts = learning_artifact_catalog(sh)
+    lines = []
+    if notice:
+        lines.extend([f"Notice: {notice}", ""])
+    for index, artifact in enumerate(artifacts, start=1):
+        status = "exists" if artifact.exists else "missing"
+        lines.append(
+            f"[{index:>2}] {artifact.label} | {status} | {artifact.relative_path} | "
+            f"{format_artifact_timestamp(artifact.timestamp)}"
+        )
+    lines.extend(
+        [
+            "",
+            "Select an existing artifact by number.",
+            "Copy path: read the displayed relative path and copy manually if needed.",
+            "[0] Back",
+        ]
+    )
+    return "\n".join(panel("Artifact Browser", lines, spec.width))
+
+
+def render_artifact_page(
+    artifact: LearningArtifact,
+    path: Path,
+    body_lines: list[str],
+    *,
+    page_index: int,
+    page_size: int,
+    show_all: bool,
+) -> str:
+    spec = layout_spec()
+    total_lines = len(body_lines)
+    if show_all:
+        start = 0
+        end = total_lines
+        page_label = "all lines"
+    else:
+        start = page_index * page_size
+        end = min(start + page_size, total_lines)
+        page_count = max((total_lines + page_size - 1) // page_size, 1)
+        page_label = f"page {page_index + 1}/{page_count}"
+    visible = body_lines[start:end] or ["(artifact is empty)"]
+    header = panel(
+        f"Artifact Viewer - {artifact.label}",
+        [
+            f"Path: {path}",
+            f"Relative path: {artifact.relative_path}",
+            f"Timestamp: {format_artifact_timestamp(artifact.timestamp)}",
+            f"Showing: {page_label} | lines {start + 1}-{end if end else 0} of {total_lines}",
+            "Copy path manually from the Path line above.",
+        ],
+        spec.width,
+    )
+    numbered = [
+        f"{line_number:>4}: {line}"
+        for line_number, line in enumerate(visible, start=start + 1)
+    ]
+    controls = panel(
+        "Viewer Controls",
+        ["n next page | p previous page | a show all | b back"],
+        spec.width,
+    )
+    return "\n".join([*header, *numbered, *controls])
+
+
+def show_learning_artifact(sh: LearningStronghold, artifact: LearningArtifact | None) -> str | None:
+    if artifact is None:
+        return "No artifact is available for this slot."
     try:
-        path, body = read_learning_artifact(sh, artifact_path)
+        path, body = read_learning_artifact(sh, artifact.path)
     except ValueError as exc:
         return str(exc)
 
-    print()
-    print("\n".join(panel(f"Artifact Viewer - {label}", [str(path)], APP_WIDTH)))
-    print(body.rstrip() or "(artifact is empty)")
-    input("\nPress Enter to return to Learning...")
-    return None
+    body_lines = body.splitlines()
+    if not body_lines:
+        body_lines = ["(artifact is empty)"]
+    page_index = 0
+    page_size = 80
+    show_all = False
+    page_count = max((len(body_lines) + page_size - 1) // page_size, 1)
+    notice: str | None = None
+
+    while True:
+        if notice:
+            print("\n" + "\n".join(panel("Notice", [notice], layout_spec().width)))
+            notice = None
+        print()
+        print(
+            render_artifact_page(
+                artifact,
+                path,
+                body_lines,
+                page_index=page_index,
+                page_size=page_size,
+                show_all=show_all,
+            )
+        )
+        choice = input("artifact viewer [n next, p previous, a all, b back]> ").strip().lower()
+        if choice == "b":
+            return None
+        if choice == "a":
+            show_all = True
+            continue
+        if choice == "n":
+            if show_all:
+                show_all = False
+                page_index = min(1, page_count - 1)
+                continue
+            if page_index + 1 >= page_count:
+                notice = "Already at the last page."
+                continue
+            page_index += 1
+            continue
+        if choice == "p":
+            if show_all:
+                show_all = False
+                page_index = 0
+                continue
+            if page_index == 0:
+                notice = "Already at the first page."
+                continue
+            page_index -= 1
+            continue
+        notice = "Unknown option. Use n, p, a, or b."
+
+
+def show_learning_artifact_menu(sh: LearningStronghold) -> str | None:
+    current_notice: str | None = None
+    while True:
+        artifacts = learning_artifact_catalog(sh)
+        print()
+        print(render_learning_artifact_menu(sh, current_notice))
+        current_notice = None
+        choice = input("artifact menu> ").strip().lower()
+        if choice == "0":
+            return None
+        if not choice.isdigit():
+            current_notice = "Unknown option. Choose an artifact number or 0 to go back."
+            continue
+        index = int(choice)
+        if index < 1 or index > len(artifacts):
+            current_notice = "Artifact selection is out of range."
+            continue
+        artifact = artifacts[index - 1]
+        if not artifact.exists:
+            current_notice = f"{artifact.label} is missing; no file was opened."
+            continue
+        current_notice = show_learning_artifact(sh, artifact)
 
 
 def run_plain_mode(notice: str | None = None) -> int:
-    dashboard = collect_dashboard_data([])
+    debug_log("rendering header")
+    print("plain mode [READ_ONLY] initializing dashboard...", flush=True)
+    if notice:
+        print(notice, flush=True)
+    print("Collecting status commands with timeout protection.", flush=True)
+    debug_log("collecting status")
+    try:
+        dashboard = collect_dashboard_data([])
+    except KeyboardInterrupt:
+        print("\nInterrupted during startup. Exiting plain dashboard.")
+        return 130
+    debug_log("entering plain loop")
     current_notice = notice
     screen = "home"
     show_backend_command = False
@@ -1180,23 +1730,28 @@ def run_plain_mode(notice: str | None = None) -> int:
         )
         current_notice = None
         try:
+            debug_log("waiting for input")
             choice = input("select action> ").strip().lower()
         except EOFError:
             print()
             return 0
+        except KeyboardInterrupt:
+            print("\nInterrupted. Exiting plain dashboard.")
+            return 130
 
         if choice == "q":
             return 0
-        if choice == "h":
+        if choice in {"h", "?"}:
             current_notice = "Help: " + " | ".join(PLAIN_CONTROLS)
             continue
 
         if screen == "home":
+            sh = first_learning_stronghold(dashboard)
             if choice == "1":
                 screen = "learning"
                 continue
-            if choice == "2":
-                screen = "handoffs"
+            if choice == "2" and sh is not None:
+                current_notice = show_learning_artifact_menu(sh)
                 continue
             if choice == "3":
                 screen = "health"
@@ -1206,18 +1761,26 @@ def run_plain_mode(notice: str | None = None) -> int:
                 continue
             if choice == "0":
                 return 0
-            current_notice = "Unknown option. Use 1, 2, 3, r, h, or q from Home."
+            current_notice = "Unknown option. Use 1, 2, 3, r, ?, or q from Home."
             continue
 
         if screen == "learning":
             sh = first_learning_stronghold(dashboard)
-            latest_plan = latest_artifact(
-                sh.latest_session_plan if sh else None,
-                sh.latest_review_plan if sh else None,
+            latest_plan = (
+                latest_catalog_artifact(
+                    sh,
+                    ("latest_session_plan", "latest_review_plan"),
+                )
+                if sh
+                else None
             )
-            latest_assessment = latest_artifact(
-                sh.latest_assessment if sh else None,
-                sh.latest_review_assessment if sh else None,
+            latest_assessment = (
+                latest_catalog_artifact(
+                    sh,
+                    ("latest_assessment", "latest_review_assessment"),
+                )
+                if sh
+                else None
             )
             if choice in {"0"}:
                 screen = "home"
@@ -1227,19 +1790,18 @@ def run_plain_mode(notice: str | None = None) -> int:
                 dashboard, current_notice = execute_recommended_learning_action(dashboard)
                 continue
             if choice == "2" and sh is not None:
-                current_notice = show_learning_artifact(sh, "Latest Plan", latest_plan)
+                current_notice = show_learning_artifact_menu(sh)
                 continue
             if choice == "3" and sh is not None:
-                current_notice = show_learning_artifact(
-                    sh,
-                    "Latest Assessment",
-                    latest_assessment,
-                )
+                current_notice = show_learning_artifact(sh, latest_plan)
                 continue
-            if choice == "4":
+            if choice == "4" and sh is not None:
+                current_notice = show_learning_artifact(sh, latest_assessment)
+                continue
+            if choice == "5":
                 show_backend_command = not show_backend_command
                 continue
-            if choice in {"5", "r"}:
+            if choice in {"6", "r"}:
                 dashboard = collect_dashboard_data(dashboard.command_log)
                 continue
             current_notice = "Unknown option. Use the numbered actions, x, or 0 to go back."
@@ -1479,13 +2041,17 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
+    debug_log("starting app")
+    debug_log("parsing args")
     args = parse_args(argv)
     if args.snapshot:
+        debug_log("collecting status")
         data = collect_dashboard_data([])
         print(render_snapshot(data), end="")
         return 0
 
     if args.plain:
+        debug_log("entering plain mode")
         return run_plain_mode()
 
     textual_app = build_textual_app()
@@ -1504,4 +2070,8 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("\nInterrupted. Exiting.")
+        sys.exit(130)
