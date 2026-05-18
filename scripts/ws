@@ -90,6 +90,9 @@ case "$SUBCOMMAND" in
         echo "  learning-review-session <id> --dry-run Plan review session"
         echo "  learning-advance <id> Advance to next learning task"
         echo ""
+        echo "Research Runner (Phase 7):"
+        echo "  research-run <id> --review-paper --dry-run Plan paper review"
+        echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
         echo "  agent-run <k> <t> [flags] Run bounded Windows-native agent task"
@@ -451,6 +454,9 @@ case "$SUBCOMMAND" in
     learning-advance)
         bash "$SCRIPTS_DIR/ws_learning_advance.sh" "$@"
         ;;
+    research-run)
+        bash "$SCRIPTS_DIR/ws_research_run.sh" "$@"
+        ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;
@@ -514,3 +520,4 @@ case "$SUBCOMMAND" in
         exit 1
         ;;
 esac
+
