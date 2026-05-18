@@ -68,7 +68,12 @@ case "$SUBCOMMAND" in
         echo "  feature-report <id> Generate a local feature summary report"
         echo "  feature-status      List recent feature strongholds"
         echo "  feature-local-review <id> --model <m> Run local Ollama reasoning gate"
+        echo "  feature-architect-handoff <id> --target <t> Create senior architect handoff"
         echo "  feature-run <id> --dry-run Preview future supervised run eligibility"
+        echo ""
+        echo "Generic Strongholds (Phase 5):"
+        echo "  stronghold-new --type <t> --title <t> Create generic stronghold"
+        echo "  stronghold-status    List recent generic strongholds"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -385,6 +390,12 @@ case "$SUBCOMMAND" in
         ;;
     feature-run)
         bash "$SCRIPTS_DIR/ws_feature_run.sh" "$@"
+        ;;
+    stronghold-new)
+        bash "$SCRIPTS_DIR/ws_stronghold_new.sh" "$@"
+        ;;
+    stronghold-status)
+        bash "$SCRIPTS_DIR/ws_stronghold_status.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

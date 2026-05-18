@@ -222,6 +222,17 @@ ws feature-run <feature_id_or_path> --dry-run
 ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <feature_run_dry_report>
 ```
 
+## Generic Strongholds (Phase 5)
+
+A Stronghold is a structured cognitive workspace for a single objective. `ws stronghold-new` initializes a new stronghold with domain-specific templates (learning, product, feature, research, trading-research). Every stronghold includes core artifacts like `contract.md`, `goals.md`, and `constraints.md`. `ws stronghold-status` lists active strongholds and their states.
+
+```bash
+ws stronghold-new --type learning|product|feature|research|trading-research --title "<title>"
+ws stronghold-status
+```
+
+Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled.
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.
