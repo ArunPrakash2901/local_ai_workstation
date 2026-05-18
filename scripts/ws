@@ -82,6 +82,11 @@ case "$SUBCOMMAND" in
         echo "  stronghold-report <id> Generate summary report"
         echo "  stronghold-decision <id> Classify next safe state/action"
         echo ""
+        echo "Domain Specific Runners (Phase 6):"
+        echo "  learning-run <id> --session --dry-run Plan learning session"
+        echo "  learning-import-answers <id> --from-file <f> Import completed answers"
+        echo "  learning-assess <id> --model <m> Assess imported answers"
+        echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
         echo "  agent-run <k> <t> [flags] Run bounded Windows-native agent task"
@@ -430,6 +435,9 @@ case "$SUBCOMMAND" in
         ;;
     learning-import-answers)
         bash "$SCRIPTS_DIR/ws_learning_import_answers.sh" "$@"
+        ;;
+    learning-assess)
+        bash "$SCRIPTS_DIR/ws_learning_assess.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
