@@ -14,6 +14,7 @@ OLLAMA_CALL_PY="$WS_HOME/scripts/ollama_call.py"
 
 STRONGHOLD_INPUT=""
 MODEL="hermes3:8b"
+REVIEW=0
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -21,6 +22,10 @@ while [[ $# -gt 0 ]]; do
         --model)
             MODEL="$2"
             shift 2
+            ;;
+        --review)
+            REVIEW=1
+            shift
             ;;
         *)
             if [ -z "$STRONGHOLD_INPUT" ] || [[ "$1" != --* ]]; then
@@ -32,7 +37,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$STRONGHOLD_INPUT" ]; then
-    echo "Usage: ws learning-assess <stronghold_id_or_path> --model <model>"
+    echo "Usage: ws learning-assess <stronghold_id_or_path> --model <model> [--review]"
     exit 1
 fi
 
@@ -98,7 +103,7 @@ fi
 NOW_TS=$(date +"%Y%m%d_%H%M%S")
 
 # Use Python for logic
-RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$MODEL" "$OLLAMA_CALL_PY" << 'PY'
+RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$MODEL" "$OLLAMA_CALL_PY" "$REVIEW" << 'PY'
 import sys
 import json
 import re
@@ -109,6 +114,7 @@ stronghold_dir = Path(sys.argv[1])
 now_ts = sys.argv[2]
 model = sys.argv[3]
 ollama_call_script = sys.argv[4]
+is_review = sys.argv[5] == "1"
 
 def to_win(p):
     try:
@@ -133,18 +139,34 @@ if state.get("type") != "learning":
     sys.exit(0)
 
 # Check requirements
-last_answers_path = state.get("last_learning_answers_path")
+if is_review:
+    last_answers_path = state.get("last_learning_review_answers_path")
+    cl_prefix = "LEARNING_REVIEW_ASSESSMENT"
+    file_prefix = "review_assessment"
+    log_msg = "Learning Review Assessment Generated"
+    status_val = "review_assessed"
+else:
+    last_answers_path = state.get("last_learning_answers_path")
+    cl_prefix = "LEARNING_ASSESSMENT"
+    file_prefix = "assessment"
+    log_msg = "Learning Assessment Generated"
+    status_val = "assessed"
+
 if not last_answers_path or not Path(last_answers_path).is_file():
-    print(json.dumps({"error": "Latest human answers not found", "classification": "LEARNING_ASSESSMENT_REQUIRES_ANSWERS"}))
+    print(json.dumps({"error": f"Latest {'review ' if is_review else ''}answers not found", "classification": f"{cl_prefix}_REQUIRES_ANSWERS"}))
     sys.exit(0)
 
 human_answers = Path(last_answers_path).read_text(encoding="utf-8")
 
 # Find latest tutor session
 sessions_dir = stronghold_dir / "sessions"
-tutor_sessions = sorted(list(sessions_dir.glob("*_tutor_session.md")), reverse=True)
+if is_review:
+    tutor_sessions = sorted(list(sessions_dir.glob("*_review_tutor_session.md")), reverse=True)
+else:
+    tutor_sessions = sorted(list(sessions_dir.glob("*_tutor_session.md")), reverse=True)
+
 if not tutor_sessions:
-    print(json.dumps({"error": "Latest tutor session not found", "classification": "LEARNING_ASSESSMENT_BLOCKED"}))
+    print(json.dumps({"error": f"Latest {'review ' if is_review else ''}tutor session not found", "classification": f"{cl_prefix}_BLOCKED"}))
     sys.exit(0)
 
 tutor_session = tutor_sessions[0].read_text(encoding="utf-8")
@@ -160,7 +182,42 @@ assessment_history = get_content("assessment.md")
 architect_plan = get_content("architect_plan.md")
 local_checklist = get_content("local_checklist.md")
 
-system_prompt = """You are an expert technical tutor and assessor for an AI Workstation operator.
+if is_review:
+    system_prompt = """You are an expert technical tutor and targeted review assessor for an AI Workstation operator.
+Your goal is to evaluate the human operator's remediated answers from a review session.
+
+Assess whether the previously identified gaps and misconceptions have been successfully addressed.
+Provide:
+1. A qualitative rating or score (e.g. 1-10 or Pass/Needs Further Review).
+2. Explicit confirmation on whether prior gaps were fixed.
+3. Any remaining gaps or new misconceptions detected.
+4. Recommended next practice or study task.
+5. A definitive recommendation: ADVANCE to next task, REVIEW specific topics, or REPEAT review session.
+
+Be supportive but rigorous. Focus on evidence of mastery for the specific gaps."""
+    
+    last_assessment_path = state.get("last_learning_assessment_path")
+    last_assessment = get_content(Path(last_assessment_path).name) if last_assessment_path else "Not found"
+    
+    user_prompt = f"""Assess the following human review answers.
+
+### Review Tutor Session Context
+{tutor_session}
+
+### Human Review Answers
+{human_answers}
+
+### Previous Assessment (Gaps identified here)
+{last_assessment}
+
+### Stronghold Context
+- Goals: {goals}
+- Syllabus: {syllabus}
+- Skill Map: {skill_map}
+
+Please provide your evaluation of the review session."""
+else:
+    system_prompt = """You are an expert technical tutor and assessor for an AI Workstation operator.
 Your goal is to evaluate the human operator's answers from a learning session.
 
 Assess the answers against the provided tutor session, goals, and syllabus.
@@ -174,7 +231,7 @@ Provide:
 
 Be supportive but rigorous. Do NOT automatically mark everything as perfect."""
 
-user_prompt = f"""Assess the following human answers from a learning session.
+    user_prompt = f"""Assess the following human answers from a learning session.
 
 ### Tutor Session Context
 {tutor_session}
@@ -208,21 +265,21 @@ try:
         str(sys_p), str(usr_p)
     ], text=True).strip()
 except subprocess.CalledProcessError as e:
-    print(json.dumps({"error": f"Ollama call failed: {e.output}", "classification": "LEARNING_ASSESSMENT_BLOCKED"}))
+    print(json.dumps({"error": f"Ollama call failed: {e.output}", "classification": f"{cl_prefix}_BLOCKED"}))
     sys.exit(0)
 
 # Write outputs
 assessments_dir = stronghold_dir / "assessments"
 assessments_dir.mkdir(parents=True, exist_ok=True)
-assessment_path = assessments_dir / f"assessment_{now_ts}.md"
+assessment_path = assessments_dir / f"{file_prefix}_{now_ts}.md"
 assessment_path.write_text(res, encoding="utf-8", newline="\n")
 
 resp_dir = stronghold_dir / "responses"
 resp_dir.mkdir(parents=True, exist_ok=True)
-(resp_dir / f"local_assessment_{now_ts}.md").write_text(res, encoding="utf-8", newline="\n")
+(resp_dir / f"local_{file_prefix}_{now_ts}.md").write_text(res, encoding="utf-8", newline="\n")
 
-evid_path = evid_dir / f"local_assessment_{now_ts}.md"
-evid_path.write_text(f"# Local Assessment Evidence\n- Model: {model}\n\n## Prompt\n{user_prompt}\n\n## Response\n{res}", encoding="utf-8", newline="\n")
+evid_path = evid_dir / f"local_{file_prefix}_{now_ts}.md"
+evid_path.write_text(f"# Local {'Review ' if is_review else ''}Assessment Evidence\n- Model: {model}\n\n## Prompt\n{user_prompt}\n\n## Response\n{res}", encoding="utf-8", newline="\n")
 
 # Extract next action recommendation
 next_action_match = re.search(r"(?:REPEAT|REVIEW|ADVANCE).*", res, re.IGNORECASE)
@@ -230,27 +287,33 @@ recommended_next = next_action_match.group(0).strip() if next_action_match else 
 
 # Append assessment.md
 with (stronghold_dir / "assessment.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Session Assessment\n- Result: {recommended_next}\n- Report: assessments/{assessment_path.name}\n")
+    f.write(f"\n## {now_ts} - {'Review ' if is_review else ''}Session Assessment\n- Result: {recommended_next}\n- Report: assessments/{assessment_path.name}\n")
 
 # Append practice_log.md
 with (stronghold_dir / "practice_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Assessment Completed\n- Result: {recommended_next}\n- Path: assessments/{assessment_path.name}\n")
+    f.write(f"\n## {now_ts} - {'Review ' if is_review else ''}Assessment Completed\n- Result: {recommended_next}\n- Path: assessments/{assessment_path.name}\n")
 
 # Update loop_log.md
 with (stronghold_dir / "loop_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Learning Assessment Generated\n- Actor: {model}\n- Result: {recommended_next}\n- Path: assessments/{assessment_path.name}\n")
+    f.write(f"\n## {now_ts} - {log_msg}\n- Actor: {model}\n- Result: {recommended_next}\n- Path: assessments/{assessment_path.name}\n")
 
 # Update state.json
-state["last_learning_assessment_at"] = now_ts
-state["last_learning_assessment_path"] = str(assessment_path)
-state["learning_session_status"] = "assessed"
-state["learning_assessment_model"] = model
+if is_review:
+    state["last_learning_review_assessment_at"] = now_ts
+    state["last_learning_review_assessment_path"] = str(assessment_path)
+    state["learning_review_assessment_model"] = model
+else:
+    state["last_learning_assessment_at"] = now_ts
+    state["last_learning_assessment_path"] = str(assessment_path)
+    state["learning_assessment_model"] = model
+
+state["learning_session_status"] = status_val
 state["provider_invocation"] = False
 state["browser_automation"] = False
 state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 print(json.dumps({
-    "classification": "LEARNING_ASSESSMENT_COMPLETED",
+    "classification": f"{cl_prefix}_COMPLETED",
     "assessment_path": to_win(assessment_path),
     "recommended_next": recommended_next
 }))
