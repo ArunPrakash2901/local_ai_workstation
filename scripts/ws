@@ -78,6 +78,9 @@ case "$SUBCOMMAND" in
         echo "  stronghold-intake-import <id> --from-file <f> Import intake answers"
         echo "  stronghold-architect-handoff <id> --target <t> Create senior architect handoff"
         echo "  stronghold-plan-import <id> --from-handoff <h> Import architect plan"
+        echo "  stronghold-local-checklist <id> --model <m> Generate operational checklist"
+        echo "  stronghold-report <id> Generate summary report"
+        echo "  stronghold-decision <id> Classify next safe state/action"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -418,6 +421,9 @@ case "$SUBCOMMAND" in
         ;;
     stronghold-report)
         bash "$SCRIPTS_DIR/ws_stronghold_report.sh" "$@"
+        ;;
+    stronghold-decision)
+        bash "$SCRIPTS_DIR/ws_stronghold_decision.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

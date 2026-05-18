@@ -235,9 +235,10 @@ ws stronghold-architect-handoff <stronghold_id_or_path> --target chatgpt|gemini-
 ws stronghold-plan-import <stronghold_id_or_path> --from-handoff latest|<handoff_id_or_path>
 ws stronghold-local-checklist <stronghold_id_or_path> --model hermes3:8b
 ws stronghold-report <stronghold_id_or_path>
+ws stronghold-decision <stronghold_id_or_path>
 ```
 
-Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`. `ws stronghold-architect-handoff` generates a browser-ready Senior Architect prompt requesting a master plan. `ws stronghold-plan-import` promotes a Senior Architect response to the authoritative `architect_plan.md`. `ws stronghold-local-checklist` uses a local "Intern" model to convert the master plan into granular operational tasks. `ws stronghold-report` synthesizes the current state into a comprehensive `final_report.md`.
+Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`. `ws stronghold-architect-handoff` generates a browser-ready Senior Architect prompt requesting a master plan. `ws stronghold-plan-import` promotes a Senior Architect response to the authoritative `architect_plan.md`. `ws stronghold-local-checklist` uses a local "Intern" model to convert the master plan into granular operational tasks. `ws stronghold-report` synthesizes the current state into a comprehensive `final_report.md`. `ws stronghold-decision` analyzes the stronghold to classify the next safe state or action.
 
 ## Workstation Audit And Cleanup
 
