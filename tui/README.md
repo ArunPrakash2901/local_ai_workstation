@@ -23,9 +23,10 @@ The dashboard does not read unsafe folders by default, including `.env`, credent
 ## Features
 - **Workstation Readiness**: Live check of Ollama, RTX GPU, and environment.
 - **Stronghold Status**: Overview of active cognitive workspaces.
-- **Learning Cockpit**: Dedicated view for learning strongholds, including progress tracking, artifact provenance, freshness-aware decision selection, stale-decision warnings, next-action command previews, and plain-mode execution of allowlisted BLUE dry-run planners only.
+- **Plain-Mode Visual Shell**: Header, sidebar, breadcrumbs, cards, human-readable actions, hidden backend-command drawer, and confirmation prompts built with the Python standard library only.
+- **Learning Cockpit**: Dedicated view for learning strongholds, including progress tracking, artifact provenance, freshness-aware decision selection, stale-decision warnings, read-only artifact viewing, and plain-mode execution of allowlisted BLUE dry-run planners only.
 - **Agent Hygiene**: Summary of Git worktrees and auto-run folders.
 - **Handoff Status**: List of recent frontier escalation packets.
 
 ## Safety
-Snapshot mode remains strictly **READ-ONLY**. Plain mode can execute only the hardcoded safe dry-run planner actions `learning-run --session --dry-run` and `learning-review-session --dry-run`; model execution, assessment, import, and advancement remain disabled. Learning Cockpit previews suppress stale advancement suggestions when normal and review artifacts are out of order.
+Snapshot mode remains strictly **READ-ONLY**. Plain mode keeps human actions in the foreground and backend `ws` commands hidden until the operator asks to reveal them. It can execute only the hardcoded safe dry-run planner actions `learning-run --session --dry-run` and `learning-review-session --dry-run`; model execution, assessment, import, and advancement remain disabled. Learning Cockpit previews suppress stale advancement suggestions when normal and review artifacts are out of order.
