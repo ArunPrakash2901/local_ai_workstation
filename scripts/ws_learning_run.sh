@@ -200,10 +200,32 @@ if not checklist_path.is_file() or checklist_path.stat().st_size == 0:
     sys.exit(0)
 
 if is_dry_run:
-    # Identify next task from checklist (simple heuristic: first unchecked box)
-    checklist_text = checklist_path.read_text(encoding="utf-8")
-    match = re.search(r"(?:-|\d+\.)\s*\[\s*\]\s*(.+)", checklist_text)
-    next_task = match.group(1).strip() if match else "No pending tasks found in checklist."
+    # Identify next task (Progress Aware)
+    # 1. Prefer state.json next_learning_task
+    next_task = state.get("next_learning_task")
+    
+    # 2. Check progress.md for completed tasks
+    progress_path = stronghold_dir / "progress.md"
+    completed_tasks = set()
+    if progress_path.is_file():
+        prog_text = progress_path.read_text(encoding="utf-8")
+        for line in prog_text.splitlines():
+            if line.startswith("- Completed:"):
+                completed_tasks.add(line.split(":", 1)[-1].strip())
+
+    # 3. Fallback to checklist if next_task is missing or already done
+    if not next_task or next_task in completed_tasks:
+        checklist_text = checklist_path.read_text(encoding="utf-8")
+        matches = re.findall(r"(?:-|\d+\.)\s*\[\s*\]\s*(.+)", checklist_text)
+        found = False
+        for m in matches:
+            t = m.strip()
+            if t not in completed_tasks:
+                next_task = t
+                found = True
+                break
+        if not found and not next_task:
+            next_task = "No pending tasks found in checklist."
 
     # Generate session plan
     sessions_dir = stronghold_dir / "sessions"
@@ -447,13 +469,20 @@ try:
     data = json.loads(sys.stdin.read())
     if 'error' in data:
         print(f\"Error: {data['error']}\")
-        print(f\"Classification: {data['classification']}\")
+        print(f\"Classification: {data.get('classification', 'BLOCKED')}\")
         sys.exit(1)
-    print(f\"Classification:  {data['classification']}\")
-    print(f\"Stronghold:      {data['stronghold_path']}\")
-    print(f\"Tutor Session:   {data['tutor_session_path']}\")
-    print(f\"Answer Template: {data['answer_template_path']}\")
-    print(f\"Next Action:     {data['next_action']}\")
+    
+    print(f\"Classification:  {data.get('classification', 'unknown')}\")
+    print(f\"Stronghold:      {data.get('stronghold_path', 'unknown')}\")
+    
+    if 'plan_path' in data:
+        print(f\"Session Plan:    {data['plan_path']}\")
+    if 'tutor_session_path' in data:
+        print(f\"Tutor Session:   {data['tutor_session_path']}\")
+    if 'answer_template_path' in data:
+        print(f\"Answer Template: {data['answer_template_path']}\")
+        
+    print(f\"Next Action:     {data.get('next_action', 'unknown')}\")
 except Exception as e:
     print(f\"Error parsing result: {e}\")
     sys.exit(1)
