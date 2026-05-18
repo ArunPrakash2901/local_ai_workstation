@@ -67,6 +67,7 @@ case "$SUBCOMMAND" in
         echo "  feature-handoff <id> Create a feature-aware local handoff packet"
         echo "  feature-report <id> Generate a local feature summary report"
         echo "  feature-status      List recent feature strongholds"
+        echo "  feature-local-review <id> --model <m> Run local Ollama reasoning gate"
         echo "  feature-run <id> --dry-run Preview future supervised run eligibility"
         echo ""
         echo "Agent & Loops:"
@@ -375,6 +376,12 @@ case "$SUBCOMMAND" in
         ;;
     feature-status)
         bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
+        ;;
+    feature-local-review)
+        bash "$SCRIPTS_DIR/ws_feature_local_review.sh" "$@"
+        ;;
+    feature-architect-handoff)
+        bash "$SCRIPTS_DIR/ws_feature_architect_handoff.sh" "$@"
         ;;
     feature-run)
         bash "$SCRIPTS_DIR/ws_feature_run.sh" "$@"
