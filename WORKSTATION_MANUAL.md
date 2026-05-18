@@ -252,8 +252,11 @@ ws learning-run <stronghold_id_or_path> --review-session --model hermes3:8b --fr
 ws learning-import-answers <stronghold_id_or_path> --from-file <answers_file> [--review]
 ws learning-assess <stronghold_id_or_path> --model hermes3:8b [--review]
 ws learning-decision <stronghold_id_or_path> [--review]
+ws learning-advance <stronghold_id_or_path>
 ws learning-review-session <stronghold_id_or_path> --dry-run
 ```
+
+The `--dry-run` command generates a tactical session plan based on the next task in the operational checklist. The model-backed command invokes a local tutor to generate specific exercises and an answer template. human operators must complete the answer template to progress. `ws learning-import-answers` records completed exercises in the stronghold history (use `--review` for review sessions). `ws learning-assess` uses a local model to evaluate human answers and provide feedback (use `--review` for review assessments). `ws learning-decision` inspects the latest assessment to categorize the next safe learning action (ADVANCE, REVIEW, or REPEAT). Use `--review` for decisions after review assessments. `ws learning-advance` marks the current task as completed and identifies the next study goal. `ws learning-review-session` generates a targeted study plan to address identified knowledge gaps.
 
 ## Workstation Audit And Cleanup
 
