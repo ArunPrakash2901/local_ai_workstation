@@ -32,9 +32,16 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 
 ## Operator TUI
 
-`ws tui` launches the current operator dashboard. Phase 8.1 is read-only only: it shows readiness, strongholds, handoffs, feature strongholds, and agent hygiene, but it does not invoke providers, run learning or research flows, or perform mutation/apply actions.
+`ws tui` launches the current operator dashboard. Phase 8.1 remains read-only only: it shows readiness, strongholds, handoffs, feature strongholds, and agent hygiene, but it does not invoke providers, run learning or research flows, or perform mutation/apply actions.
 
-Use `ws tui --snapshot` for the same dashboard as plain text when an interactive TUI dependency is unavailable.
+```bash
+ws tui
+ws tui --snapshot
+ws tui --plain
+ws tui --textual
+```
+
+`ws tui --snapshot` prints the dashboard and exits. `ws tui --plain` opens the dependency-free line-based dashboard. `ws tui --textual` requires Textual explicitly. Current policy: Textual is optional, no dependency is installed automatically, and plain/snapshot mode must always remain available.
 
 ---
 

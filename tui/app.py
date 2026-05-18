@@ -38,6 +38,11 @@ STATUS_COMMANDS = (
     ("features", ("feature-status",)),
     ("agent_hygiene", ("agent-hygiene",)),
 )
+PLAIN_CONTROLS = (
+    "r refresh dashboard",
+    "h show help",
+    "q quit",
+)
 
 
 @dataclass
@@ -137,6 +142,45 @@ def render_snapshot(data: DashboardData) -> str:
 
 def print_textual_missing_message() -> None:
     print("Textual is not installed. Install later with the approved dependency process.")
+
+
+def render_plain_dashboard(data: DashboardData, notice: str | None = None) -> str:
+    blocks: list[str] = []
+    if notice:
+        blocks.extend([notice, ""])
+    blocks.extend(
+        [
+            render_snapshot(data).rstrip(),
+            "",
+            section("Plain Mode Controls", "\n".join(PLAIN_CONTROLS)),
+        ]
+    )
+    return "\n".join(blocks).rstrip() + "\n"
+
+
+def run_plain_mode(notice: str | None = None) -> int:
+    dashboard = collect_dashboard_data([])
+    current_notice = notice
+
+    while True:
+        print(render_plain_dashboard(dashboard, current_notice), end="")
+        current_notice = None
+        try:
+            choice = input("plain mode [r refresh, h help, q quit]> ").strip().lower()
+        except EOFError:
+            print()
+            return 0
+
+        if choice == "q":
+            return 0
+        if choice == "r":
+            dashboard = collect_dashboard_data(dashboard.command_log)
+            continue
+        if choice == "h":
+            current_notice = "Help: " + " | ".join(PLAIN_CONTROLS)
+            continue
+
+        current_notice = "Unknown option. Use r to refresh, h for help, or q to quit."
 
 
 def build_textual_app():
@@ -277,10 +321,21 @@ def build_textual_app():
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Read-only workstation operator dashboard")
-    parser.add_argument(
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
         "--snapshot",
         action="store_true",
         help="print the read-only dashboard as plain text and exit",
+    )
+    mode_group.add_argument(
+        "--plain",
+        action="store_true",
+        help="launch the stdlib-only line-based dashboard",
+    )
+    mode_group.add_argument(
+        "--textual",
+        action="store_true",
+        help="require the Textual dashboard; exit safely if Textual is unavailable",
     )
     return parser.parse_args(argv)
 
@@ -292,10 +347,19 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(render_snapshot(data), end="")
         return 0
 
+    if args.plain:
+        return run_plain_mode()
+
     textual_app = build_textual_app()
+    if args.textual:
+        if textual_app is None:
+            print_textual_missing_message()
+            return 1
+        textual_app().run()
+        return 0
+
     if textual_app is None:
-        print_textual_missing_message()
-        return 1
+        return run_plain_mode("Textual is not installed. Falling back to plain mode.")
 
     textual_app().run()
     return 0

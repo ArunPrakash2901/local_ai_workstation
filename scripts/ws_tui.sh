@@ -15,4 +15,6 @@ if [ ! -f "$APP" ]; then
     exit 1
 fi
 
+# Forward all supported dashboard modes directly to the Python app:
+# --snapshot, --plain, and --textual.
 exec python3 "$APP" "$@"
