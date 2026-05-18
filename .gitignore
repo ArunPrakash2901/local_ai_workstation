@@ -56,3 +56,5 @@ tasks/generated/split_*/
 tasks/generated/*/generated_tasks_raw.md
 tasks/generated/*/split_prompt.md
 tasks/generated/README.md
+
+tmp/
