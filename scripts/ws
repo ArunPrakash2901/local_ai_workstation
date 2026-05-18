@@ -74,6 +74,7 @@ case "$SUBCOMMAND" in
         echo "Generic Strongholds (Phase 5):"
         echo "  stronghold-new --type <t> --title <t> Create generic stronghold"
         echo "  stronghold-status    List recent generic strongholds"
+        echo "  stronghold-intake <id> Generate domain-specific intake questions"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -396,6 +397,9 @@ case "$SUBCOMMAND" in
         ;;
     stronghold-status)
         bash "$SCRIPTS_DIR/ws_stronghold_status.sh" "$@"
+        ;;
+    stronghold-intake)
+        bash "$SCRIPTS_DIR/ws_stronghold_intake.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
