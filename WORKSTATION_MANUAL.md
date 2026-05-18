@@ -248,8 +248,9 @@ Strongholds for `trading-research` are limited to backtesting and paper trading;
 ```bash
 ws learning-run <stronghold_id_or_path> --session --dry-run
 ws learning-run <stronghold_id_or_path> --session --model hermes3:8b --from-plan <session_plan>
+ws learning-import-answers <stronghold_id_or_path> --from-file <answers_file>
 ```
-The `--dry-run` command generates a tactical session plan based on the next task in the operational checklist. The model-backed command invokes a local tutor to generate specific exercises and an answer template. human operators must complete the answer template to progress.
+The `--dry-run` command generates a tactical session plan based on the next task in the operational checklist. The model-backed command invokes a local tutor to generate specific exercises and an answer template. human operators must complete the answer template to progress. `ws learning-import-answers` records completed exercises in the stronghold history.
 
 ## Workstation Audit And Cleanup
 

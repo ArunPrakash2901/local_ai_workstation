@@ -428,6 +428,9 @@ case "$SUBCOMMAND" in
     learning-run)
         bash "$SCRIPTS_DIR/ws_learning_run.sh" "$@"
         ;;
+    learning-import-answers)
+        bash "$SCRIPTS_DIR/ws_learning_import_answers.sh" "$@"
+        ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;
