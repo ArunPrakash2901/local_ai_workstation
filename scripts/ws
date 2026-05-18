@@ -86,6 +86,8 @@ case "$SUBCOMMAND" in
         echo "  learning-run <id> --session --dry-run Plan learning session"
         echo "  learning-import-answers <id> --from-file <f> Import completed answers"
         echo "  learning-assess <id> --model <m> Assess imported answers"
+        echo "  learning-decision <id> Classify next learning action"
+        echo "  learning-review-session <id> --dry-run Plan review session"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -441,6 +443,9 @@ case "$SUBCOMMAND" in
         ;;
     learning-decision)
         bash "$SCRIPTS_DIR/ws_learning_decision.sh" "$@"
+        ;;
+    learning-review-session)
+        bash "$SCRIPTS_DIR/ws_learning_review_session.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
