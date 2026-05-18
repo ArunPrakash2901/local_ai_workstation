@@ -416,6 +416,9 @@ case "$SUBCOMMAND" in
     stronghold-local-checklist)
         bash "$SCRIPTS_DIR/ws_stronghold_local_checklist.sh" "$@"
         ;;
+    stronghold-report)
+        bash "$SCRIPTS_DIR/ws_stronghold_report.sh" "$@"
+        ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;
