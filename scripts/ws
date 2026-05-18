@@ -120,6 +120,7 @@ case "$SUBCOMMAND" in
         echo ""
         echo "System:"
         echo "  status              High-level health/status check"
+        echo "  tui                 Launch read-only operator dashboard"
         echo "  runs                List recent run folders"
         echo "  open-run <id>       Show paths for a specific run"
         echo "  aliases             Show legacy aliases"
@@ -263,6 +264,9 @@ case "$SUBCOMMAND" in
         # Combine health check and current model
         powershell.exe -File "D:/_ai_brain/scripts/check_health.ps1"
         bash "$SCRIPTS_DIR/ai_model_current.sh"
+        ;;
+    tui)
+        bash "$SCRIPTS_DIR/ws_tui.sh" "$@"
         ;;
     runs)
         if compgen -G "$RUNS_DIR/*" > /dev/null; then
@@ -528,4 +532,3 @@ case "$SUBCOMMAND" in
         exit 1
         ;;
 esac
-

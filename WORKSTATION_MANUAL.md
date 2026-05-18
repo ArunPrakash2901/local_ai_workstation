@@ -10,6 +10,7 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 2. `ws agent-hygiene`: Audit and cleanup transient agent artifacts.
 3. `ws stronghold-status`: Check active cognitive workspaces.
 4. `ws task-status`: Review pending implementation tasks.
+5. `ws tui`: Open the read-only operator dashboard when you want a terminal summary view.
 
 ---
 
@@ -26,6 +27,14 @@ The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes
 `ws task-split <prd_path> --project <key>`: Decompose a PRD into multiple implementation tasks.
 `ws task-status`: Show a summary of task lifecycle counts.
 `ws task-next`: Identify and display the next highest-priority task.
+
+---
+
+## Operator TUI
+
+`ws tui` launches the current operator dashboard. Phase 8.1 is read-only only: it shows readiness, strongholds, handoffs, feature strongholds, and agent hygiene, but it does not invoke providers, run learning or research flows, or perform mutation/apply actions.
+
+Use `ws tui --snapshot` for the same dashboard as plain text when an interactive TUI dependency is unavailable.
 
 ---
 
