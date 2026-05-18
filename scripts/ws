@@ -75,6 +75,7 @@ case "$SUBCOMMAND" in
         echo "  stronghold-new --type <t> --title <t> Create generic stronghold"
         echo "  stronghold-status    List recent generic strongholds"
         echo "  stronghold-intake <id> Generate domain-specific intake questions"
+        echo "  stronghold-intake-import <id> --from-file <f> Import intake answers"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -400,6 +401,9 @@ case "$SUBCOMMAND" in
         ;;
     stronghold-intake)
         bash "$SCRIPTS_DIR/ws_stronghold_intake.sh" "$@"
+        ;;
+    stronghold-intake-import)
+        bash "$SCRIPTS_DIR/ws_stronghold_intake_import.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

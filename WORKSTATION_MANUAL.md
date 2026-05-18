@@ -230,9 +230,10 @@ A Stronghold is a structured cognitive workspace for a single objective. `ws str
 ws stronghold-new --type learning|product|feature|research|trading-research --title "<title>"
 ws stronghold-status
 ws stronghold-intake <stronghold_id_or_path>
+ws stronghold-intake-import <stronghold_id_or_path> --from-file <answers_file>
 ```
 
-Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins.
+Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`.
 
 ## Workstation Audit And Cleanup
 
