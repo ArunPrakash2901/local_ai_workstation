@@ -170,16 +170,20 @@ if not tutor_sessions:
 tutor_session_path = tutor_sessions[0]
 tutor_session = tutor_session_path.read_text(encoding="utf-8")
 
-# Timestamp alignment check
-answers_mtime = Path(last_answers_path).stat().st_mtime
-tutor_mtime = tutor_session_path.stat().st_mtime
+# Strict Explicit-Link verification
+success_key = "last_learning_review_answers_import_success" if is_review else "last_learning_answers_import_success"
+link_key = "last_learning_review_answers_for_tutor_session_path" if is_review else "last_learning_answers_for_tutor_session_path"
 
-if answers_mtime < tutor_mtime:
+import_success = state.get(success_key, False)
+linked_tutor_session = state.get(link_key)
+
+if not import_success or linked_tutor_session != str(tutor_session_path):
     print(json.dumps({
-        "error": f"Latest {'review ' if is_review else ''}answers are older than latest tutor session. (Contamination Risk)",
+        "error": f"Latest {'review ' if is_review else ''}answers are not explicitly linked to the current tutor session. (Contamination Risk)",
         "classification": f"{cl_prefix}_REQUIRES_CURRENT_ANSWERS",
         "tutor_session_path": to_win(tutor_session_path),
-        "answers_path": to_win(last_answers_path)
+        "linked_answers_tutor_session": to_win(linked_tutor_session) if linked_tutor_session else "None",
+        "answers_path": to_win(last_answers_path) if last_answers_path else "None"
     }))
     sys.exit(0)
 
@@ -349,6 +353,8 @@ try:
         print(f\"Classification: {data['classification']}\")
         if 'tutor_session_path' in data:
             print(f\"Tutor Session:   {data['tutor_session_path']}\")
+        if 'linked_answers_tutor_session' in data:
+            print(f\"Linked Answers Tutor Session: {data['linked_answers_tutor_session']}\")
         if 'answers_path' in data:
             print(f\"Latest Answers:  {data['answers_path']}\")
         if data['classification'].endswith('REQUIRES_CURRENT_ANSWERS'):

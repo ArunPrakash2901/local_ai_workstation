@@ -183,9 +183,13 @@ with loop_log_path.open("a", encoding="utf-8", newline="\n") as f:
 if is_review:
     state["last_learning_review_answers_imported_at"] = now_ts
     state["last_learning_review_answers_path"] = str(imported_answers_path)
+    state["last_learning_review_answers_for_tutor_session_path"] = state.get("last_review_tutor_session_path")
+    state["last_learning_review_answers_import_success"] = True
 else:
     state["last_learning_answers_imported_at"] = now_ts
     state["last_learning_answers_path"] = str(imported_answers_path)
+    state["last_learning_answers_for_tutor_session_path"] = state.get("last_tutor_session_path")
+    state["last_learning_answers_import_success"] = True
 
 state["learning_session_status"] = next_status
 state["provider_invocation"] = False
