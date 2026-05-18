@@ -19,3 +19,13 @@ Option C is the current policy:
 - Any future Textual installation should use a dedicated virtual environment or another documented, approved dependency process.
 
 The dashboard does not read unsafe folders by default, including `.env`, credentials, raw datasets, model files, archives, or `.git`.
+
+## Features
+- **Workstation Readiness**: Live check of Ollama, RTX GPU, and environment.
+- **Stronghold Status**: Overview of active cognitive workspaces.
+- **Learning Cockpit**: Dedicated read-only view for learning strongholds, including progress tracking, artifact provenance, and next-action command previews.
+- **Agent Hygiene**: Summary of Git worktrees and auto-run folders.
+- **Handoff Status**: List of recent frontier escalation packets.
+
+## Safety
+The dashboard is strictly **READ-ONLY**. It does not invoke providers, mutate project files, or execute automated tasks. Command previews are provided for convenience but must be run manually by the operator.

@@ -139,6 +139,11 @@ ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <fe
 
 ---
 
+### TUI & Dashboards
+`ws tui [--snapshot | --plain | --textual]`: Launch the read-only operator dashboard.
+- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides a state-aware analysis of the active learning stronghold and previews the recommended next command.
+- **Safety**: The TUI is strictly read-only and does not execute actions or invoke providers.
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.

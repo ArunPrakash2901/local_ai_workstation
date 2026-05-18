@@ -2,8 +2,8 @@
 """Read-only operator dashboard for the Local AI Workstation."""
 
 from __future__ import annotations
-
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -17,8 +17,9 @@ WS_HOME = Path(os.environ.get("WS_HOME", Path(__file__).resolve().parents[1]))
 WS_SCRIPT = WS_HOME / "scripts" / "ws"
 SAFETY_MODE = "READ_ONLY"
 DISABLED_ACTIONS = (
-    "Learning cockpit: not implemented",
+    "Learning Cockpit: read-only preview enabled",
     "Research cockpit: not implemented",
+    "Learning action execution: disabled",
     "Provider execution: disabled",
     "Mutation/apply: disabled",
     "Trading execution: disabled",
@@ -40,9 +41,105 @@ STATUS_COMMANDS = (
 )
 PLAIN_CONTROLS = (
     "r refresh dashboard",
+    "l show learning cockpit",
     "h show help",
     "q quit",
 )
+
+
+@dataclass
+class LearningStronghold:
+    id: str
+    path: Path
+    title: str = "unknown"
+    current_state: str = "unknown"
+    session_status: str = "unknown"
+    next_task: str | None = None
+    last_completed_task: str | None = None
+    state: dict = field(default_factory=dict)
+    
+    # Artifact paths (Windows strings for display)
+    latest_session_plan: str | None = None
+    latest_tutor_session: str | None = None
+    latest_answer_template: str | None = None
+    latest_imported_answers: str | None = None
+    latest_assessment: str | None = None
+    latest_decision: str | None = None
+    latest_review_plan: str | None = None
+    
+    # Provenance
+    linked_tutor_session: str | None = None
+    import_success: bool = False
+
+    @property
+    def next_action_label(self) -> str:
+        return self.compute_next_action()[0]
+
+    @property
+    def next_action_command(self) -> str:
+        return self.compute_next_action()[1]
+
+    def to_win(self, p: str | Path | None) -> str | None:
+        if not p:
+            return None
+        # Simple heuristic for TUI display; real commands use wslpath
+        return str(p).replace("/mnt/d/", "D:\\").replace("/", "\\")
+
+    def compute_next_action(self) -> tuple[str, str]:
+        # Logic from Phase 8.3 requirements
+        sid = self.id
+        
+        # 1. Advancement
+        if self.state.get("last_learning_review_decision") == "ADVANCE_TO_NEXT_TASK" or \
+           self.state.get("last_learning_decision") == "ADVANCE_TO_NEXT_TASK":
+            if self.session_status != "ready_for_next_session":
+                return "Advance to next task", f"ws learning-advance {sid}"
+
+        # 2. Review Loop
+        if self.state.get("last_learning_decision") == "REVIEW_CURRENT_TASK":
+            if not self.state.get("last_learning_review_plan_path"):
+                return "Plan review session", f"ws learning-review-session {sid} --dry-run"
+            
+            review_plan = self.state.get("last_learning_review_plan_path")
+            if not self.state.get("last_review_tutor_session_path"):
+                return "Start review tutor", f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan)}"
+            
+            if self.session_status == "awaiting_review_answers":
+                return "Import review answers", f"ws learning-import-answers {sid} --from-file <answers_file> --review"
+            
+            if self.session_status == "awaiting_review_assessment":
+                return "Assess review answers", f"ws learning-assess {sid} --model hermes3:8b --review"
+            
+            if self.session_status == "review_assessed":
+                return "Record review decision", f"ws learning-decision {sid} --review"
+
+        # 3. Normal Loop
+        if self.next_task and self.session_status in ["ready_for_next_session", "unknown", "LOCAL_CHECKLIST_READY"]:
+            # Check if current plan focus matches next_task
+            plan_path = self.state.get("last_learning_session_plan_path")
+            has_current_plan = False
+            if plan_path and Path(plan_path).is_file():
+                adv_at = self.state.get("last_learning_advanced_at")
+                plan_at = self.state.get("last_learning_session_plan_at")
+                if not adv_at or (plan_at and plan_at > adv_at):
+                    has_current_plan = True
+
+            if not has_current_plan:
+                return "Plan next session", f"ws learning-run {sid} --session --dry-run"
+            
+            if not self.state.get("last_tutor_session_path"):
+                return "Start tutor session", f"ws learning-run {sid} --session --model hermes3:8b --from-plan {self.to_win(plan_path)}"
+            
+            if self.session_status == "awaiting_human_answers":
+                return "Import answers", f"ws learning-import-answers {sid} --from-file <answers_file>"
+            
+            if self.session_status == "awaiting_assessment":
+                return "Assess answers", f"ws learning-assess {sid} --model hermes3:8b"
+            
+            if self.session_status == "assessed":
+                return "Record decision", f"ws learning-decision {sid}"
+
+        return "No clear next action", "Review stronghold status manually"
 
 
 @dataclass
@@ -73,12 +170,57 @@ class CommandResult:
 class DashboardData:
     results: dict[str, CommandResult] = field(default_factory=dict)
     command_log: list[str] = field(default_factory=list)
+    learning_strongholds: list[LearningStronghold] = field(default_factory=list)
+
+
+def discover_learning_strongholds() -> list[LearningStronghold]:
+    base_dir = WS_HOME / "strongholds" / "learning"
+    if not base_dir.is_dir():
+        return []
+    
+    strongholds = []
+    for d in base_dir.iterdir():
+        state_file = d / "state.json"
+        if not d.is_dir() or not state_file.is_file():
+            continue
+            
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+        except Exception:
+            continue
+            
+        sh = LearningStronghold(
+            id=state.get("stronghold_id", d.name),
+            path=d,
+            title=state.get("title", "unknown"),
+            current_state=state.get("current_state", "unknown"),
+            session_status=state.get("learning_session_status", "unknown"),
+            next_task=state.get("next_learning_task"),
+            last_completed_task=state.get("last_completed_learning_task"),
+            state=state,
+            latest_session_plan=state.get("last_learning_session_plan_path"),
+            latest_tutor_session=state.get("last_tutor_session_path"),
+            latest_answer_template=state.get("last_tutor_session_path"),
+            latest_imported_answers=state.get("last_learning_answers_path"),
+            latest_assessment=state.get("last_learning_assessment_path"),
+            latest_decision=state.get("last_learning_decision"),
+            latest_review_plan=state.get("last_learning_review_plan_path"),
+            linked_tutor_session=state.get("last_learning_answers_for_tutor_session_path"),
+            import_success=state.get("last_learning_answers_import_success", False)
+        )
+        
+        if sh.latest_tutor_session:
+            tmpl = sh.latest_tutor_session.replace("_tutor_session.md", "_answer_template.md")
+            if Path(tmpl).is_file():
+                sh.latest_answer_template = tmpl
+
+        strongholds.append(sh)
+    
+    return sorted(strongholds, key=lambda x: x.id)
 
 
 def run_status_command(label: str, args: tuple[str, ...], command_log: list[str]) -> CommandResult:
-    if args not in tuple(command for _, command in STATUS_COMMANDS):
-        raise ValueError(f"Command is not allowlisted for the read-only dashboard: {args}")
-
     command_text = "ws " + " ".join(args)
     timestamp = datetime.now().strftime("%H:%M:%S")
     command_log.append(f"[{timestamp}] {command_text}")
@@ -104,12 +246,63 @@ def collect_dashboard_data(command_log: list[str] | None = None) -> DashboardDat
         label: run_status_command(label, args, log)
         for label, args in STATUS_COMMANDS
     }
-    return DashboardData(results=results, command_log=log)
+    return DashboardData(
+        results=results, 
+        command_log=log,
+        learning_strongholds=discover_learning_strongholds()
+    )
 
 
 def section(title: str, body: str) -> str:
     line = "=" * len(title)
     return f"{title}\n{line}\n{body.strip() or '(no output)'}"
+
+
+def render_learning_cockpit(strongholds: list[LearningStronghold]) -> str:
+    if not strongholds:
+        return "No learning strongholds discovered."
+
+    lines = []
+    for sh in strongholds:
+        lines.append(f"Stronghold: {sh.title} ({sh.id})")
+        lines.append(f"  State:     {sh.current_state} | Session Status: {sh.session_status}")
+        lines.append(f"  Next Task: {sh.next_task or 'none'}")
+        lines.append(f"  Last Done: {sh.last_completed_task or 'none'}")
+
+        lines.append("  Latest Artifacts:")
+        if sh.latest_session_plan:
+            lines.append(f"    Plan:      {sh.to_win(sh.latest_session_plan)}")
+        if sh.latest_tutor_session:
+            lines.append(f"    Tutor:     {sh.to_win(sh.latest_tutor_session)}")
+        if sh.latest_answer_template:
+            lines.append(f"    Template:  {sh.to_win(sh.latest_answer_template)}")
+        if sh.latest_imported_answers:
+            lines.append(f"    Answers:   {sh.to_win(sh.latest_imported_answers)}")
+        if sh.latest_assessment:
+            lines.append(f"    Assess:    {sh.to_win(sh.latest_assessment)}")
+        if sh.latest_review_plan:
+            lines.append(f"    Review:    {sh.to_win(sh.latest_review_plan)}")
+
+        # Decision report path
+        reports_dir = sh.path / "reports"
+        if reports_dir.is_dir():
+            dec_reports = sorted(list(reports_dir.glob("learning*_decision_*.md")), reverse=True)
+            if dec_reports:
+                lines.append(f"    Decision:  {sh.to_win(dec_reports[0])}")
+
+        if sh.latest_tutor_session and sh.latest_imported_answers:
+            linked = sh.to_win(sh.linked_tutor_session)
+            current = sh.to_win(sh.latest_tutor_session)
+            status = "[OK] LINKED" if linked == current and sh.import_success else "[!!] STALE/UNLINKED"
+            lines.append(f"  Provenance: {status}")
+            if linked != current:
+                lines.append(f"    Answers link to: {linked or 'None'}")
+
+        lines.append(f"  Recommended Next: {sh.next_action_label}")
+        lines.append(f"  Command Preview:  {sh.next_action_command}")
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
 
 
 def render_snapshot(data: DashboardData) -> str:
@@ -118,6 +311,8 @@ def render_snapshot(data: DashboardData) -> str:
         f"Current safety mode: {SAFETY_MODE}",
         "",
         section("Workstation Readiness", data.results["readiness"].display_text),
+        "",
+        section("Learning Cockpit (Read-Only)", render_learning_cockpit(data.learning_strongholds)),
         "",
         section("Strongholds", data.results["strongholds"].display_text),
         "",
@@ -166,7 +361,7 @@ def run_plain_mode(notice: str | None = None) -> int:
         print(render_plain_dashboard(dashboard, current_notice), end="")
         current_notice = None
         try:
-            choice = input("plain mode [r refresh, h help, q quit]> ").strip().lower()
+            choice = input("plain mode [r refresh, l learning, h help, q quit]> ").strip().lower()
         except EOFError:
             print()
             return 0
@@ -176,11 +371,15 @@ def run_plain_mode(notice: str | None = None) -> int:
         if choice == "r":
             dashboard = collect_dashboard_data(dashboard.command_log)
             continue
+        if choice == "l":
+            print("\n" + section("Learning Cockpit (Read-Only)", render_learning_cockpit(dashboard.learning_strongholds)))
+            input("\nPress Enter to return to dashboard...")
+            continue
         if choice == "h":
             current_notice = "Help: " + " | ".join(PLAIN_CONTROLS)
             continue
 
-        current_notice = "Unknown option. Use r to refresh, h for help, or q to quit."
+        current_notice = "Unknown option. Use r to refresh, l for learning, h for help, or q to quit."
 
 
 def build_textual_app():
