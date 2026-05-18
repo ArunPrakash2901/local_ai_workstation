@@ -439,6 +439,9 @@ case "$SUBCOMMAND" in
     learning-assess)
         bash "$SCRIPTS_DIR/ws_learning_assess.sh" "$@"
         ;;
+    learning-decision)
+        bash "$SCRIPTS_DIR/ws_learning_decision.sh" "$@"
+        ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;
