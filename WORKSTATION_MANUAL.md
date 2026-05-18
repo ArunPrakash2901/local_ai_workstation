@@ -232,9 +232,10 @@ ws stronghold-status
 ws stronghold-intake <stronghold_id_or_path>
 ws stronghold-intake-import <stronghold_id_or_path> --from-file <answers_file>
 ws stronghold-architect-handoff <stronghold_id_or_path> --target chatgpt|gemini-browser --purpose master-plan
+ws stronghold-plan-import <stronghold_id_or_path> --from-handoff latest|<handoff_id_or_path>
 ```
 
-Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`. `ws stronghold-architect-handoff` generates a browser-ready Senior Architect prompt requesting a master plan.
+Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`. `ws stronghold-architect-handoff` generates a browser-ready Senior Architect prompt requesting a master plan. `ws stronghold-plan-import` promotes a Senior Architect response to the authoritative `architect_plan.md`.
 
 ## Workstation Audit And Cleanup
 
