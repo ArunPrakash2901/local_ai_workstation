@@ -70,8 +70,11 @@ The `--dry-run` command generates a tactical session plan based on the next task
 
 ```bash
 ws research-run <stronghold_id_or_path> --review-paper --dry-run
+ws research-run <stronghold_id_or_path> --review-paper --model <model> --source-text <text_file> --from-plan <paper_review_plan>
 ```
 The `--dry-run` command generates a structured analysis plan for a paper or technical source. It also initializes key research artifacts if missing or empty: `literature_map.md`, `hypothesis_log.md`, `evidence_matrix.md`, and `research_summary.md`. Terminal states include `RESEARCH_REVIEW_PLAN_READY` on success.
+
+The model-backed command uses a local "Research Intern" persona (via Ollama) to process a plain text source file. It generates structured notes, extracts candidate hypotheses, suggests evidence matrix updates, and synthesizes a source summary. Terminal states include `RESEARCH_SOURCE_NOTES_READY`.
 
 ---
 
