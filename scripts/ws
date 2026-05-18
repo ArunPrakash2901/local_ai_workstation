@@ -93,6 +93,7 @@ case "$SUBCOMMAND" in
         echo "Research Runner (Phase 7):"
         echo "  research-run <id> --review-paper --dry-run Plan paper review"
         echo "  research-decision <id> Classify next research action"
+        echo "  research-add-source <id> --source-text <f> --label <l> Register new source"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -460,6 +461,9 @@ case "$SUBCOMMAND" in
         ;;
     research-decision)
         bash "$SCRIPTS_DIR/ws_research_decision.sh" "$@"
+        ;;
+    research-add-source)
+        bash "$SCRIPTS_DIR/ws_research_add_source.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

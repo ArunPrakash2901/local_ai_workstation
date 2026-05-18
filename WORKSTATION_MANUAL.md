@@ -72,12 +72,15 @@ The `--dry-run` command generates a tactical session plan based on the next task
 ws research-run <stronghold_id_or_path> --review-paper --dry-run
 ws research-run <stronghold_id_or_path> --review-paper --model <model> --source-text <text_file> --from-plan <paper_review_plan>
 ws research-decision <stronghold_id_or_path>
+ws research-add-source <stronghold_id_or_path> --source-text <text_file> --label "<label>"
 ```
 The `--dry-run` command generates a structured analysis plan for a paper or technical source. It also initializes key research artifacts if missing or empty: `literature_map.md`, `hypothesis_log.md`, `evidence_matrix.md`, and `research_summary.md`. Terminal states include `RESEARCH_REVIEW_PLAN_READY` on success.
 
 The model-backed command uses a local "Research Intern" persona (via Ollama) to process a plain text source file. It generates structured notes, extracts candidate hypotheses, suggests evidence matrix updates, and synthesizes a source summary. Terminal states include `RESEARCH_SOURCE_NOTES_READY`.
 
 `ws research-decision` performs a local, deterministic evaluation of the research evidence. It classifies the stronghold state (e.g., `NEEDS_MORE_SOURCES`, `ENOUGH_FOR_SYNTHESIS`) and generates a summary report under `reports/`.
+
+`ws research-add-source` registers a new plain-text source file into the research stronghold. It copies the source into a `sources/` folder and updates the `literature_map.md` with a `registered_unreviewed` status.
 
 ---
 
