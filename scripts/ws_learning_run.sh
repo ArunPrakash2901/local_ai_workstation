@@ -10,10 +10,13 @@ fi
 WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
 STRONGHOLDS_DIR="$WS_HOME/strongholds"
 PYTHON="$WS_HOME/runtimes/workstation_venv/bin/python3"
+OLLAMA_CALL_PY="$WS_HOME/scripts/ollama_call.py"
 
 STRONGHOLD_INPUT=""
 SESSION=0
 DRY_RUN=0
+MODEL=""
+FROM_PLAN=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -26,6 +29,14 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=1
             shift
             ;;
+        --model)
+            MODEL="$2"
+            shift 2
+            ;;
+        --from-plan)
+            FROM_PLAN="$2"
+            shift 2
+            ;;
         *)
             if [ -z "$STRONGHOLD_INPUT" ] || [[ "$1" != --* ]]; then
                 STRONGHOLD_INPUT="$1"
@@ -36,18 +47,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$STRONGHOLD_INPUT" ]; then
-    echo "Usage: ws learning-run <stronghold_id_or_path> --session --dry-run"
+    echo "Usage: ws learning-run <stronghold_id_or_path> --session [--dry-run | --model <m> --from-plan <f>]"
     exit 1
 fi
 
 if [ "$SESSION" -eq 0 ]; then
-    echo "Error: --session is mandatory in this MVP."
+    echo "Error: --session is mandatory."
+    exit 1
+fi
+
+if [ "$DRY_RUN" -eq 1 ] && [ -n "$MODEL" ]; then
+    echo "Error: Cannot combine --dry-run and --model."
     exit 1
 fi
 
 if [ "$DRY_RUN" -eq 0 ]; then
-    echo "Error: --dry-run is mandatory in this MVP."
-    exit 1
+    if [ -z "$MODEL" ] || [ -z "$FROM_PLAN" ]; then
+        echo "Error: Must specify either --dry-run or both --model and --from-plan."
+        exit 1
+    fi
 fi
 
 to_wsl_path() {
@@ -97,22 +115,54 @@ resolve_stronghold_dir() {
 }
 
 STRONGHOLD_DIR=$(resolve_stronghold_dir) || {
-    # If not found in learning/, check if it's a generic path but invalid type
     echo "Error: Target is not a learning stronghold or not found."
     exit 1
 }
 
+if [ "$DRY_RUN" -eq 0 ]; then
+    # Check Ollama
+    if ! curl -s -f "http://localhost:11434/api/tags" > /dev/null; then
+        echo "Error: Ollama is not reachable at localhost:11434. (LEARNING_TUTOR_REQUIRES_OLLAMA)"
+        exit 1
+    fi
+
+    # Check model
+    if ! curl -s "http://localhost:11434/api/tags" | grep -q "\"$MODEL\""; then
+        echo "Error: Model '$MODEL' is not available in Ollama. (LEARNING_TUTOR_REQUIRES_MODEL)"
+        exit 1
+    fi
+fi
+
 NOW_TS=$(date +"%Y%m%d_%H%M%S")
+FROM_PLAN_WSL=""
+[ -n "$FROM_PLAN" ] && FROM_PLAN_WSL=$(to_wsl_path "$FROM_PLAN")
 
 # Use Python for logic
-RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" << 'PY'
+RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$DRY_RUN" "$MODEL" "$FROM_PLAN_WSL" "$OLLAMA_CALL_PY" << 'PY'
 import sys
 import json
 import re
+import subprocess
 from pathlib import Path
 
 stronghold_dir = Path(sys.argv[1])
 now_ts = sys.argv[2]
+is_dry_run = sys.argv[3] == "1"
+model = sys.argv[4]
+from_plan_path = Path(sys.argv[5]) if sys.argv[5] else None
+ollama_call_script = sys.argv[6]
+
+def to_win(p):
+    try:
+        return subprocess.check_output(["wslpath", "-w", str(p)]).decode("utf-8").strip()
+    except:
+        return str(p)
+
+def get_content(filename):
+    p = stronghold_dir / filename
+    if p.is_file():
+        return p.read_text(encoding="utf-8").strip()
+    return "[Artifact not found]"
 
 state_path = stronghold_dir / "state.json"
 if not state_path.is_file():
@@ -126,9 +176,9 @@ if stype != "learning":
     sys.exit(0)
 
 curr_state = state.get("current_state", "unknown")
+# For MVP we allow a few ready states
 allowed_states = ["LOCAL_CHECKLIST_READY", "ARCHITECT_PLAN_IMPORTED", "READY_FOR_LOCAL_WORK"]
 if curr_state not in allowed_states:
-    # We might still allow it if it's been manually updated, but let's be strict for MVP
     print(json.dumps({"error": f"Stronghold is in state '{curr_state}'. Must be one of: {', '.join(allowed_states)}", "classification": "LEARNING_SESSION_BLOCKED"}))
     sys.exit(0)
 
@@ -137,17 +187,18 @@ if not checklist_path.is_file() or checklist_path.stat().st_size == 0:
     print(json.dumps({"error": "Missing or empty local_checklist.md", "classification": "LEARNING_SESSION_BLOCKED"}))
     sys.exit(0)
 
-# Identify next task from checklist (simple heuristic: first unchecked box)
-checklist_text = checklist_path.read_text(encoding="utf-8")
-match = re.search(r"(?:-|\d+\.)\s*\[\s*\]\s*(.+)", checklist_text)
-next_task = match.group(1).strip() if match else "No pending tasks found in checklist."
+if is_dry_run:
+    # Identify next task from checklist (simple heuristic: first unchecked box)
+    checklist_text = checklist_path.read_text(encoding="utf-8")
+    match = re.search(r"(?:-|\d+\.)\s*\[\s*\]\s*(.+)", checklist_text)
+    next_task = match.group(1).strip() if match else "No pending tasks found in checklist."
 
-# Generate session plan
-sessions_dir = stronghold_dir / "sessions"
-sessions_dir.mkdir(parents=True, exist_ok=True)
-plan_path = sessions_dir / f"{now_ts}_session_plan.md"
+    # Generate session plan
+    sessions_dir = stronghold_dir / "sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    plan_path = sessions_dir / f"{now_ts}_session_plan.md"
 
-plan_content = f"""# Learning Session Plan: {state.get('title')}
+    plan_content = f"""# Learning Session Plan: {state.get('title')}
 
 - Timestamp: {now_ts}
 - Stronghold ID: {state.get('stronghold_id')}
@@ -163,7 +214,6 @@ Implement or study the next tactical task:
 - Ensure local model `hermes3:8b` is warm (if applicable)
 
 ## Topics to Study
-[Heuristic: Extracting from syllabus based on task]
 - Refer to `syllabus.md` for relevant sections.
 
 ## Practice Exercises
@@ -192,40 +242,143 @@ Implement or study the next tactical task:
 ## Next Safe Action
 Run the actual session once implemented, or begin manual study based on this plan.
 """
-plan_path.write_text(plan_content, encoding="utf-8", newline="\n")
+    plan_path.write_text(plan_content, encoding="utf-8", newline="\n")
 
-# Update practice_log.md
-log_path = stronghold_dir / "practice_log.md"
-log_entry = f"\n## {now_ts} - Planned Session\n- Focus: {next_task}\n- Plan: sessions/{plan_path.name}\n"
-with log_path.open("a", encoding="utf-8", newline="\n") as f:
-    f.write(log_entry)
+    # Update logs
+    with (stronghold_dir / "practice_log.md").open("a", encoding="utf-8", newline="\n") as f:
+        f.write(f"\n## {now_ts} - Planned Session\n- Focus: {next_task}\n- Plan: sessions/{plan_path.name}\n")
+    with (stronghold_dir / "loop_log.md").open("a", encoding="utf-8", newline="\n") as f:
+        f.write(f"\n## {now_ts} - Learning Session Dry-Run Generated\n- Actor: local\n- State: {curr_state}\n- Plan: sessions/{plan_path.name}\n")
 
-# Update loop_log.md
-loop_log_path = stronghold_dir / "loop_log.md"
-loop_entry = f"\n## {now_ts} - Learning Session Dry-Run Generated\n- Actor: local\n- State: {curr_state}\n- Plan: sessions/{plan_path.name}\n"
-with loop_log_path.open("a", encoding="utf-8", newline="\n") as f:
-    f.write(loop_entry)
+    state["last_learning_session_plan_at"] = now_ts
+    state["last_learning_session_plan_path"] = str(plan_path)
+    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+    print(json.dumps({
+        "classification": "LEARNING_SESSION_DRY_READY",
+        "stronghold_path": to_win(stronghold_dir),
+        "plan_path": to_win(plan_path),
+        "next_action": "Review the session plan and begin manual study."
+    }))
+    sys.exit(0)
+
+# Model session mode
+if not from_plan_path or not from_plan_path.is_file():
+    print(json.dumps({"error": f"Session plan not found: {from_plan_path}", "classification": "LEARNING_TUTOR_REQUIRES_PLAN"}))
+    sys.exit(0)
+
+plan_text = from_plan_path.read_text(encoding="utf-8")
+contract = get_content("contract.md")
+goals = get_content("goals.md")
+constraints = get_content("constraints.md")
+success = get_content("success_criteria.md")
+syllabus = get_content("syllabus.md")
+skill_map = get_content("skill_map.md")
+practice_log = get_content("practice_log.md")
+assessment = get_content("assessment.md")
+architect_plan = get_content("architect_plan.md")
+local_checklist = get_content("local_checklist.md")
+
+system_prompt = """You are a supportive and technical local tutor (Intern level) for an AI Workstation operator.
+Your goal is to guide the user through a specific learning session defined in their plan.
+
+Provide:
+1. A clear, technical explanation of the topic.
+2. A worked example or case study.
+3. 2-3 specific practice exercises for the user to complete.
+4. 3 self-assessment questions to check understanding.
+5. A Markdown Answer Template for the user to use.
+6. Instructions on what the human should do next.
+
+Stay within the provided context. Do NOT suggest live trading or capital deployment.
+Act as an assistant, not an architect. Focus on implementation and understanding.
+"""
+
+user_prompt = f"""Conduct a learning session based on the following plan.
+
+### Session Plan
+{plan_text}
+
+### Stronghold Context
+- Title: {state.get('title')}
+- Contract: {contract}
+- Goals: {goals}
+- Constraints: {constraints}
+- Syllabus: {syllabus}
+- Skill Map: {skill_map}
+- Master Plan (Architect): {architect_plan}
+
+### History
+{practice_log[-2000:]}
+
+Please generate the tutor session content.
+"""
+
+# Call Ollama via temporary files
+evid_dir = stronghold_dir / "evidence"
+evid_dir.mkdir(parents=True, exist_ok=True)
+sys_p = evid_dir / f"local_tutor_{now_ts}_sys.txt"
+usr_p = evid_dir / f"local_tutor_{now_ts}_user.txt"
+sys_p.write_text(system_prompt, encoding="utf-8")
+usr_p.write_text(user_prompt, encoding="utf-8")
+
+try:
+    res = subprocess.check_output([
+        sys.executable, ollama_call_script,
+        "http://localhost:11434", model,
+        str(sys_p), str(usr_p)
+    ], text=True).strip()
+except subprocess.CalledProcessError as e:
+    print(json.dumps({"error": f"Ollama call failed: {e.output}", "classification": "LEARNING_TUTOR_SESSION_BLOCKED"}))
+    sys.exit(0)
+
+# Write outputs
+sessions_dir = stronghold_dir / "sessions"
+tutor_session_path = sessions_dir / f"{now_ts}_tutor_session.md"
+tutor_session_path.write_text(res, encoding="utf-8", newline="\n")
+
+# Extract answer template (look for markdown code block or "Answer Template" header)
+answer_template = "# Answer Template\n\n[Paste tutor session exercises here and provide answers]"
+template_match = re.search(r"## Answer Template\n(.*?)(?:\n##|$)", res, re.DOTALL | re.IGNORECASE)
+if template_match:
+    answer_template = f"# Answer Template: {now_ts}\n\n{template_match.group(1).strip()}"
+
+template_path = sessions_dir / f"{now_ts}_answer_template.md"
+template_path.write_text(answer_template, encoding="utf-8", newline="\n")
+
+# Responses and evidence
+resp_dir = stronghold_dir / "responses"
+resp_dir.mkdir(parents=True, exist_ok=True)
+(resp_dir / f"local_tutor_{now_ts}.md").write_text(res, encoding="utf-8", newline="\n")
+
+evid_path = evid_dir / f"local_tutor_{now_ts}.md"
+evid_path.write_text(f"# Local Tutor Evidence\n- Model: {model}\n\n## Prompt\n{user_prompt}\n\n## Response\n{res}", encoding="utf-8", newline="\n")
+
+# Update logs
+with (stronghold_dir / "practice_log.md").open("a", encoding="utf-8", newline="\n") as f:
+    f.write(f"\n## {now_ts} - Tutor Session Generated\n- Model: {model}\n- Session: sessions/{tutor_session_path.name}\n- Status: awaiting human answers\n")
+with (stronghold_dir / "loop_log.md").open("a", encoding="utf-8", newline="\n") as f:
+    f.write(f"\n## {now_ts} - Local Tutor Session Generated\n- Actor: {model}\n- Plan: {from_plan_path.name}\n- Session: sessions/{tutor_session_path.name}\n")
 
 # Update state.json
-state["last_learning_session_plan_at"] = now_ts
-state["last_learning_session_plan_path"] = str(plan_path)
+state["last_tutor_session_at"] = now_ts
+state["last_tutor_session_path"] = str(tutor_session_path)
+state["tutor_model"] = model
 state["provider_invocation"] = False
 state["browser_automation"] = False
 state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
-def to_win(p):
-    try:
-        import subprocess
-        return subprocess.check_output(["wslpath", "-w", str(p)]).decode("utf-8").strip()
-    except:
-        return str(p)
-
 print(json.dumps({
-    "classification": "LEARNING_SESSION_DRY_READY",
+    "classification": "LEARNING_TUTOR_SESSION_READY",
     "stronghold_path": to_win(stronghold_dir),
-    "plan_path": to_win(plan_path),
-    "next_action": "Review the session plan and begin manual study."
+    "tutor_session_path": to_win(tutor_session_path),
+    "answer_template_path": to_win(template_path),
+    "next_action": "Complete the answer template based on the tutor session."
 }))
+
+# Cleanup
+sys_p.unlink()
+usr_p.unlink()
 PY
 )
 
@@ -239,10 +392,11 @@ try:
         print(f\"Error: {data['error']}\")
         print(f\"Classification: {data['classification']}\")
         sys.exit(1)
-    print(f\"Classification: {data['classification']}\")
-    print(f\"Stronghold:     {data['stronghold_path']}\")
-    print(f\"Session Plan:   {data['plan_path']}\")
-    print(f\"Next Action:    {data['next_action']}\")
+    print(f\"Classification:  {data['classification']}\")
+    print(f\"Stronghold:      {data['stronghold_path']}\")
+    print(f\"Tutor Session:   {data['tutor_session_path']}\")
+    print(f\"Answer Template: {data['answer_template_path']}\")
+    print(f\"Next Action:     {data['next_action']}\")
 except Exception as e:
     print(f\"Error parsing result: {e}\")
     sys.exit(1)
