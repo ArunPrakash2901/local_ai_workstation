@@ -425,6 +425,9 @@ case "$SUBCOMMAND" in
     stronghold-decision)
         bash "$SCRIPTS_DIR/ws_stronghold_decision.sh" "$@"
         ;;
+    learning-run)
+        bash "$SCRIPTS_DIR/ws_learning_run.sh" "$@"
+        ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
         ;;

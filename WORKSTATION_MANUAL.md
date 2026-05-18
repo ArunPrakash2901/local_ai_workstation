@@ -240,6 +240,16 @@ ws stronghold-decision <stronghold_id_or_path>
 
 Strongholds for `trading-research` are limited to backtesting and paper trading; no live trading or capital deployment is enabled. `ws stronghold-intake` generates domain-specific questions to establish absolute understanding before planning begins. `ws stronghold-intake-import` parses human answers to update core artifacts and move the stronghold toward `CONTRACT_READY`. `ws stronghold-architect-handoff` generates a browser-ready Senior Architect prompt requesting a master plan. `ws stronghold-plan-import` promotes a Senior Architect response to the authoritative `architect_plan.md`. `ws stronghold-local-checklist` uses a local "Intern" model to convert the master plan into granular operational tasks. `ws stronghold-report` synthesizes the current state into a comprehensive `final_report.md`. `ws stronghold-decision` analyzes the stronghold to classify the next safe state or action.
 
+## Domain Specific Runners (Phase 6)
+
+### Learning Run
+`ws learning-run` orchestrates interactive tutoring sessions within a learning stronghold.
+
+```bash
+ws learning-run <stronghold_id_or_path> --session --dry-run
+```
+The `--dry-run` command generates a tactical session plan based on the next task in the operational checklist.
+
 ## Workstation Audit And Cleanup
 
 Cleanup is for `D:\_ai_brain` infrastructure only, not project repositories. The default audit and plan commands are read-only. `ws audit-workstation` generates a detailed report grouping issues by severity (**HIGH**, **MEDIUM**, **LOW**) and identifies cleanup candidates.
