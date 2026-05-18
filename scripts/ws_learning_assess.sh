@@ -156,8 +156,6 @@ if not last_answers_path or not Path(last_answers_path).is_file():
     print(json.dumps({"error": f"Latest {'review ' if is_review else ''}answers not found", "classification": f"{cl_prefix}_REQUIRES_ANSWERS"}))
     sys.exit(0)
 
-human_answers = Path(last_answers_path).read_text(encoding="utf-8")
-
 # Find latest tutor session
 sessions_dir = stronghold_dir / "sessions"
 if is_review:
@@ -169,7 +167,23 @@ if not tutor_sessions:
     print(json.dumps({"error": f"Latest {'review ' if is_review else ''}tutor session not found", "classification": f"{cl_prefix}_BLOCKED"}))
     sys.exit(0)
 
-tutor_session = tutor_sessions[0].read_text(encoding="utf-8")
+tutor_session_path = tutor_sessions[0]
+tutor_session = tutor_session_path.read_text(encoding="utf-8")
+
+# Timestamp alignment check
+answers_mtime = Path(last_answers_path).stat().st_mtime
+tutor_mtime = tutor_session_path.stat().st_mtime
+
+if answers_mtime < tutor_mtime:
+    print(json.dumps({
+        "error": f"Latest {'review ' if is_review else ''}answers are older than latest tutor session. (Contamination Risk)",
+        "classification": f"{cl_prefix}_REQUIRES_CURRENT_ANSWERS",
+        "tutor_session_path": to_win(tutor_session_path),
+        "answers_path": to_win(last_answers_path)
+    }))
+    sys.exit(0)
+
+human_answers = Path(last_answers_path).read_text(encoding="utf-8")
 
 contract = get_content("contract.md")
 goals = get_content("goals.md")
@@ -333,6 +347,12 @@ try:
     if 'error' in data:
         print(f\"Error: {data['error']}\")
         print(f\"Classification: {data['classification']}\")
+        if 'tutor_session_path' in data:
+            print(f\"Tutor Session:   {data['tutor_session_path']}\")
+        if 'answers_path' in data:
+            print(f\"Latest Answers:  {data['answers_path']}\")
+        if data['classification'].endswith('REQUIRES_CURRENT_ANSWERS'):
+            print(f\"Next Safe Action: ws learning-import-answers <stronghold> --from-file <answers_file>\")
         sys.exit(1)
     print(f\"Classification:   {data['classification']}\")
     print(f\"Assessment:       {data['assessment_path']}\")
