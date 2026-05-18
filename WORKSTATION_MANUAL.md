@@ -248,6 +248,7 @@ Strongholds for `trading-research` are limited to backtesting and paper trading;
 ```bash
 ws learning-run <stronghold_id_or_path> --session --dry-run
 ws learning-run <stronghold_id_or_path> --session --model hermes3:8b --from-plan <session_plan>
+ws learning-run <stronghold_id_or_path> --review-session --model hermes3:8b --from-plan <review_plan>
 ws learning-import-answers <stronghold_id_or_path> --from-file <answers_file>
 ws learning-assess <stronghold_id_or_path> --model hermes3:8b
 ws learning-decision <stronghold_id_or_path>

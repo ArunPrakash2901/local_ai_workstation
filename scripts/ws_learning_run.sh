@@ -14,6 +14,7 @@ OLLAMA_CALL_PY="$WS_HOME/scripts/ollama_call.py"
 
 STRONGHOLD_INPUT=""
 SESSION=0
+REVIEW_SESSION=0
 DRY_RUN=0
 MODEL=""
 FROM_PLAN=""
@@ -23,6 +24,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --session)
             SESSION=1
+            shift
+            ;;
+        --review-session)
+            REVIEW_SESSION=1
             shift
             ;;
         --dry-run)
@@ -47,12 +52,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -z "$STRONGHOLD_INPUT" ]; then
-    echo "Usage: ws learning-run <stronghold_id_or_path> --session [--dry-run | --model <m> --from-plan <f>]"
+    echo "Usage: ws learning-run <stronghold_id_or_path> [--session | --review-session] [--dry-run | --model <m> --from-plan <f>]"
     exit 1
 fi
 
-if [ "$SESSION" -eq 0 ]; then
-    echo "Error: --session is mandatory."
+if [ "$SESSION" -eq 0 ] && [ "$REVIEW_SESSION" -eq 0 ]; then
+    echo "Error: Either --session or --review-session is mandatory."
+    exit 1
+fi
+
+if [ "$SESSION" -eq 1 ] && [ "$REVIEW_SESSION" -eq 1 ]; then
+    echo "Error: Cannot combine --session and --review-session."
     exit 1
 fi
 
@@ -138,7 +148,7 @@ FROM_PLAN_WSL=""
 [ -n "$FROM_PLAN" ] && FROM_PLAN_WSL=$(to_wsl_path "$FROM_PLAN")
 
 # Use Python for logic
-RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$DRY_RUN" "$MODEL" "$FROM_PLAN_WSL" "$OLLAMA_CALL_PY" << 'PY'
+RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$DRY_RUN" "$MODEL" "$FROM_PLAN_WSL" "$OLLAMA_CALL_PY" "$SESSION" "$REVIEW_SESSION" << 'PY'
 import sys
 import json
 import re
@@ -151,6 +161,8 @@ is_dry_run = sys.argv[3] == "1"
 model = sys.argv[4]
 from_plan_path = Path(sys.argv[5]) if sys.argv[5] else None
 ollama_call_script = sys.argv[6]
+is_normal_session = sys.argv[7] == "1"
+is_review_session = sys.argv[8] == "1"
 
 def to_win(p):
     try:
@@ -264,7 +276,8 @@ Run the actual session once implemented, or begin manual study based on this pla
 
 # Model session mode
 if not from_plan_path or not from_plan_path.is_file():
-    print(json.dumps({"error": f"Session plan not found: {from_plan_path}", "classification": "LEARNING_TUTOR_REQUIRES_PLAN"}))
+    cl = "LEARNING_TUTOR_REQUIRES_PLAN" if is_normal_session else "LEARNING_REVIEW_TUTOR_REQUIRES_PLAN"
+    print(json.dumps({"error": f"Session plan not found: {from_plan_path}", "classification": cl}))
     sys.exit(0)
 
 plan_text = from_plan_path.read_text(encoding="utf-8")
@@ -279,7 +292,8 @@ assessment = get_content("assessment.md")
 architect_plan = get_content("architect_plan.md")
 local_checklist = get_content("local_checklist.md")
 
-system_prompt = """You are a supportive and technical local tutor (Intern level) for an AI Workstation operator.
+if is_normal_session:
+    system_prompt = """You are a supportive and technical local tutor (Intern level) for an AI Workstation operator.
 Your goal is to guide the user through a specific learning session defined in their plan.
 
 Provide:
@@ -293,10 +307,45 @@ Provide:
 Stay within the provided context. Do NOT suggest live trading or capital deployment.
 Act as an assistant, not an architect. Focus on implementation and understanding.
 """
+    cl_prefix = "LEARNING_TUTOR"
+    session_suffix = "tutor_session"
+    template_suffix = "answer_template"
+    log_msg = "Local Tutor Session Generated"
+else:
+    # Review session
+    last_decision = state.get("last_learning_decision")
+    if last_decision not in ["REVIEW_CURRENT_TASK", "REPEAT_SESSION"]:
+        print(json.dumps({
+            "error": f"Stronghold decision is '{last_decision}'. Review session not required.",
+            "classification": "LEARNING_REVIEW_TUTOR_REQUIRES_DECISION"
+        }))
+        sys.exit(0)
 
-user_prompt = f"""Conduct a learning session based on the following plan.
+    last_assessment_path = state.get("last_learning_assessment_path")
+    last_assessment = get_content(Path(last_assessment_path).name) if last_assessment_path else "Not found"
 
-### Session Plan
+    system_prompt = """You are a supportive and targeted local review tutor for an AI Workstation operator.
+Your goal is to help the user address specific gaps identified in their previous assessment.
+
+Provide:
+1. A focused explanation for each identified gap or misconception.
+2. Corrected worked examples addressing the failed areas.
+3. Targeted practice exercises specifically designed to demonstrate mastery of the gaps.
+4. 3 self-assessment questions to verify the gaps are closed.
+5. A Markdown Answer Template for the user to use.
+6. Instructions on what the human should do next to advance.
+
+Stay within the provided context. Do NOT suggest live trading or capital deployment.
+Act as a review assistant. Focus on remediation and mastery.
+"""
+    cl_prefix = "LEARNING_REVIEW_TUTOR"
+    session_suffix = "review_tutor_session"
+    template_suffix = "review_answer_template"
+    log_msg = "Local Review Tutor Session Generated"
+
+user_prompt = f"""Conduct a {'review ' if is_review_session else ''}learning session based on the following plan.
+
+### {'Review ' if is_review_session else ''}Session Plan
 {plan_text}
 
 ### Stronghold Context
@@ -307,12 +356,12 @@ user_prompt = f"""Conduct a learning session based on the following plan.
 - Syllabus: {syllabus}
 - Skill Map: {skill_map}
 - Master Plan (Architect): {architect_plan}
-
-### History
-{practice_log[-2000:]}
-
-Please generate the tutor session content.
 """
+
+if is_review_session:
+    user_prompt += f"\n### Latest Assessment\n{last_assessment}\n"
+
+user_prompt += f"\n### History\n{practice_log[-2000:]}\n\nPlease generate the tutor session content."
 
 # Call Ollama via temporary files
 evid_dir = stronghold_dir / "evidence"
@@ -329,47 +378,55 @@ try:
         str(sys_p), str(usr_p)
     ], text=True).strip()
 except subprocess.CalledProcessError as e:
-    print(json.dumps({"error": f"Ollama call failed: {e.output}", "classification": "LEARNING_TUTOR_SESSION_BLOCKED"}))
+    print(json.dumps({"error": f"Ollama call failed: {e.output}", "classification": f"{cl_prefix}_SESSION_BLOCKED"}))
     sys.exit(0)
 
 # Write outputs
 sessions_dir = stronghold_dir / "sessions"
-tutor_session_path = sessions_dir / f"{now_ts}_tutor_session.md"
+tutor_session_path = sessions_dir / f"{now_ts}_{session_suffix}.md"
 tutor_session_path.write_text(res, encoding="utf-8", newline="\n")
 
-# Extract answer template (look for markdown code block or "Answer Template" header)
+# Extract answer template
 answer_template = "# Answer Template\n\n[Paste tutor session exercises here and provide answers]"
 template_match = re.search(r"## Answer Template\n(.*?)(?:\n##|$)", res, re.DOTALL | re.IGNORECASE)
 if template_match:
     answer_template = f"# Answer Template: {now_ts}\n\n{template_match.group(1).strip()}"
 
-template_path = sessions_dir / f"{now_ts}_answer_template.md"
+template_path = sessions_dir / f"{now_ts}_{template_suffix}.md"
 template_path.write_text(answer_template, encoding="utf-8", newline="\n")
 
 # Responses and evidence
 resp_dir = stronghold_dir / "responses"
 resp_dir.mkdir(parents=True, exist_ok=True)
-(resp_dir / f"local_tutor_{now_ts}.md").write_text(res, encoding="utf-8", newline="\n")
+(resp_dir / f"local_{session_suffix}_{now_ts}.md").write_text(res, encoding="utf-8", newline="\n")
 
-evid_path = evid_dir / f"local_tutor_{now_ts}.md"
+evid_path = evid_dir / f"local_{session_suffix}_{now_ts}.md"
 evid_path.write_text(f"# Local Tutor Evidence\n- Model: {model}\n\n## Prompt\n{user_prompt}\n\n## Response\n{res}", encoding="utf-8", newline="\n")
 
 # Update logs
 with (stronghold_dir / "practice_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Tutor Session Generated\n- Model: {model}\n- Session: sessions/{tutor_session_path.name}\n- Status: awaiting human answers\n")
+    f.write(f"\n## {now_ts} - {log_msg}\n- Model: {model}\n- Session: sessions/{tutor_session_path.name}\n- Status: awaiting human answers\n")
 with (stronghold_dir / "loop_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Local Tutor Session Generated\n- Actor: {model}\n- Plan: {from_plan_path.name}\n- Session: sessions/{tutor_session_path.name}\n")
+    f.write(f"\n## {now_ts} - {log_msg}\n- Actor: {model}\n- Plan: {from_plan_path.name}\n- Session: sessions/{tutor_session_path.name}\n")
 
 # Update state.json
-state["last_tutor_session_at"] = now_ts
-state["last_tutor_session_path"] = str(tutor_session_path)
-state["tutor_model"] = model
+if is_normal_session:
+    state["last_tutor_session_at"] = now_ts
+    state["last_tutor_session_path"] = str(tutor_session_path)
+    state["tutor_model"] = model
+    state["learning_session_status"] = "awaiting_human_answers"
+else:
+    state["last_review_tutor_session_at"] = now_ts
+    state["last_review_tutor_session_path"] = str(tutor_session_path)
+    state["review_tutor_model"] = model
+    state["learning_session_status"] = "awaiting_review_answers"
+
 state["provider_invocation"] = False
 state["browser_automation"] = False
 state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 print(json.dumps({
-    "classification": "LEARNING_TUTOR_SESSION_READY",
+    "classification": f"{cl_prefix}_READY",
     "stronghold_path": to_win(stronghold_dir),
     "tutor_session_path": to_win(tutor_session_path),
     "answer_template_path": to_win(template_path),
