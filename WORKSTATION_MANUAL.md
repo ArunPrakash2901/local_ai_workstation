@@ -251,7 +251,7 @@ ws learning-run <stronghold_id_or_path> --session --model hermes3:8b --from-plan
 ws learning-run <stronghold_id_or_path> --review-session --model hermes3:8b --from-plan <review_plan>
 ws learning-import-answers <stronghold_id_or_path> --from-file <answers_file> [--review]
 ws learning-assess <stronghold_id_or_path> --model hermes3:8b [--review]
-ws learning-decision <stronghold_id_or_path>
+ws learning-decision <stronghold_id_or_path> [--review]
 ws learning-review-session <stronghold_id_or_path> --dry-run
 ```
 

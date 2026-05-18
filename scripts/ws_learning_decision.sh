@@ -11,10 +11,27 @@ WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
 STRONGHOLDS_DIR="$WS_HOME/strongholds"
 PYTHON="$WS_HOME/runtimes/workstation_venv/bin/python3"
 
-STRONGHOLD_INPUT=${1:-}
+STRONGHOLD_INPUT=""
+REVIEW=0
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --review)
+            REVIEW=1
+            shift
+            ;;
+        *)
+            if [ -z "$STRONGHOLD_INPUT" ] || [[ "$1" != --* ]]; then
+                STRONGHOLD_INPUT="$1"
+            fi
+            shift
+            ;;
+    esac
+done
 
 if [ -z "$STRONGHOLD_INPUT" ]; then
-    echo "Usage: ws learning-decision <stronghold_id_or_path>"
+    echo "Usage: ws learning-decision <stronghold_id_or_path> [--review]"
     exit 1
 fi
 
@@ -69,7 +86,7 @@ STRONGHOLD_DIR=$(resolve_stronghold_dir) || exit 1
 NOW_TS=$(date +"%Y%m%d_%H%M%S")
 
 # Use Python for classification logic
-RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" << 'PY'
+RESULT_JSON=$( "$PYTHON" - "$STRONGHOLD_DIR" "$NOW_TS" "$REVIEW" << 'PY'
 import sys
 import json
 import re
@@ -77,6 +94,7 @@ from pathlib import Path
 
 stronghold_dir = Path(sys.argv[1])
 now_ts = sys.argv[2]
+is_review = sys.argv[3] == "1"
 
 state_path = stronghold_dir / "state.json"
 if not state_path.is_file():
@@ -88,23 +106,37 @@ if state.get("type") != "learning":
     print(json.dumps({"error": "Not a learning stronghold", "classification": "BLOCKED"}))
     sys.exit(0)
 
-# Check for latest assessment
-last_assessment_path = state.get("last_learning_assessment_path")
+# Check requirements
+if is_review:
+    last_assessment_path = state.get("last_learning_review_assessment_path")
+    decision_type = "Learning Review Decision"
+    log_subject = "Learning Review Decision Generated"
+    file_prefix = "learning_review_decision"
+    status_val = "review_decision_recorded"
+    state_key_at = "last_learning_review_decision_at"
+    state_key_val = "last_learning_review_decision"
+else:
+    last_assessment_path = state.get("last_learning_assessment_path")
+    decision_type = "Learning Progress Decision"
+    log_subject = "Learning Decision Generated"
+    file_prefix = "learning_decision"
+    status_val = "decision_recorded"
+    state_key_at = "last_learning_decision_at"
+    state_key_val = "last_learning_decision"
+
 if not last_assessment_path or not Path(last_assessment_path).is_file():
-    print(json.dumps({"error": "Latest assessment not found", "classification": "BLOCKED"}))
+    print(json.dumps({"error": f"Latest {'review ' if is_review else ''}assessment not found", "classification": "BLOCKED"}))
     sys.exit(0)
 
 assessment_text = Path(last_assessment_path).read_text(encoding="utf-8")
 
 classification = "NEEDS_HUMAN_REVIEW"
-reason = "Decision could not be deterministically reached."
 next_action = "Manually review the latest assessment."
 
-# Heuristic 1: Look for explicit ADVANCE/REVIEW/REPEAT recommendations
+# Heuristics
 rec_match = re.search(r"Recommendation:\s*(ADVANCE|REVIEW|REPEAT)", assessment_text, re.IGNORECASE)
 explicit_rec = rec_match.group(1).upper() if rec_match else None
 
-# Heuristic 2: Look for numeric score (e.g. 7/10 or Score: 8)
 score_match = re.search(r"(\d+(?:\.\d+)?)\s*/\s*10", assessment_text)
 score = float(score_match.group(1)) if score_match else None
 
@@ -112,11 +144,11 @@ if not score:
     score_match = re.search(r"Score:\s*(\d+(?:\.\d+)?)", assessment_text, re.IGNORECASE)
     score = float(score_match.group(1)) if score_match else None
 
-# Heuristic 3: Check for major gaps or blockers
 has_major_gaps = "major gaps" in assessment_text.lower() or "significant improvement" in assessment_text.lower()
+gaps_fixed = bool(re.search(r"(?:gaps fixed|gaps were fixed|prior gaps fixed|gaps were successfully addressed)\s*[:\*]*\s*(?:yes|true)", assessment_text, re.IGNORECASE | re.DOTALL))
 
 # Decision Tree
-if explicit_rec == "ADVANCE" or (score and score >= 8 and not has_major_gaps):
+if explicit_rec == "ADVANCE" or (score and score >= 8 and (not is_review or gaps_fixed)):
     classification = "ADVANCE_TO_NEXT_TASK"
     next_action = "Run `ws stronghold-decision` to identify next task or generate next session plan."
 elif explicit_rec == "REVIEW" or (score and 5 <= score < 8):
@@ -126,13 +158,12 @@ elif explicit_rec == "REPEAT" or (score and score < 5):
     classification = "REPEAT_SESSION"
     next_action = "Regenerate tutor session for the current task and repeat the study session."
 else:
-    # If no score/rec, look for "pass" or "fail" language
     if "pass" in assessment_text.lower() and "fail" not in assessment_text.lower():
         classification = "ADVANCE_TO_NEXT_TASK"
         next_action = "Proceed based on positive qualitative feedback."
 
 # Decision report assembly
-report_content = f"""# Learning Progress Decision: {state.get('title')}
+report_content = f"""# {decision_type}: {state.get('title')}
 
 - Timestamp: {now_ts}
 - Classification: {classification}
@@ -142,27 +173,32 @@ report_content = f"""# Learning Progress Decision: {state.get('title')}
 - Explicit Recommendation: {explicit_rec or "none detected"}
 - Detected Score: {score if score else "none detected"}
 - Major Gaps Detected: {"Yes" if has_major_gaps else "No"}
+"""
 
+if is_review:
+    report_content += f"- Prior Gaps Fixed: {'Yes' if gaps_fixed else 'No'}\n"
+
+report_content += f"""
 ## Next Safe Action
 {next_action}
 """
 
 reports_dir = stronghold_dir / "reports"
 reports_dir.mkdir(parents=True, exist_ok=True)
-decision_report_path = reports_dir / f"learning_decision_{now_ts}.md"
+decision_report_path = reports_dir / f"{file_prefix}_{now_ts}.md"
 decision_report_path.write_text(report_content, encoding="utf-8", newline="\n")
 
 # Update logs
 with (stronghold_dir / "practice_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Learning Decision Generated\n- Result: {classification}\n- Action: {next_action}\n")
+    f.write(f"\n## {now_ts} - {log_subject}\n- Result: {classification}\n- Action: {next_action}\n")
 
 with (stronghold_dir / "loop_log.md").open("a", encoding="utf-8", newline="\n") as f:
-    f.write(f"\n## {now_ts} - Learning Decision Generated\n- Classification: {classification}\n- Report: reports/{decision_report_path.name}\n")
+    f.write(f"\n## {now_ts} - {log_subject}\n- Classification: {classification}\n- Report: reports/{decision_report_path.name}\n")
 
 # Update state.json
-state["last_learning_decision_at"] = now_ts
-state["last_learning_decision"] = classification
-state["learning_session_status"] = "decision_recorded"
+state[state_key_at] = now_ts
+state[state_key_val] = classification
+state["learning_session_status"] = status_val
 state["provider_invocation"] = False
 state["browser_automation"] = False
 state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
