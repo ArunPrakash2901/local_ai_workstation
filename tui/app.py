@@ -18,9 +18,11 @@ WS_HOME = Path(os.environ.get("WS_HOME", Path(__file__).resolve().parents[1]))
 WS_SCRIPT = WS_HOME / "scripts" / "ws"
 SAFETY_MODE = "READ_ONLY"
 DISABLED_ACTIONS = (
-    "Learning Cockpit: read-only preview enabled",
+    "Learning Cockpit: safe dry-run execution enabled in plain mode",
     "Research cockpit: not implemented",
-    "Learning action execution: disabled",
+    "Learning dry-run execution: enabled in plain mode",
+    "Learning model execution: disabled",
+    "Learning assessment/import/advance execution: disabled",
     "Provider execution: disabled",
     "Mutation/apply: disabled",
     "Trading execution: disabled",
@@ -43,9 +45,38 @@ STATUS_COMMANDS = (
 PLAIN_CONTROLS = (
     "r refresh dashboard",
     "l show learning cockpit",
+    "x execute recommended safe learning dry-run",
     "h show help",
     "q quit",
 )
+LEARNING_DRY_RUN_ALLOWLIST = {
+    ("learning-run", "--session", "--dry-run"),
+    ("learning-review-session", "--dry-run"),
+}
+LEARNING_DRY_RUN_WRITES = {
+    "learning-run": (
+        "sessions/*_session_plan.md",
+        "practice_log.md",
+        "loop_log.md",
+        "state.json",
+    ),
+    "learning-review-session": (
+        "sessions/*_review_session_plan.md",
+        "practice_log.md",
+        "loop_log.md",
+        "state.json",
+    ),
+}
+
+
+@dataclass(frozen=True)
+class LearningAction:
+    label: str
+    command_text: str
+    args: tuple[str, ...]
+    risk_class: str
+    expected_writes: tuple[str, ...] = ()
+    executable: bool = False
 
 
 @dataclass
@@ -79,17 +110,25 @@ class LearningStronghold:
 
     @property
     def next_action_label(self) -> str:
-        return self.compute_next_action()[0]
+        return self.compute_next_action().label
 
     @property
     def next_action_command(self) -> str:
-        return self.compute_next_action()[1]
+        return self.compute_next_action().command_text
 
     @property
     def decision_warning(self) -> str | None:
         review_decision = self.artifact_timestamp(
             "last_learning_review_decision_at",
             self.latest_review_decision,
+        )
+        review_plan = self.artifact_timestamp(
+            "last_learning_review_plan_at",
+            self.latest_review_plan,
+        )
+        review_tutor = self.artifact_timestamp(
+            "last_review_tutor_session_at",
+            self.latest_review_tutor_session,
         )
         if not review_decision:
             return None
@@ -173,6 +212,14 @@ class LearningStronghold:
             "last_learning_review_decision_at",
             self.latest_review_decision,
         )
+        review_plan = self.artifact_timestamp(
+            "last_learning_review_plan_at",
+            self.latest_review_plan,
+        )
+        review_tutor = self.artifact_timestamp(
+            "last_review_tutor_session_at",
+            self.latest_review_tutor_session,
+        )
         latest_normal_cycle = self.latest_timestamp(
             self.artifact_timestamp("last_tutor_session_at", self.latest_tutor_session),
             self.artifact_timestamp(
@@ -195,7 +242,25 @@ class LearningStronghold:
             and (latest_normal_cycle is None or review_decision > latest_normal_cycle)
         )
 
-    def compute_next_action(self) -> tuple[str, str]:
+    def make_action(
+        self,
+        label: str,
+        command_text: str,
+        args: tuple[str, ...],
+        risk_class: str,
+    ) -> LearningAction:
+        executable = is_allowlisted_learning_dry_run(args)
+        expected_writes = LEARNING_DRY_RUN_WRITES.get(args[0], ()) if executable else ()
+        return LearningAction(
+            label=label,
+            command_text=command_text,
+            args=args,
+            risk_class=risk_class,
+            expected_writes=expected_writes,
+            executable=executable,
+        )
+
+    def compute_next_action(self) -> LearningAction:
         sid = self.id
         normal_assessment = self.artifact_timestamp(
             "last_learning_assessment_at",
@@ -213,48 +278,120 @@ class LearningStronghold:
             "last_learning_review_decision_at",
             self.latest_review_decision,
         )
+        review_plan = self.artifact_timestamp(
+            "last_learning_review_plan_at",
+            self.latest_review_plan,
+        )
+        review_tutor = self.artifact_timestamp(
+            "last_review_tutor_session_at",
+            self.latest_review_tutor_session,
+        )
 
         # A newer current-session assessment invalidates any older normal decision.
         if self.is_newer(normal_assessment, normal_decision):
-            return "Run learning decision", f"ws learning-decision {sid}"
+            return self.make_action(
+                "Run learning decision",
+                f"ws learning-decision {sid}",
+                ("learning-decision", sid),
+                "BLUE",
+            )
 
         # The current normal decision controls entry into a review/remediation lane.
         if self.state.get("last_learning_decision") == "REVIEW_CURRENT_TASK":
             if not self.has_fresh_review_cycle():
-                return (
+                return self.make_action(
                     "Generate targeted review session",
                     f"ws learning-review-session {sid} --dry-run",
+                    ("learning-review-session", sid, "--dry-run"),
+                    "BLUE",
                 )
 
-            review_plan = self.state.get("last_learning_review_plan_path")
+            review_plan_path = self.state.get("last_learning_review_plan_path")
+            if self.is_newer(review_plan, review_tutor):
+                return self.make_action(
+                    "Start review tutor",
+                    f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan_path)}",
+                    (
+                        "learning-run",
+                        sid,
+                        "--review-session",
+                        "--model",
+                        "hermes3:8b",
+                        "--from-plan",
+                        self.to_win(review_plan_path) or "",
+                    ),
+                    "PURPLE",
+                )
             if self.session_status == "awaiting_review_answers":
-                return (
+                return self.make_action(
                     "Import review answers",
                     f"ws learning-import-answers {sid} --from-file <answers_file> --review",
+                    ("learning-import-answers", sid, "--from-file", "<answers_file>", "--review"),
+                    "BLUE",
                 )
             if self.session_status == "awaiting_review_assessment":
-                return (
+                return self.make_action(
                     "Assess review answers",
                     f"ws learning-assess {sid} --model hermes3:8b --review",
+                    ("learning-assess", sid, "--model", "hermes3:8b", "--review"),
+                    "PURPLE",
                 )
             if self.is_newer(review_assessment, review_decision) or self.session_status == "review_assessed":
-                return "Run review learning decision", f"ws learning-decision {sid} --review"
-            if self.review_advance_is_fresh():
-                return "Advance to next task", f"ws learning-advance {sid}"
-            if review_plan and not self.latest_review_tutor_session:
-                return (
-                    "Start review tutor",
-                    f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan)}",
+                return self.make_action(
+                    "Run review learning decision",
+                    f"ws learning-decision {sid} --review",
+                    ("learning-decision", sid, "--review"),
+                    "BLUE",
                 )
-            return "Inspect learning state / run decision", f"ws learning-decision {sid}"
+            if self.review_advance_is_fresh():
+                return self.make_action(
+                    "Advance to next task",
+                    f"ws learning-advance {sid}",
+                    ("learning-advance", sid),
+                    "BLUE",
+                )
+            if review_plan_path and not self.latest_review_tutor_session:
+                return self.make_action(
+                    "Start review tutor",
+                    f"ws learning-run {sid} --review-session --model hermes3:8b --from-plan {self.to_win(review_plan_path)}",
+                    (
+                        "learning-run",
+                        sid,
+                        "--review-session",
+                        "--model",
+                        "hermes3:8b",
+                        "--from-plan",
+                        self.to_win(review_plan_path) or "",
+                    ),
+                    "PURPLE",
+                )
+            return self.make_action(
+                "Inspect learning state / run decision",
+                f"ws learning-decision {sid}",
+                ("learning-decision", sid),
+                "BLUE",
+            )
 
         if self.review_advance_is_fresh():
-            return "Advance to next task", f"ws learning-advance {sid}"
+            return self.make_action(
+                "Advance to next task",
+                f"ws learning-advance {sid}",
+                ("learning-advance", sid),
+                "BLUE",
+            )
 
         # Normal loop
         if self.next_task and self.session_status in ["ready_for_next_session", "unknown", "LOCAL_CHECKLIST_READY"]:
             # Check if current plan focus matches next_task
             plan_path = self.state.get("last_learning_session_plan_path")
+            plan_ts = self.artifact_timestamp(
+                "last_learning_session_plan_at",
+                self.latest_session_plan,
+            )
+            tutor_ts = self.artifact_timestamp(
+                "last_tutor_session_at",
+                self.latest_tutor_session,
+            )
             has_current_plan = False
             if plan_path and Path(plan_path).is_file():
                 adv_at = self.state.get("last_learning_advanced_at")
@@ -263,21 +400,59 @@ class LearningStronghold:
                     has_current_plan = True
 
             if not has_current_plan:
-                return "Plan next session", f"ws learning-run {sid} --session --dry-run"
+                return self.make_action(
+                    "Plan next session",
+                    f"ws learning-run {sid} --session --dry-run",
+                    ("learning-run", sid, "--session", "--dry-run"),
+                    "BLUE",
+                )
             
-            if not self.state.get("last_tutor_session_path"):
-                return "Start tutor session", f"ws learning-run {sid} --session --model hermes3:8b --from-plan {self.to_win(plan_path)}"
+            if not self.state.get("last_tutor_session_path") or self.is_newer(plan_ts, tutor_ts):
+                return self.make_action(
+                    "Start tutor session",
+                    f"ws learning-run {sid} --session --model hermes3:8b --from-plan {self.to_win(plan_path)}",
+                    (
+                        "learning-run",
+                        sid,
+                        "--session",
+                        "--model",
+                        "hermes3:8b",
+                        "--from-plan",
+                        self.to_win(plan_path) or "",
+                    ),
+                    "PURPLE",
+                )
             
             if self.session_status == "awaiting_human_answers":
-                return "Import answers", f"ws learning-import-answers {sid} --from-file <answers_file>"
+                return self.make_action(
+                    "Import answers",
+                    f"ws learning-import-answers {sid} --from-file <answers_file>",
+                    ("learning-import-answers", sid, "--from-file", "<answers_file>"),
+                    "BLUE",
+                )
             
             if self.session_status == "awaiting_assessment":
-                return "Assess answers", f"ws learning-assess {sid} --model hermes3:8b"
+                return self.make_action(
+                    "Assess answers",
+                    f"ws learning-assess {sid} --model hermes3:8b",
+                    ("learning-assess", sid, "--model", "hermes3:8b"),
+                    "PURPLE",
+                )
             
             if self.session_status == "assessed":
-                return "Record decision", f"ws learning-decision {sid}"
+                return self.make_action(
+                    "Record decision",
+                    f"ws learning-decision {sid}",
+                    ("learning-decision", sid),
+                    "BLUE",
+                )
 
-        return "Inspect learning state / run decision", f"ws learning-decision {sid}"
+        return self.make_action(
+            "Inspect learning state / run decision",
+            f"ws learning-decision {sid}",
+            ("learning-decision", sid),
+            "BLUE",
+        )
 
 
 @dataclass
@@ -309,6 +484,7 @@ class DashboardData:
     results: dict[str, CommandResult] = field(default_factory=dict)
     command_log: list[str] = field(default_factory=list)
     learning_strongholds: list[LearningStronghold] = field(default_factory=list)
+    execution_log: list[str] = field(default_factory=list)
 
 
 def discover_learning_strongholds() -> list[LearningStronghold]:
@@ -409,6 +585,7 @@ def run_status_command(label: str, args: tuple[str, ...], command_log: list[str]
     completed = subprocess.run(
         ["bash", str(WS_SCRIPT), *args],
         cwd=WS_HOME,
+        stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
         check=False,
@@ -420,6 +597,78 @@ def run_status_command(label: str, args: tuple[str, ...], command_log: list[str]
         stderr=completed.stderr,
         returncode=completed.returncode,
     )
+
+
+def is_allowlisted_learning_dry_run(args: tuple[str, ...]) -> bool:
+    if not args:
+        return False
+    if args[0] == "learning-run":
+        return len(args) == 4 and (args[0], args[2], args[3]) in LEARNING_DRY_RUN_ALLOWLIST
+    if args[0] == "learning-review-session":
+        return len(args) == 3 and (args[0], args[2]) in LEARNING_DRY_RUN_ALLOWLIST
+    return False
+
+
+def run_learning_action(action: LearningAction) -> CommandResult:
+    if not action.executable or not is_allowlisted_learning_dry_run(action.args):
+        raise ValueError("Learning action is not allowlisted for execution.")
+
+    completed = subprocess.run(
+        ["bash", str(WS_SCRIPT), *action.args],
+        cwd=WS_HOME,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return CommandResult(
+        label=action.label,
+        args=action.args,
+        stdout=completed.stdout,
+        stderr=completed.stderr,
+        returncode=completed.returncode,
+    )
+
+
+def first_learning_stronghold(data: DashboardData) -> LearningStronghold | None:
+    return data.learning_strongholds[0] if data.learning_strongholds else None
+
+
+def write_tui_execution_report(
+    action: LearningAction,
+    result: CommandResult,
+    refreshed_action: LearningAction | None,
+) -> Path:
+    reports_dir = WS_HOME / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = reports_dir / f"TUI_EXECUTION_{timestamp}.md"
+    report = "\n".join(
+        [
+            "# TUI Execution Report",
+            "",
+            f"- Timestamp: {timestamp}",
+            f"- Action Label: {action.label}",
+            f"- Risk Class: {action.risk_class}",
+            f"- Command: `{action.command_text}`",
+            f"- Exit Code: {result.returncode}",
+            f"- Refreshed Recommendation: {refreshed_action.label if refreshed_action else 'none'}",
+            f"- Refreshed Command: `{refreshed_action.command_text if refreshed_action else 'none'}`",
+            "",
+            "## Stdout",
+            "```text",
+            result.stdout.rstrip(),
+            "```",
+            "",
+            "## Stderr",
+            "```text",
+            result.stderr.rstrip(),
+            "```",
+            "",
+        ]
+    )
+    report_path.write_text(report, encoding="utf-8", newline="\n")
+    return report_path
 
 
 def collect_dashboard_data(command_log: list[str] | None = None) -> DashboardData:
@@ -521,6 +770,8 @@ def render_snapshot(data: DashboardData) -> str:
         ),
         "",
         section("Command Log", "\n".join(data.command_log)),
+        "",
+        section("Plain Execution Log", "\n".join(data.execution_log)),
     ]
     return "\n".join(sections).rstrip() + "\n"
 
@@ -551,7 +802,7 @@ def run_plain_mode(notice: str | None = None) -> int:
         print(render_plain_dashboard(dashboard, current_notice), end="")
         current_notice = None
         try:
-            choice = input("plain mode [r refresh, l learning, h help, q quit]> ").strip().lower()
+            choice = input("plain mode [r refresh, l learning, x execute, h help, q quit]> ").strip().lower()
         except EOFError:
             print()
             return 0
@@ -565,11 +816,77 @@ def run_plain_mode(notice: str | None = None) -> int:
             print("\n" + section("Learning Cockpit (Read-Only)", render_learning_cockpit(dashboard.learning_strongholds)))
             input("\nPress Enter to return to dashboard...")
             continue
+        if choice == "x":
+            dashboard, current_notice = execute_recommended_learning_action(dashboard)
+            continue
         if choice == "h":
             current_notice = "Help: " + " | ".join(PLAIN_CONTROLS)
             continue
 
-        current_notice = "Unknown option. Use r to refresh, l for learning, h for help, or q to quit."
+        current_notice = "Unknown option. Use r to refresh, l for learning, x to execute, h for help, or q to quit."
+
+
+def execute_recommended_learning_action(dashboard: DashboardData) -> tuple[DashboardData, str]:
+    displayed = first_learning_stronghold(dashboard)
+    if displayed is None:
+        return dashboard, "No learning stronghold is available for execution."
+
+    approved_action = displayed.compute_next_action()
+    if not approved_action.executable:
+        return dashboard, "Recommended learning action is preview-only; execution is not enabled."
+
+    refreshed = collect_dashboard_data(dashboard.command_log)
+    refreshed.execution_log = dashboard.execution_log
+    current = next((item for item in refreshed.learning_strongholds if item.id == displayed.id), None)
+    if current is None:
+        return refreshed, "Learning stronghold changed during refresh; execution cancelled."
+
+    refreshed_action = current.compute_next_action()
+    if (
+        refreshed_action.command_text != approved_action.command_text
+        or refreshed_action.label != approved_action.label
+    ):
+        return refreshed, "Recommended action changed during refresh. Execution cancelled; review the updated cockpit state."
+
+    print("\n" + section("Confirm Learning Action", render_action_confirmation(approved_action)))
+    confirmation = input("Execute? y/N> ").strip().lower()
+    if confirmation != "y":
+        return refreshed, "Execution cancelled."
+
+    refreshed.execution_log.append(
+        f"[{datetime.now().strftime('%H:%M:%S')}] START {approved_action.command_text}"
+    )
+    result = run_learning_action(approved_action)
+
+    post_run = collect_dashboard_data(refreshed.command_log)
+    post_run.execution_log = refreshed.execution_log
+    post_stronghold = next((item for item in post_run.learning_strongholds if item.id == displayed.id), None)
+    post_action = post_stronghold.compute_next_action() if post_stronghold else None
+    report_path = write_tui_execution_report(approved_action, result, post_action)
+
+    refreshed.execution_log.append(
+        f"[{datetime.now().strftime('%H:%M:%S')}] END {approved_action.command_text} exit={result.returncode} report={report_path.name}"
+    )
+    post_run.execution_log = refreshed.execution_log
+
+    print("\n" + section("Learning Action Result", result.display_text))
+    print(f"Execution report: {report_path}")
+    input("\nPress Enter to return to dashboard...")
+
+    status = "completed" if result.returncode == 0 else f"failed with exit code {result.returncode}"
+    return post_run, f"Learning action {status}; dashboard refreshed."
+
+
+def render_action_confirmation(action: LearningAction) -> str:
+    lines = [
+        f"Action: {action.label}",
+        "Risk Class: BLUE",
+        f"Command: {action.command_text}",
+        "Expected mutation: learning stronghold runtime files only",
+        "Expected files changed:",
+    ]
+    lines.extend(f"- {item}" for item in action.expected_writes)
+    return "\n".join(lines)
 
 
 def build_textual_app():

@@ -23,9 +23,9 @@ The dashboard does not read unsafe folders by default, including `.env`, credent
 ## Features
 - **Workstation Readiness**: Live check of Ollama, RTX GPU, and environment.
 - **Stronghold Status**: Overview of active cognitive workspaces.
-- **Learning Cockpit**: Dedicated read-only view for learning strongholds, including progress tracking, artifact provenance, freshness-aware decision selection, stale-decision warnings, and next-action command previews.
+- **Learning Cockpit**: Dedicated view for learning strongholds, including progress tracking, artifact provenance, freshness-aware decision selection, stale-decision warnings, next-action command previews, and plain-mode execution of allowlisted BLUE dry-run planners only.
 - **Agent Hygiene**: Summary of Git worktrees and auto-run folders.
 - **Handoff Status**: List of recent frontier escalation packets.
 
 ## Safety
-The dashboard is strictly **READ-ONLY**. It does not invoke providers, mutate project files, or execute automated tasks. Learning Cockpit previews suppress stale advancement suggestions when normal and review artifacts are out of order. Command previews are provided for convenience but must be run manually by the operator.
+Snapshot mode remains strictly **READ-ONLY**. Plain mode can execute only the hardcoded safe dry-run planner actions `learning-run --session --dry-run` and `learning-review-session --dry-run`; model execution, assessment, import, and advancement remain disabled. Learning Cockpit previews suppress stale advancement suggestions when normal and review artifacts are out of order.

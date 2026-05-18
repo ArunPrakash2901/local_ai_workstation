@@ -140,9 +140,10 @@ ws feature-run <feature_id_or_path> --apply --worktree <path> --from-dry-run <fe
 ---
 
 ### TUI & Dashboards
-`ws tui [--snapshot | --plain | --textual]`: Launch the read-only operator dashboard.
-- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides freshness-aware analysis of the active learning stronghold, keeps normal and review decisions separate, suppresses stale advancement previews, and shows the recommended next command without executing it.
-- **Safety**: The TUI is strictly read-only and does not execute actions or invoke providers.
+`ws tui [--snapshot | --plain | --textual]`: Launch the operator dashboard.
+- **Learning Cockpit**: A dedicated view within the TUI for tracking study progress. It provides freshness-aware analysis of the active learning stronghold, keeps normal and review decisions separate, suppresses stale advancement previews, and shows the recommended next command.
+- **Plain-mode execution**: `ws tui --plain` can execute only the currently recommended safe dry-run planner command via `x`, limited to `learning-run --session --dry-run` and `learning-review-session --dry-run`.
+- **Safety**: Snapshot mode stays read-only. Learning model execution, assessment, import, advance, providers, and browser automation remain disabled from the TUI.
 
 ## Workstation Audit And Cleanup
 
