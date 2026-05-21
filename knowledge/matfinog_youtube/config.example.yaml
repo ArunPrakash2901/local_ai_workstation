@@ -1,0 +1,14 @@
+channel_url: "https://www.youtube.com/@MatFinOg"
+limit: 30
+output_root: "knowledge/matfinog_youtube"
+language_preference: "en"
+skip_download: true
+write_subs: true
+write_auto_subs: true
+overwrite: false
+dry_run_default: true
+full_channel_mode: false
+default_limit: 30
+allow_all_requires_explicit_flag: true
+download_video: false
+download_audio: false

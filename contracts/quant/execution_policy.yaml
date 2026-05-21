@@ -1,0 +1,34 @@
+# Execution Policy
+# Defines how the system interacts with the (simulated) broker environment.
+
+execution:
+  mode: paper_only
+  approved_brokers_future: [Alpaca, IBKR]
+  allowed_markets: [NYSE, NASDAQ, ARCA]
+  allowed_instruments: [US_ETFs, US_Large_Cap_Equities]
+  
+  trading_hours_policy:
+    market_open: "09:30"
+    market_close: "16:00"
+    timezone: "America/New_York"
+    extended_hours_allowed: false
+
+  order_retry_policy:
+    max_retries: 3
+    retry_delay_seconds: 5
+
+  order_timeout_policy:
+    fill_timeout_seconds: 60
+    unfilled_action: cancel_and_repropose
+
+  governance:
+    reconciliation_required: daily
+    human_approval_required: true
+    ai_direct_execution_allowed: false
+    audit_trail_retention_days: 365
+
+  cost_simulation:
+    commissions_per_share: 0.005
+    minimum_commission: 1.00
+    slippage_model: "constant_bps"
+    slippage_value_bps: 2

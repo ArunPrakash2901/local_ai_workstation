@@ -1,0 +1,63 @@
+type: object
+description: "Schema for the MatFinOg Human Review Queue"
+required:
+  - queue_item_id
+  - prompt_id
+  - prompt_type
+  - source_workflow_id
+  - source_video_id
+  - source_title
+  - priority
+  - review_status
+  - reviewer
+  - review_decision
+  - recommended_next_action
+  - safety_notes
+  - created_at
+  - reviewed_at
+properties:
+  queue_item_id:
+    type: string
+  prompt_id:
+    type: string
+  prompt_type:
+    type: string
+  source_workflow_id:
+    type: string
+  source_video_id:
+    type: string
+  source_title:
+    type: string
+  priority:
+    type: string
+    enum: [high, medium, low]
+  review_status:
+    type: string
+    enum:
+      - new
+      - needs_review
+      - reviewed
+      - rejected
+      - archived
+  reviewer:
+    type: string
+  review_decision:
+    type: string
+    enum:
+      - pending
+      - keep_learning_note
+      - create_research_notebook
+      - request_more_sources
+      - reject_unsafe_or_irrelevant
+      - future_backlog_candidate
+  recommended_next_action:
+    type: string
+  safety_notes:
+    type: string
+  created_at:
+    type: string
+    format: date-time
+  reviewed_at:
+    type: string
+    format: date-time
+    nullable: true

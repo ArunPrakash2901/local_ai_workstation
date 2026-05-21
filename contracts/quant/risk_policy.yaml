@@ -1,0 +1,30 @@
+# Risk Policy
+# This is a deterministic policy enforced by the Risk Gateway.
+# AI Agents are forbidden from modifying this without human approval.
+
+limits:
+  max_position_pct_nav: 0.25         # No single asset > 25% of account
+  max_strategy_gross_pct_nav: 1.0   # No strategy > 100% of account (No leverage)
+  max_portfolio_gross_pct_nav: 1.0  # Total portfolio < 100% (Cash account only)
+  max_daily_loss_pct_nav: 0.02      # Kill all trades if daily loss > 2%
+  max_order_notional: 50000         # Max $50k per single order proposal
+
+controls:
+  duplicate_order_window: 300       # Seconds (5 mins) to block identical orders
+  price_collar_bps: 50              # Block orders if price moved > 50bps from last tick
+  stale_data_block: true            # Block if data is older than 24h
+  kill_switch: active               # global switch: active / triggered
+
+allowed_instruments:
+  types: [ETF, EQUITY]
+  regions: [US]
+  currencies: [USD]
+
+forbidden_instruments:
+  types: [OPTIONS, FUTURES, CRYPTO, FOREX]
+  attributes: [LEVERAGED_ETF, INVERSE_ETF]
+
+safety_settings:
+  live_trading_allowed: false       # HARD BLOCK
+  paper_trading_allowed: true
+  manual_approval_required: true    # Human must click 'approve' for all paper orders in MVP

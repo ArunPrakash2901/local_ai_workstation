@@ -1,0 +1,1 @@
+Encoding your strategy, back testing it over a long period of time, is literally the bare minimum you should do before trading anything.

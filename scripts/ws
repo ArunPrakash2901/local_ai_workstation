@@ -1,9 +1,22 @@
 #!/bin/bash
 
 # Unified Workstation Command
-if [ -f "/mnt/d/_ai_brain/scripts/ws_env.sh" ]; then
+
+# Robustly determine WS_HOME
+if [ -z "${WS_HOME:-}" ]; then
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    _SCRIPTS_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    export WS_HOME="$(cd "$_SCRIPTS_DIR/.." >/dev/null 2>&1 && pwd)"
+fi
+
+if [ -f "$WS_HOME/scripts/ws_env.sh" ]; then
     # shellcheck source=/mnt/d/_ai_brain/scripts/ws_env.sh
-    source "/mnt/d/_ai_brain/scripts/ws_env.sh"
+    source "$WS_HOME/scripts/ws_env.sh"
 fi
 
 WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
@@ -60,6 +73,28 @@ case "$SUBCOMMAND" in
         echo "  task-complete <f> [n] Mark task completed"
         echo "  task-block <f> <r>  Mark task blocked with reason"
         echo ""
+        echo "Product Lane:"
+        echo "  product-new --title <t> --type <type> [--id <id>] Create product registry record"
+        echo "  product-list        List product registry records"
+        echo "  product-status <id> Show one product registry record"
+        echo "  product-help        Show Product Lane Phase 0 quick help"
+        echo "  product-questions --type <type> --dry-run  Preview static intake questions"
+        echo "  product-intake --type <type> --dry-run     Preview intake flow (no writes)"
+        echo "  product-intake --product <id> --confirm    Start intake (writes templates)"
+        echo "  product-answer-import --product <id> --file <answers_file> --confirm  Import intake answers and classify readiness"
+        echo "  product-scope --product <id> --dry-run     Preview deterministic scope draft (no writes)"
+        echo "  product-scope-change --product <id> --file <change_file> --dry-run Preview deterministic scope change impact"
+        echo "  product-scope-change --product <id> --file <change_file> --confirm Record scope change decision and stale metadata"
+        echo "  product-scope-revision --product <id> --dry-run Preview revised scope from confirmed change decisions"
+        echo "  product-scope-revision --product <id> --confirm Write versioned revised scope lock and active scope metadata"
+        echo "  product-lock-scope --product <id> --confirm Lock immutable scope artifact"
+        echo "  product-prd --product <id> --dry-run       Preview deterministic PRD from locked scope"
+        echo "  product-prd --product <id> --confirm       Write deterministic PRD draft from locked scope"
+        echo "  product-prd-review --product <id> --dry-run Preview deterministic PRD review report"
+        echo "  product-prd-approve --product <id> --confirm Approve PRD metadata after PASS review"
+        echo "  product-prd-status --product <id>          Show pure-read PRD artifact status"
+        echo "  product-wireframe --product <id> --dry-run Preview deterministic text/ASCII wireframes"
+        echo ""
         echo "Feature Strongholds:"
         echo "  feature-new <k>     Create a local-only feature stronghold"
         echo "  feature-plan <id>   Build/update a local-only feature plan"
@@ -89,11 +124,34 @@ case "$SUBCOMMAND" in
         echo "  learning-decision <id> Classify next learning action"
         echo "  learning-review-session <id> --dry-run Plan review session"
         echo "  learning-advance <id> Advance to next learning task"
+        echo "  learning-action-pack <id> --dry-run Generate dry-run action pack v1"
+        echo "  learning-confirm <id> --action-id <id> [--dry-run | --confirm] Confirm dry-run action"
+        echo "  learning-ledger-repair <id> [--dry-run | --repair-ledger] Repair legacy confirmation ledger"
+        echo "  learning-pointer-plan <id> --dry-run Generate next task pointer update plan v1"
+        echo "  learning-advancement-plan <id> --dry-run Generate advancement readiness plan v1"
+        echo "  learning-advancement-review <id> [--dry-run | --create-packet] Generate human review packet v1"
+        echo "  learning-state-sync-plan <id> --dry-run Generate state sync plan v1"
+        echo "  learning-state-sync-apply <id> [--dry-run | --confirm-sync] Apply state sync plan v1"
+
+
         echo ""
         echo "Research Runner (Phase 7):"
         echo "  research-run <id> --review-paper --dry-run Plan paper review"
         echo "  research-decision <id> Classify next research action"
         echo "  research-add-source <id> --source-text <f> --label <l> Register new source"
+        echo ""
+        echo "Quant Trading Lane (Phase 6+):"
+        echo "  quant data-contract-check  [--dry-run] Validate YAML contracts"
+        echo "  quant data-schema-check    [--dry-run] Validate sample OHLCV schema"
+        echo "  quant data-freshness-check --latest <ts> [--dry-run] Check data freshness"
+        echo "  quant data-ingest-fixture  --symbol SPY --start <iso> --end <iso> [--format <f>] [--write-fixture]"
+        echo "  quant dataset-catalog      [--dry-run] Scan Quant dataset catalog"
+        echo "  quant dataset-profile      --path <p> [--dry-run] Profile a Quant dataset"
+        echo "  quant feature-contract-check [--dry-run] Validate feature building contract"
+        echo "  quant feature-build        --input <p> --features <f> [--format <fmt>] [--write-features]"
+        echo "  quant persistence-capabilities [--dry-run] Detect local persistence libraries"
+        echo "  quant analytics-capabilities   [--dry-run] Detect local analytics libraries"
+        echo "  quant paths-check          [--dry-run] Verify approved quant paths"
         echo ""
         echo "Agent & Loops:"
         echo "  apply-ready <k> <t> Check if task is ready for agent-run"
@@ -252,7 +310,7 @@ case "$SUBCOMMAND" in
         bash "$SCRIPTS_DIR/ws_readiness.sh" "$@"
         ;;
     moe)
-        # Assuming ai_moe_list.sh was supposed to be implemented or we use ai_models with filter
+        # Assuming ai_moe_list.sh was supposed to be implemented or we use ai_models with filte
         # For now, map to ai_models.sh if ai_moe_list doesn't exist
         if [ -f "$SCRIPTS_DIR/ai_moe_list.sh" ]; then
             bash "$SCRIPTS_DIR/ai_moe_list.sh" "$@"
@@ -388,6 +446,54 @@ case "$SUBCOMMAND" in
     task-block)
         bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
         ;;
+    product-new)
+        python3 "$SCRIPTS_DIR/ws_product_new.py" "$@"
+        ;;
+    product-list)
+        python3 "$SCRIPTS_DIR/ws_product_list.py" "$@"
+        ;;
+    product-status)
+        python3 "$SCRIPTS_DIR/ws_product_status.py" "$@"
+        ;;
+    product-help)
+        python3 "$SCRIPTS_DIR/ws_product_help.py" "$@"
+        ;;
+    product-questions)
+        python3 "$SCRIPTS_DIR/ws_product_questions.py" "$@"
+        ;;
+    product-intake)
+        python3 "$SCRIPTS_DIR/ws_product_intake.py" "$@"
+        ;;
+    product-answer-import)
+        python3 "$SCRIPTS_DIR/ws_product_answer_import.py" "$@"
+        ;;
+    product-scope)
+        python3 "$SCRIPTS_DIR/ws_product_scope.py" "$@"
+        ;;
+    product-scope-change)
+        python3 "$SCRIPTS_DIR/ws_product_scope_change.py" "$@"
+        ;;
+    product-scope-revision)
+        python3 "$SCRIPTS_DIR/ws_product_scope_revision.py" "$@"
+        ;;
+    product-lock-scope)
+        python3 "$SCRIPTS_DIR/ws_product_lock_scope.py" "$@"
+        ;;
+    product-prd)
+        python3 "$SCRIPTS_DIR/ws_product_prd.py" "$@"
+        ;;
+    product-prd-review)
+        python3 "$SCRIPTS_DIR/ws_product_prd_review.py" "$@"
+        ;;
+    product-prd-approve)
+        python3 "$SCRIPTS_DIR/ws_product_prd_approve.py" "$@"
+        ;;
+    product-prd-status)
+        python3 "$SCRIPTS_DIR/ws_product_prd_status.py" "$@"
+        ;;
+    product-wireframe)
+        python3 "$SCRIPTS_DIR/ws_product_wireframe.py" "$@"
+        ;;
     feature-new)
         bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
         ;;
@@ -458,9 +564,34 @@ case "$SUBCOMMAND" in
         bash "$SCRIPTS_DIR/ws_learning_review_session.sh" "$@"
         ;;
     learning-advance)
-        bash "$SCRIPTS_DIR/ws_learning_advance.sh" "$@"
+        "$SCRIPTS_DIR/ws_learning_advance.sh" "$@"
+        ;;
+    learning-action-pack)
+        "$SCRIPTS_DIR/ws_learning_action_pack.sh" "$@"
+        ;;
+    learning-confirm)
+        "$SCRIPTS_DIR/ws_learning_confirm.sh" "$@"
+        ;;
+    learning-ledger-repair)
+        "$SCRIPTS_DIR/ws_learning_ledger_repair.sh" "$@"
+        ;;
+    learning-pointer-plan)
+        "$SCRIPTS_DIR/ws_learning_pointer_plan.sh" "$@"
+        ;;
+    learning-advancement-plan)
+        "$SCRIPTS_DIR/ws_learning_advancement_plan.sh" "$@"
+        ;;
+    learning-advancement-review)
+        "$SCRIPTS_DIR/ws_learning_advancement_review.sh" "$@"
+        ;;
+    learning-state-sync-plan)
+        "$SCRIPTS_DIR/ws_learning_state_sync_plan.sh" "$@"
+        ;;
+    learning-state-sync-apply)
+        "$SCRIPTS_DIR/ws_learning_state_sync_apply.sh" "$@"
         ;;
     research-run)
+
         bash "$SCRIPTS_DIR/ws_research_run.sh" "$@"
         ;;
     research-decision)
@@ -468,6 +599,17 @@ case "$SUBCOMMAND" in
         ;;
     research-add-source)
         bash "$SCRIPTS_DIR/ws_research_add_source.sh" "$@"
+        ;;
+    quant)
+        # Quant foundation CLI (Wave 1)
+        PYTHON_EXEC="${PYTHON_EXEC:-python3}"
+        # Ensure we use the workstation venv if available
+        if [ -x "$WS_HOME/runtimes/workstation_venv/bin/python3" ]; then
+            PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/bin/python3"
+        elif [ -x "$WS_HOME/runtimes/workstation_venv/Scripts/python.exe" ]; then
+             PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/Scripts/python.exe"
+        fi
+        PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" -m quant.cli "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

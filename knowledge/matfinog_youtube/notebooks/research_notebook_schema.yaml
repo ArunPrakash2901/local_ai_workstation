@@ -1,0 +1,87 @@
+type: object
+description: "Schema for MatFinOg Research Notebooks"
+required:
+  - notebook_id
+  - source_prompt_id
+  - source_workflow_id
+  - source_video_id
+  - status
+  - human_owner
+  - created_at
+  - learning_objective
+  - research_question
+  - required_data
+  - validation_checks
+  - safety_flags
+  - allowed_next_actions
+  - forbidden_next_actions
+properties:
+  notebook_id:
+    type: string
+    description: "Unique identifier for this research notebook."
+  source_prompt_id:
+    type: string
+    description: "ID of the source prompt from the prompt library."
+  source_workflow_id:
+    type: string
+    description: "ID of the source workflow."
+  source_video_id:
+    type: string
+    description: "ID of the source YouTube video."
+  status:
+    type: string
+    enum:
+      - draft_learning_note
+      - needs_human_review
+      - accepted_for_research_planning
+      - rejected
+      - archived
+      - future_backlog_candidate
+    description: "Current status of the notebook. Must not imply approved strategy or trading."
+  human_owner:
+    type: string
+    description: "The human responsible for reviewing and authorizing actions."
+  created_at:
+    type: string
+    format: date-time
+  learning_objective:
+    type: string
+  research_question:
+    type: string
+  required_data:
+    type: string
+  validation_checks:
+    type: string
+  safety_flags:
+    type: object
+    properties:
+      is_not_financial_advice:
+        type: boolean
+        enum: [true]
+      contains_no_trading_signals:
+        type: boolean
+        enum: [true]
+      no_live_trading_authorized:
+        type: boolean
+        enum: [true]
+  allowed_next_actions:
+    type: array
+    items:
+      type: string
+      enum:
+        - keep as learning note
+        - request human review
+        - request research plan draft
+        - request data requirement analysis
+        - reject/archive
+        - promote to future quant research backlog only after human approval
+  forbidden_next_actions:
+    type: array
+    items:
+      type: string
+      enum:
+        - place trade
+        - generate trading signal
+        - create broker order
+        - run live trading automation
+        - present as investment recommendation

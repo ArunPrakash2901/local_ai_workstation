@@ -1,0 +1,176 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.080 --> 00:00:02.389 align:start position:0%
+ 
+Let's<00:00:00.400><c> go</c><00:00:00.560><c> from</c><00:00:00.640><c> zero</c><00:00:00.880><c> to</c><00:00:01.040><c> algo</c><00:00:01.439><c> trader</c><00:00:01.839><c> in</c><00:00:02.159><c> 30</c>
+
+00:00:02.389 --> 00:00:02.399 align:start position:0%
+Let's go from zero to algo trader in 30
+ 
+
+00:00:02.399 --> 00:00:04.390 align:start position:0%
+Let's go from zero to algo trader in 30
+days.<00:00:02.879><c> As</c><00:00:03.120><c> very</c><00:00:03.360><c> first</c><00:00:03.600><c> step,</c><00:00:04.000><c> you</c><00:00:04.160><c> need</c><00:00:04.240><c> a</c>
+
+00:00:04.390 --> 00:00:04.400 align:start position:0%
+days. As very first step, you need a
+ 
+
+00:00:04.400 --> 00:00:06.550 align:start position:0%
+days. As very first step, you need a
+back<00:00:04.720><c> testing</c><00:00:05.040><c> and</c><00:00:05.200><c> execution</c><00:00:05.839><c> platform.</c><00:00:06.400><c> A</c>
+
+00:00:06.550 --> 00:00:06.560 align:start position:0%
+back testing and execution platform. A
+ 
+
+00:00:06.560 --> 00:00:08.230 align:start position:0%
+back testing and execution platform. A
+standard<00:00:06.879><c> for</c><00:00:07.040><c> the</c><00:00:07.200><c> industry</c><00:00:07.520><c> is</c><00:00:07.759><c> developing</c>
+
+00:00:08.230 --> 00:00:08.240 align:start position:0%
+standard for the industry is developing
+ 
+
+00:00:08.240 --> 00:00:10.629 align:start position:0%
+standard for the industry is developing
+your<00:00:08.480><c> own</c><00:00:08.720><c> back</c><00:00:09.040><c> testing</c><00:00:09.519><c> execution</c><00:00:10.080><c> scripts</c>
+
+00:00:10.629 --> 00:00:10.639 align:start position:0%
+your own back testing execution scripts
+ 
+
+00:00:10.639 --> 00:00:12.549 align:start position:0%
+your own back testing execution scripts
+using<00:00:11.040><c> Python.</c><00:00:11.759><c> However,</c><00:00:12.080><c> if</c><00:00:12.240><c> you're</c><00:00:12.400><c> not</c>
+
+00:00:12.549 --> 00:00:12.559 align:start position:0%
+using Python. However, if you're not
+ 
+
+00:00:12.559 --> 00:00:13.910 align:start position:0%
+using Python. However, if you're not
+good<00:00:12.800><c> developer,</c><00:00:13.280><c> you're</c><00:00:13.599><c> going</c><00:00:13.679><c> to</c><00:00:13.759><c> be</c>
+
+00:00:13.910 --> 00:00:13.920 align:start position:0%
+good developer, you're going to be
+ 
+
+00:00:13.920 --> 00:00:15.829 align:start position:0%
+good developer, you're going to be
+vulnerable<00:00:14.480><c> to</c><00:00:14.719><c> make</c><00:00:14.880><c> mistakes</c><00:00:15.440><c> which</c><00:00:15.679><c> are</c>
+
+00:00:15.829 --> 00:00:15.839 align:start position:0%
+vulnerable to make mistakes which are
+ 
+
+00:00:15.839 --> 00:00:17.830 align:start position:0%
+vulnerable to make mistakes which are
+independence<00:00:16.400><c> from</c><00:00:16.720><c> your</c><00:00:16.960><c> trading</c><00:00:17.279><c> strategy.</c>
+
+00:00:17.830 --> 00:00:17.840 align:start position:0%
+independence from your trading strategy.
+ 
+
+00:00:17.840 --> 00:00:20.070 align:start position:0%
+independence from your trading strategy.
+So<00:00:18.000><c> what</c><00:00:18.160><c> I</c><00:00:18.320><c> suggest</c><00:00:18.640><c> is</c><00:00:18.880><c> using</c><00:00:19.199><c> multi</c><00:00:19.600><c> charts.</c>
+
+00:00:20.070 --> 00:00:20.080 align:start position:0%
+So what I suggest is using multi charts.
+ 
+
+00:00:20.080 --> 00:00:21.910 align:start position:0%
+So what I suggest is using multi charts.
+The<00:00:20.320><c> reason</c><00:00:20.480><c> why</c><00:00:20.640><c> I</c><00:00:20.800><c> point</c><00:00:21.039><c> to</c><00:00:21.199><c> multi</c><00:00:21.520><c> charts</c>
+
+00:00:21.910 --> 00:00:21.920 align:start position:0%
+The reason why I point to multi charts
+ 
+
+00:00:21.920 --> 00:00:24.630 align:start position:0%
+The reason why I point to multi charts
+are<00:00:22.480><c> it</c><00:00:22.720><c> is</c><00:00:22.960><c> extremely</c><00:00:23.439><c> reliable</c><00:00:24.080><c> both</c><00:00:24.320><c> for</c>
+
+00:00:24.630 --> 00:00:24.640 align:start position:0%
+are it is extremely reliable both for
+ 
+
+00:00:24.640 --> 00:00:27.029 align:start position:0%
+are it is extremely reliable both for
+big<00:00:24.880><c> testing</c><00:00:25.279><c> and</c><00:00:25.600><c> execution</c><00:00:26.160><c> purposes.</c><00:00:26.800><c> It</c>
+
+00:00:27.029 --> 00:00:27.039 align:start position:0%
+big testing and execution purposes. It
+ 
+
+00:00:27.039 --> 00:00:29.109 align:start position:0%
+big testing and execution purposes. It
+is<00:00:27.199><c> very</c><00:00:27.439><c> easy</c><00:00:27.680><c> to</c><00:00:27.920><c> use</c><00:00:28.240><c> and</c><00:00:28.560><c> very</c><00:00:28.720><c> easy</c><00:00:28.960><c> to</c>
+
+00:00:29.109 --> 00:00:29.119 align:start position:0%
+is very easy to use and very easy to
+ 
+
+00:00:29.119 --> 00:00:31.109 align:start position:0%
+is very easy to use and very easy to
+code<00:00:29.359><c> the</c><00:00:29.519><c> logics</c><00:00:29.920><c> of</c><00:00:30.080><c> your</c><00:00:30.240><c> strategy.</c><00:00:30.880><c> You</c>
+
+00:00:31.109 --> 00:00:31.119 align:start position:0%
+code the logics of your strategy. You
+ 
+
+00:00:31.119 --> 00:00:33.110 align:start position:0%
+code the logics of your strategy. You
+can<00:00:31.279><c> connect</c><00:00:31.519><c> it</c><00:00:31.760><c> to</c><00:00:31.840><c> many</c><00:00:32.079><c> data</c><00:00:32.399><c> providers</c><00:00:32.880><c> or</c>
+
+00:00:33.110 --> 00:00:33.120 align:start position:0%
+can connect it to many data providers or
+ 
+
+00:00:33.120 --> 00:00:35.750 align:start position:0%
+can connect it to many data providers or
+you<00:00:33.360><c> can</c><00:00:33.520><c> import</c><00:00:34.239><c> custom</c><00:00:34.719><c> data.</c><00:00:35.200><c> It</c><00:00:35.360><c> supports</c>
+
+00:00:35.750 --> 00:00:35.760 align:start position:0%
+you can import custom data. It supports
+ 
+
+00:00:35.760 --> 00:00:37.270 align:start position:0%
+you can import custom data. It supports
+many<00:00:36.000><c> broker</c><00:00:36.320><c> for</c><00:00:36.480><c> the</c><00:00:36.640><c> execution</c><00:00:36.960><c> of</c><00:00:37.120><c> your</c>
+
+00:00:37.270 --> 00:00:37.280 align:start position:0%
+many broker for the execution of your
+ 
+
+00:00:37.280 --> 00:00:39.350 align:start position:0%
+many broker for the execution of your
+orders<00:00:37.840><c> and</c><00:00:38.079><c> you</c><00:00:38.320><c> can</c><00:00:38.480><c> fully</c><00:00:38.800><c> automate</c><00:00:39.200><c> the</c>
+
+00:00:39.350 --> 00:00:39.360 align:start position:0%
+orders and you can fully automate the
+ 
+
+00:00:39.360 --> 00:00:41.350 align:start position:0%
+orders and you can fully automate the
+execution<00:00:39.760><c> of</c><00:00:39.920><c> your</c><00:00:40.160><c> strategies</c><00:00:40.800><c> with</c><00:00:41.120><c> just</c>
+
+00:00:41.350 --> 00:00:41.360 align:start position:0%
+execution of your strategies with just
+ 
+
+00:00:41.360 --> 00:00:43.750 align:start position:0%
+execution of your strategies with just
+one<00:00:41.600><c> click.</c><00:00:42.000><c> to</c><00:00:42.239><c> as</c><00:00:42.480><c> step</c><00:00:42.640><c> one</c><00:00:43.200><c> go</c><00:00:43.360><c> and</c><00:00:43.520><c> get</c>
+
+00:00:43.750 --> 00:00:43.760 align:start position:0%
+one click. to as step one go and get
+ 
+
+00:00:43.760 --> 00:00:46.640 align:start position:0%
+one click. to as step one go and get
+your<00:00:44.000><c> multi</c><00:00:44.399><c> charts.</c>
+

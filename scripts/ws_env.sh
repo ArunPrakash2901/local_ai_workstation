@@ -4,7 +4,19 @@
 # This file must stay safe for `source` from any bash script.
 
 if [ -z "${WS_HOME:-}" ]; then
-    export WS_HOME="/mnt/d/_ai_brain"
+    if [ -d "/mnt/d/_ai_brain" ]; then
+        export WS_HOME="/mnt/d/_ai_brain"
+    else
+        # Fallback: determine from script location
+        SOURCE="${BASH_SOURCE[0]}"
+        while [ -h "$SOURCE" ]; do
+            DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+            SOURCE="$(readlink "$SOURCE")"
+            [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+        done
+        _DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+        export WS_HOME="$(cd "$_DIR/.." >/dev/null 2>&1 && pwd)"
+    fi
 fi
 
 if [ -z "${WS_PARENT:-}" ]; then

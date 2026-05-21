@@ -1,0 +1,42 @@
+# Experiment Manifest Template
+# This file must be generated for every backtest run.
+
+experiment_id: [UUID_OR_TIMESTAMP]
+strategy_id: [STRATEGY_ID]
+owner: [OPERATOR_NAME]
+run_timestamp: [ISO8601]
+
+versions:
+  code_commit: [GIT_HASH]
+  data_version: [DATA_HASH_OR_TIMESTAMP]
+  policy_version: [RISK_POLICY_HASH]
+
+configuration:
+  universe: [Ticker List]
+  date_range:
+    start: [YYYY-MM-DD]
+    end: [YYYY-MM-DD]
+  parameters:
+    [param_name]: [value]
+  cost_model:
+    commissions: [value]
+    slippage: [value]
+
+results:
+  metrics:
+    total_return: [value]
+    cagr: [value]
+    max_drawdown: [value]
+    sharpe_ratio: [value]
+    win_rate: [value]
+  artifacts:
+    equity_curve: [path/to/image.png]
+    trade_list: [path/to/trades.csv]
+
+validation:
+  pass_fail_status: [PASS/FAIL]
+  reviewer_notes: |
+    [AI-generated summary of the run]
+    [Human-added review notes]
+
+next_status_allowed: [approved_for_paper / rejected]

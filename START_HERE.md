@@ -43,6 +43,8 @@ ws agent-run <project_key> <task_file> --mode detect --branch --max-files 5 --ma
 
 That sequence is the default operator path: restore the workstation, choose one task, inspect the local plan, then run the bounded apply step only when ready.
 
+- Product Lane Phase 0 is available for `ws product-list`, `ws product-status <product_id>`, and guarded `ws product-new` (preview with `--dry-run` first; creation requires `--confirm`). Product Lane Phase 2 now includes `ws product-prd --product <product_id> --dry-run` and `--confirm` after scope lock. From PowerShell, invoke these through WSL Bash, for example: `wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-list'`.
+
 ---
 
 ## 2. Using Graphify (Project Brain)

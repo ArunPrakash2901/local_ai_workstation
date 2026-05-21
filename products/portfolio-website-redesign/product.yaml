@@ -1,0 +1,46 @@
+{
+  "schema_version": 0,
+  "product_id": "portfolio-website-redesign",
+  "product_type": "website",
+  "type": "website",
+  "label": "Portfolio Website Redesign",
+  "title": "Portfolio Website Redesign",
+  "owner": "operator",
+  "state": "SCOPE_LOCKED",
+  "quick_prototype": false,
+  "private": false,
+  "created_at": "2026-05-20T14:47:09Z",
+  "updated_at": "2026-05-21T04:05:16Z",
+  "scope_locked_at": "2026-05-20T14:47:48Z",
+  "scope_lock_hash": "f0c8a89304ce735567bd5fa4d18deaf466b124b04473ba142a277e3801de3031",
+  "has_ui": false,
+  "has_code": false,
+  "has_content": false,
+  "blockers": [],
+  "open_questions": [],
+  "decisions": [],
+  "handoffs": [],
+  "tags": [],
+  "notes": "",
+  "summary": "",
+  "source": {
+    "created_by": "ws product-new"
+  },
+  "links": [],
+  "promotion": {
+    "stronghold_id": null,
+    "promoted_at": null
+  },
+  "intake_started_at": "2026-05-20T14:47:16Z",
+  "phase": "phase_1_intake_scope",
+  "last_action": "ws product-scope-change --confirm",
+  "intake_completed_at": "2026-05-20T14:47:42Z",
+  "scope_ready_at": "2026-05-20T14:47:42Z",
+  "prd_created_at": "2026-05-20T15:23:34Z",
+  "scope_change_pending": true,
+  "last_scope_change_at": "2026-05-21T04:05:16Z",
+  "stale_artifacts": [
+    "prd.md"
+  ],
+  "prd_status": "NEEDS_REVISION"
+}

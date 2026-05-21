@@ -1,0 +1,50 @@
+# Feature Contract: Quant MVP
+# Defines allowed features, window sizes, and safety policies for feature building.
+
+version: 1.0.0
+lane: Quant Trading
+
+allowed_input_formats: [parquet, json_fixture]
+allowed_output_formats: [parquet, json_fixture]
+approved_feature_roots: [data/quant/features/]
+
+required_input_columns: [timestamp, open, high, low, close, volume]
+
+supported_features:
+  - name: returns_1d
+    description: 1-day simple returns (close[t] / close[t-1] - 1)
+    type: rolling
+    window: 1
+    parameters: {}
+  - name: sma_n
+    description: Simple Moving Average over close price
+    type: rolling
+    window_range: [2, 200]
+    default_windows: [3, 5, 10, 20, 50, 200]
+  - name: volatility_n
+    description: Rolling standard deviation of 1-day returns
+    type: rolling
+    window_range: [2, 200]
+    default_windows: [3, 5, 10, 20]
+
+null_policy: "emit_nulls" # Keep row count same as input; first N-1 rows of window are null
+lookahead_policy: "strictly_no_future_leakage"
+output_metadata_required: true
+
+blocked_features:
+  - name: trading_signal
+    reason: "Signal generation is deferred to Wave 2B/3."
+  - name: buy_sell_hold
+    reason: "Strategy logic is out of scope for Wave 2A."
+  - name: rsi
+    reason: "Deferred to keep Wave 2A builder deterministic and simple."
+  - name: macd
+    reason: "Deferred to keep Wave 2A builder deterministic and simple."
+
+safety_mandates:
+  - "no_trading_signals"
+  - "no_strategy_decisions"
+  - "no_order_generation"
+  - "no_future_data_leakage"
+  - "no_centered_rolling_windows"
+  - "no_use_of_future_rows"

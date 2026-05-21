@@ -1,0 +1,63 @@
+# Prompt Library Schema
+
+fields:
+  prompt_id:
+    type: string
+    description: Unique identifier for the prompt.
+  prompt_title:
+    type: string
+    description: A short, descriptive title for the prompt.
+  prompt_type:
+    type: string
+    description: Category of the prompt (e.g., validation_question, risk_review_question).
+  prompt_text:
+    type: string
+    description: The full text of the research prompt.
+  source_workflow_id:
+    type: string
+    description: The workflow this prompt belongs to.
+  source_topic_ids:
+    type: list[string]
+    description: Topics associated with this prompt.
+  source_video_id:
+    type: string
+    description: The original YouTube video ID.
+  source_title:
+    type: string
+    description: The title of the source video.
+  source_url:
+    type: string
+    description: URL to the source video.
+  evidence_snippet:
+    type: string
+    description: Transcript snippet providing context for the prompt.
+  intended_use:
+    type: string
+    description: Safe intended use cases.
+  forbidden_use:
+    type: string
+    description: Uses that are explicitly forbidden (e.g., financial advice).
+  human_review_required:
+    type: boolean
+    description: Whether this prompt requires human review before action.
+  suggested_next_human_action:
+    type: string
+    description: A suggested action for the human researcher.
+  safety_financial_advice_generated:
+    type: boolean
+    description: Must be false. Indicates no financial advice was generated.
+  safety_trading_signal_generated:
+    type: boolean
+    description: Must be false. Indicates no trading signal was generated.
+  safety_bot_logic_generated:
+    type: boolean
+    description: Must be false. Indicates no bot logic was generated.
+  safety_live_trading_logic_generated:
+    type: boolean
+    description: Must be false. Indicates no live trading logic was generated.
+  source_artifact:
+    type: string
+    description: The path or name of the artifact from which this was generated.
+  processed_at:
+    type: string
+    description: Timestamp of when this record was processed.

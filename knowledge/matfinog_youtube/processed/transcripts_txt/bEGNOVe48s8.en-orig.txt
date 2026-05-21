@@ -1,0 +1,1 @@
+Let's go from zero to algo trader in 30 days. [music] We got the backtesting software, we got the data provider, so today we load the data. Specify the data source, the instrument you want to develop your strategy for, specify the time frame, and the data period. And finally, load the data.

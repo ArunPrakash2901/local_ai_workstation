@@ -1,0 +1,168 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.160 --> 00:00:01.670 align:start position:0%
+ 
+Let's<00:00:00.400><c> say</c><00:00:00.560><c> you</c><00:00:00.719><c> trade</c><00:00:00.880><c> an</c><00:00:01.120><c> orderflow</c>
+
+00:00:01.670 --> 00:00:01.680 align:start position:0%
+Let's say you trade an orderflow
+ 
+
+00:00:01.680 --> 00:00:03.270 align:start position:0%
+Let's say you trade an orderflow
+strategy.<00:00:01.964><c> [music]</c><00:00:02.240><c> Something</c><00:00:02.480><c> very</c><00:00:02.800><c> simple.</c>
+
+00:00:03.270 --> 00:00:03.280 align:start position:0%
+strategy. [music] Something very simple.
+ 
+
+00:00:03.280 --> 00:00:05.829 align:start position:0%
+strategy. [music] Something very simple.
+If<00:00:03.439><c> a</c><00:00:03.600><c> candle</c><00:00:04.000><c> has</c><00:00:04.240><c> a</c><00:00:04.400><c> large</c><00:00:04.720><c> positive</c><00:00:05.200><c> delta</c>
+
+00:00:05.829 --> 00:00:05.839 align:start position:0%
+If a candle has a large positive delta
+ 
+
+00:00:05.839 --> 00:00:07.850 align:start position:0%
+If a candle has a large positive delta
+and<00:00:06.160><c> it</c><00:00:06.480><c> crosses</c><00:00:07.040><c> above</c><00:00:07.440><c> the</c><00:00:07.759><c> previous</c>
+
+00:00:07.850 --> 00:00:07.860 align:start position:0%
+and it crosses above the previous
+ 
+
+00:00:07.860 --> 00:00:10.470 align:start position:0%
+and it crosses above the previous
+[music]<00:00:08.160><c> day's</c><00:00:08.480><c> high,</c><00:00:09.280><c> you</c><00:00:09.519><c> go</c><00:00:09.760><c> long.</c><00:00:10.320><c> And</c>
+
+00:00:10.470 --> 00:00:10.480 align:start position:0%
+[music] day's high, you go long. And
+ 
+
+00:00:10.480 --> 00:00:13.030 align:start position:0%
+[music] day's high, you go long. And
+similarly,<00:00:11.040><c> if</c><00:00:11.280><c> it</c><00:00:11.519><c> has</c><00:00:11.759><c> a</c><00:00:12.000><c> large</c><00:00:12.480><c> negative</c>
+
+00:00:13.030 --> 00:00:13.040 align:start position:0%
+similarly, if it has a large negative
+ 
+
+00:00:13.040 --> 00:00:15.110 align:start position:0%
+similarly, if it has a large negative
+delta<00:00:13.100><c> [music]</c><00:00:13.440><c> and</c><00:00:13.759><c> it</c><00:00:13.920><c> closes</c><00:00:14.400><c> below</c><00:00:14.880><c> the</c>
+
+00:00:15.110 --> 00:00:15.120 align:start position:0%
+delta [music] and it closes below the
+ 
+
+00:00:15.120 --> 00:00:17.430 align:start position:0%
+delta [music] and it closes below the
+previous<00:00:15.519><c> days</c><00:00:15.839><c> low,</c><00:00:16.240><c> you</c><00:00:16.480><c> go</c><00:00:16.720><c> short.</c><00:00:17.119><c> Now,</c>
+
+00:00:17.430 --> 00:00:17.440 align:start position:0%
+previous days low, you go short. Now,
+ 
+
+00:00:17.440 --> 00:00:18.630 align:start position:0%
+previous days low, you go short. Now,
+here<00:00:17.600><c> is</c><00:00:17.760><c> where</c><00:00:18.080><c> things</c><00:00:18.320><c> get</c><00:00:18.340><c> [music]</c>
+
+00:00:18.630 --> 00:00:18.640 align:start position:0%
+here is where things get [music]
+ 
+
+00:00:18.640 --> 00:00:20.710 align:start position:0%
+here is where things get [music]
+interesting.<00:00:19.279><c> Rather</c><00:00:19.600><c> than</c><00:00:20.000><c> eyeballing</c>
+
+00:00:20.710 --> 00:00:20.720 align:start position:0%
+interesting. Rather than eyeballing
+ 
+
+00:00:20.720 --> 00:00:23.269 align:start position:0%
+interesting. Rather than eyeballing
+this,<00:00:21.039><c> you</c><00:00:21.199><c> can</c><00:00:21.359><c> let</c><00:00:21.520><c> SH</c><00:00:21.840><c> GPT</c><00:00:22.320><c> code</c><00:00:22.720><c> the</c><00:00:22.960><c> entire</c>
+
+00:00:23.269 --> 00:00:23.279 align:start position:0%
+this, you can let SH GPT code the entire
+ 
+
+00:00:23.279 --> 00:00:25.109 align:start position:0%
+this, you can let SH GPT code the entire
+strategy<00:00:23.840><c> for</c><00:00:24.080><c> you.</c><00:00:24.480><c> You</c><00:00:24.640><c> back</c><00:00:24.880><c> test</c><00:00:24.900><c> [music]</c>
+
+00:00:25.109 --> 00:00:25.119 align:start position:0%
+strategy for you. You back test [music]
+ 
+
+00:00:25.119 --> 00:00:27.429 align:start position:0%
+strategy for you. You back test [music]
+it<00:00:25.359><c> over</c><00:00:25.600><c> the</c><00:00:25.840><c> past</c><00:00:26.160><c> 10</c><00:00:26.400><c> years</c><00:00:26.880><c> to</c><00:00:27.119><c> actually</c>
+
+00:00:27.429 --> 00:00:27.439 align:start position:0%
+it over the past 10 years to actually
+ 
+
+00:00:27.439 --> 00:00:29.349 align:start position:0%
+it over the past 10 years to actually
+see<00:00:27.680><c> the</c><00:00:27.920><c> performance.</c><00:00:28.640><c> and</c><00:00:28.800><c> you</c><00:00:28.880><c> optimize</c>
+
+00:00:29.349 --> 00:00:29.359 align:start position:0%
+see the performance. and you optimize
+ 
+
+00:00:29.359 --> 00:00:31.589 align:start position:0%
+see the performance. and you optimize
+the<00:00:29.679><c> delta</c><00:00:30.080><c> threshold.</c><00:00:30.800><c> Find</c><00:00:31.039><c> out</c><00:00:31.359><c> which</c>
+
+00:00:31.589 --> 00:00:31.599 align:start position:0%
+the delta threshold. Find out which
+ 
+
+00:00:31.599 --> 00:00:32.630 align:start position:0%
+the delta threshold. Find out which
+level<00:00:32.000><c> historically</c><00:00:32.095><c> [music]</c>
+
+00:00:32.630 --> 00:00:32.640 align:start position:0%
+level historically [music]
+ 
+
+00:00:32.640 --> 00:00:34.630 align:start position:0%
+level historically [music]
+did<00:00:32.880><c> the</c><00:00:33.040><c> best</c><00:00:33.280><c> job</c><00:00:33.440><c> in</c><00:00:33.680><c> filtering</c><00:00:34.160><c> the</c><00:00:34.399><c> bad</c>
+
+00:00:34.630 --> 00:00:34.640 align:start position:0%
+did the best job in filtering the bad
+ 
+
+00:00:34.640 --> 00:00:37.350 align:start position:0%
+did the best job in filtering the bad
+trades.<00:00:35.520><c> That</c><00:00:35.760><c> alone</c><00:00:36.079><c> is</c><00:00:36.320><c> a</c><00:00:36.480><c> massive</c><00:00:36.960><c> step</c>
+
+00:00:37.350 --> 00:00:37.360 align:start position:0%
+trades. That alone is a massive step
+ 
+
+00:00:37.360 --> 00:00:39.350 align:start position:0%
+trades. That alone is a massive step
+forward<00:00:37.760><c> in</c><00:00:38.079><c> your</c><00:00:38.239><c> trading</c><00:00:38.640><c> journey.</c><00:00:39.120><c> And</c>
+
+00:00:39.350 --> 00:00:39.360 align:start position:0%
+forward in your trading journey. And
+ 
+
+00:00:39.360 --> 00:00:40.869 align:start position:0%
+forward in your trading journey. And
+this<00:00:39.600><c> is</c><00:00:39.920><c> just</c><00:00:40.239><c> scratching</c><00:00:40.610><c> [music]</c><00:00:40.640><c> the</c>
+
+00:00:40.869 --> 00:00:40.879 align:start position:0%
+this is just scratching [music] the
+ 
+
+00:00:40.879 --> 00:00:43.120 align:start position:0%
+this is just scratching [music] the
+surface.
+

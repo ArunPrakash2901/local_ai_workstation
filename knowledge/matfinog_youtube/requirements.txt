@@ -1,0 +1,3 @@
+# yt-dlp is required as a CLI tool or Python package.
+# Do not add heavy dependencies (pandas, duckdb, ml libs) for this milestone.
+yt-dlp

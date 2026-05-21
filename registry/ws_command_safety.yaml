@@ -1,0 +1,3374 @@
+version: 1
+source: WS_COMMAND_SAFETY_MATRIX.md
+generated_note: JSON-compatible YAML generated from the command safety matrix. It
+  is advisory display metadata only; it must not be used to bypass ws/TUI execution
+  gates.
+default_policy:
+  unknown:
+    tui_exposure: hidden
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    confirmation: required
+safety_classes:
+  PURE_READ:
+    description: Reads existing state only; no writes.
+  LOCAL_REPORT_WRITE:
+    description: Reads state but writes local status/report artifacts under controlled
+      workstation paths.
+  DRY_RUN_ONLY:
+    description: Simulates or plans an action without applying project/provider changes.
+  GUARDED_WRITE:
+    description: Can mutate local files/state only through explicit gates.
+  AGENT_RUN:
+    description: Can invoke local model or agent process.
+  PROVIDER_CALL:
+    description: Can contact external API, cloud provider, or cloud agent.
+  DESTRUCTIVE:
+    description: Can delete, overwrite, clean, reset, or discard state.
+  UNKNOWN:
+    description: Insufficient evidence; hidden until classified.
+allowed_values:
+  safety_class:
+  - AGENT_RUN
+  - DESTRUCTIVE
+  - DRY_RUN_ONLY
+  - GUARDED_WRITE
+  - LOCAL_REPORT_WRITE
+  - PROVIDER_CALL
+  - PURE_READ
+  - UNKNOWN
+  tui_exposure:
+  - admin_only
+  - disabled
+  - hidden
+  - visible
+  - visible_with_label
+  confirmation:
+  - branch
+  - destructive
+  - dirty_worktree
+  - explicit
+  - light
+  - none
+  - provider
+  - required
+  - typed
+commands:
+  ws help:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Prints built-in help text from the wrapper.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Help
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws help case
+    confidence: high
+    notes: Inline wrapper output only.
+  ws aliases:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Prints suggested shell aliases.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Aliases
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws aliases case
+    confidence: high
+    notes: Inline wrapper output only.
+  ws projects:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists registered projects.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Projects
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_list_projects.sh
+    confidence: high
+    notes: Reads registry.
+  ws project <key>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows project details and graph path status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Project key
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_project.sh
+    confidence: high
+    notes: Checks graph path existence; does not read raw graph content.
+  ws model:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows active model profile.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Model
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_model_current.sh
+    confidence: high
+    notes: Reads active model/KV registry files.
+  ws models:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists model registry and local Ollama availability.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Models
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_models.sh
+    confidence: high
+    notes: Queries local model runtime; no generation or writes observed.
+  ws moe:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists MoE/lab model information through model listing fallback.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Moe
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws moe case
+    confidence: medium
+    notes: ai_moe_list.sh was not present; wrapper falls back to ai_models.sh filter.
+  ws kv:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists KV/cache profiles.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Kv
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_kv_profiles.sh
+    confidence: high
+    notes: Reads registry only.
+  ws paths:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows configured workstation paths.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Paths
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_path_status.sh
+    confidence: high
+    notes: Reads path registry.
+  ws status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Runs health/model status checks.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws status case
+    - scripts/check_health.ps1
+    - scripts/ai_model_current.sh
+    confidence: medium
+    notes: No file writes observed; probes local services.
+  ws tui:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: May run status checks that write local status reports
+    safety_class: LOCAL_REPORT_WRITE
+    description: Launches the operator dashboard; dashboard collection may run status
+      commands that write local reports.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: TUI dashboard
+    evidence:
+    - scripts/ws tui case
+    - scripts/ws_tui.sh
+    - tui/app.py STATUS_COMMANDS
+    confidence: medium
+    notes: Classified for ws route coverage. This manifest entry does not expose the
+      TUI as an action inside itself; interactive dashboard actions remain governed
+      by existing TUI gates.
+    tui_dispatch_policy: hidden_local_report
+    tui_dispatch_allowed: false
+    report_write_scope: unknown
+  ws runs:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists recent run folders.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Runs
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws runs case
+    confidence: high
+    notes: Uses directory listing only.
+  ws open-run <id>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Prints path/content for a selected run artifact if present.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Open-run id
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws open-run case
+    confidence: high
+    notes: Reads generated run files.
+  ws build-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists latest build run state.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Build-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws build-status case
+    confidence: high
+    notes: Reads build_runs.
+  ws build-runs:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists build runs.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Build-runs
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws build-runs case
+    confidence: high
+    notes: Directory listing only.
+  ws open-build <id>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Prints latest build report path/content if present.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Open-build id
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws open-build case
+    confidence: high
+    notes: Reads generated build report.
+  ws feature-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows feature stronghold status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_status.sh
+    - tui/app.py STATUS_COMMANDS
+    confidence: high
+    notes: TUI status allowlist includes this command.
+  ws stronghold-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows stronghold status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_status.sh
+    - tui/app.py STATUS_COMMANDS
+    confidence: high
+    notes: TUI status allowlist includes this command.
+  ws handoff-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows handoff status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_handoff_status.sh
+    - tui/app.py STATUS_COMMANDS
+    confidence: high
+    notes: TUI status allowlist includes this command.
+  ws quant data-contract-check:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Validates Quant YAML contracts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant contract check
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    confidence: high
+    notes: Reads YAML only.
+  ws quant:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Dispatches the Quant foundation CLI to local validation and inspection subcommands.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant CLI
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/contracts.py
+    - scripts/quant/schema.py
+    - scripts/quant/freshness.py
+    - scripts/quant/paths.py
+    confidence: high
+    notes: Base route prints help when no subcommand is given and currently dispatches only to read-only or in-memory dry-run checks; no quantization, model loading, provider calls, or file mutation paths are implemented.
+  ws quant data-schema-check:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Validates sample OHLCV schema.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant schema check
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    confidence: high
+    notes: In-memory dry-run only; available in SAFE_DRY_RUN, not READ_ONLY_STRICT.
+  ws quant data-freshness-check:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Checks data freshness policy.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant freshness check
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    confidence: high
+    notes: Arithmetic check only; available in SAFE_DRY_RUN, not READ_ONLY_STRICT.
+  ws quant data-ingest-fixture:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local quant fixture/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Fetches and validates synthetic fixture OHLCV data.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant fixture ingestion
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/ingest.py
+    - scripts/quant/persistence.py
+    - scripts/quant/storage.py
+    confidence: high
+    notes: Uses a deterministic local fixture adapter with no network/provider/model calls; may write a tiny local synthetic fixture artifact under approved quant data paths when --write-fixture is passed.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: quant_fixture
+  ws quant dataset-catalog:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Scans and lists Quant datasets.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant dataset catalog
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/catalog.py
+    confidence: high
+    notes: Path scanning only; no data reads during cataloging.
+  ws quant dataset-profile:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Profiles a Quant dataset.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant dataset profile
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/analytics.py
+    confidence: high
+    notes: Reads approved data files to generate metadata profile.
+  ws quant analytics-capabilities:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Detects local analytics libraries.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant analytics capabilities
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/analytics.py
+    confidence: high
+    notes: Capability probing only.
+  ws quant feature-contract-check:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Validates Quant feature building contract.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant feature contract check
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/features.py
+    confidence: high
+    notes: Reads YAML only.
+  ws quant feature-build:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local feature/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Builds research features from a dataset.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant feature building
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/features.py
+    - scripts/quant/persistence.py
+    confidence: high
+    notes: Deterministic feature calculation; default is dry-run. No trading signals generated.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: quant_features
+  ws quant paths-check:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Verifies approved quant paths.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant paths check
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    confidence: high
+    notes: Path inspection only.
+  ws quant persistence-capabilities:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Detects local persistence libraries.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant persistence capabilities
+    evidence:
+    - scripts/ws
+    - scripts/quant/cli.py
+    - scripts/quant/persistence.py
+    confidence: high
+    notes: Capability probing only.
+  ws product-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists Product Lane Phase 0 registry records.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product list
+    evidence:
+    - PRODUCT_PHASE_0_IMPLEMENTATION_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_list.py
+    confidence: high
+    notes: Reads products/*/product.yaml; no writes.
+  ws product-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows one Product Lane Phase 0 product record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product status
+    evidence:
+    - PRODUCT_PHASE_0_IMPLEMENTATION_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_status.py
+    confidence: high
+    notes: Reads products/<product_id>/product.yaml; no writes.
+  ws product-new:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes product registry files
+    safety_class: GUARDED_WRITE
+    description: Creates a Product Lane Phase 0 product record.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Create product record
+    evidence:
+    - PRODUCT_PHASE_0_IMPLEMENTATION_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_new.py
+    - scripts/product_registry.py
+    confidence: high
+    notes: Writes only under products/<product_id>/ and refuses overwrite by default.
+  ws product-help:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Prints Product Lane Phase 0 usage and safety notes.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product Lane help
+    evidence:
+    - products/README.md
+    - WORKSTATION_MANUAL.md
+    - scripts/ws
+    - scripts/ws_product_help.py
+    confidence: high
+    notes: Prints Product Lane Phase 0 quick reference only; no reads/writes of registry files.
+  ws product-questions --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews static Product Lane intake questions for a product type.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product questions preview
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_INTAKE_QUESTION_BANK.md
+    - scripts/ws
+    - scripts/ws_product_questions.py
+    - scripts/product_intake_questions.py
+    confidence: high
+    notes: Static dry-run preview only; no writes, models, providers, or agents.
+  ws product-intake --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews Product Lane intake flow and future artifacts without writing files.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product intake preview
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_INTAKE_QUESTION_BANK.md
+    - scripts/ws
+    - scripts/ws_product_intake.py
+    - scripts/product_intake_questions.py
+    confidence: high
+    notes: Dry-run intake preview only; no writes, models, providers, or agents.
+  ws product-intake --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes intake templates under products/<product_id>/
+    safety_class: GUARDED_WRITE
+    description: Starts Product Lane intake for an existing product.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Start product intake
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_INTAKE_QUESTION_BANK.md
+    - scripts/ws
+    - scripts/ws_product_intake.py
+    - scripts/product_intake_artifacts.py
+    confidence: high
+    notes: Writes intake.md/questions.md and updates product.yaml only within products/<product_id>/; no models/providers/agents.
+  ws product-answer-import:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes answers.md and updates product.yaml under products/<product_id>/
+    safety_class: GUARDED_WRITE
+    description: Imports operator-provided intake answers and classifies intake completion.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Import product intake answers
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_INTAKE_QUESTION_BANK.md
+    - scripts/ws
+    - scripts/ws_product_answer_import.py
+    - scripts/product_answer_import.py
+    confidence: high
+    notes: Writes answers.md and updates product.yaml only within products/<product_id>/; rejects unknown/duplicate answers; no models/providers/agents.
+  ws product-scope --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic Product Lane scope draft from product.yaml and answers.md.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product scope draft
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_SCOPE_LOCK_SPEC.md
+    - scripts/ws
+    - scripts/ws_product_scope.py
+    - scripts/product_scope.py
+    confidence: high
+    notes: Static deterministic dry-run preview only; no writes, no product.yaml updates, no models/providers/agents.
+  ws product-scope-change --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic Product Lane scope change impact from product metadata and an operator-authored change file.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product scope change
+    evidence:
+    - PRODUCT_SCOPE_REVISION_PLAN.md
+    - PRODUCT_PRD_WARN_TRIAGE_PORTFOLIO_WEBSITE.md
+    - scripts/ws
+    - scripts/ws_product_scope_change.py
+    - scripts/product_scope_change.py
+    confidence: high
+    notes: Deterministic no-write scope change impact preview; no model/provider/agent calls.
+  ws product-scope-change --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes scope change decision and updates product metadata
+    safety_class: GUARDED_WRITE
+    description: Records a product scope change decision and marks downstream artifacts stale or needs revision without rewriting immutable scope or PRD artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Record product scope change
+    evidence:
+    - PRODUCT_SCOPE_REVISION_PLAN.md
+    - PRODUCT_PRD_WARN_TRIAGE_PORTFOLIO_WEBSITE.md
+    - scripts/ws
+    - scripts/ws_product_scope_change.py
+    - scripts/product_scope_change.py
+    confidence: high
+    notes: Records change request only; writes products/<product_id>/decisions/scope_change_<change_id>.md plus product.yaml/action_log metadata; does not rewrite scope_lock.md or prd.md; no model/provider/agent calls.
+  ws product-scope-revision --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic revised Product Lane scope text from scope_lock.md and confirmed scope change decisions.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product scope revision
+    evidence:
+    - PRODUCT_SCOPE_REVISION_PLAN.md
+    - PRODUCT_PRD_WARN_TRIAGE_PORTFOLIO_WEBSITE.md
+    - scripts/ws
+    - scripts/ws_product_scope_revision.py
+    - scripts/product_scope_revision.py
+    confidence: high
+    notes: Deterministic no-write revised scope preview from confirmed scope change decisions; does not modify scope_lock.md, product.yaml, or prd.md; no model/provider/agent calls.
+  ws product-scope-revision --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes revised scope lock and updates active scope metadata
+    safety_class: GUARDED_WRITE
+    description: Writes a versioned revised Product Lane scope lock artifact from confirmed scope change decisions and updates active scope metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Write revised product scope lock
+    evidence:
+    - PRODUCT_SCOPE_REVISION_PLAN.md
+    - PRODUCT_PRD_WARN_TRIAGE_PORTFOLIO_WEBSITE.md
+    - scripts/ws
+    - scripts/ws_product_scope_revision.py
+    - scripts/product_scope_revision.py
+    confidence: high
+    notes: Creates products/<product_id>/scope_locks/scope_lock_vN.md and updates active scope metadata without rewriting original scope_lock.md, prd.md, or answers.md; no model/provider/agent calls.
+  ws product-lock-scope:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes immutable scope_lock.md and updates product.yaml
+    safety_class: GUARDED_WRITE
+    description: Locks scope for a SCOPE_READY product by writing scope_lock.md and recording lock metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Lock product scope
+    evidence:
+    - PRODUCT_PHASE_1_INTAKE_SCOPE_PLAN.md
+    - PRODUCT_SCOPE_LOCK_SPEC.md
+    - scripts/ws
+    - scripts/ws_product_lock_scope.py
+    - scripts/product_scope_lock.py
+    confidence: high
+    notes: Writes only under products/<product_id>/ (scope_lock.md, product.yaml update, action log append if present); refuses overwrite and existing lock metadata; no models/providers/agents.
+  ws product-prd --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic PRD content from locked scope and product metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product PRD
+    evidence:
+    - PRODUCT_PHASE_2_PRD_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd.py
+    - scripts/product_prd.py
+    confidence: high
+    notes: Deterministic no-write PRD preview from product.yaml and scope_lock.md; no model/provider/agent calls.
+  ws product-prd --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes prd.md and updates product.yaml under products/<product_id>/
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic PRD content from locked scope to prd.md.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Write product PRD draft
+    evidence:
+    - PRODUCT_PHASE_2_PRD_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd.py
+    - scripts/product_prd.py
+    confidence: high
+    notes: Deterministic PRD draft from locked scope only; no model/provider/agent calls; refuses overwrite.
+  ws product-prd-review --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Reviews deterministic PRD structure from product.yaml, scope_lock.md, and prd.md.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product PRD review
+    evidence:
+    - PRODUCT_PHASE_2_PRD_REVIEW_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd_review.py
+    - scripts/product_prd_review.py
+    confidence: high
+    notes: Deterministic no-write PRD review from product.yaml, scope_lock.md, and prd.md; no model/provider/agent calls.
+  ws product-prd-approve:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes PRD approval decision and updates product.yaml
+    safety_class: GUARDED_WRITE
+    description: Approves deterministic PRD metadata after a PASS deterministic review.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Approve product PRD
+    evidence:
+    - PRODUCT_PHASE_2_PRD_REVIEW_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd_approve.py
+    - scripts/product_prd_approval.py
+    confidence: high
+    notes: Deterministic approval only after product-prd-review PASS; writes products/<product_id>/decisions/prd_approval.md and product.yaml; does not modify prd.md or scope_lock.md; no model/provider/agent calls; refuses duplicate approval.
+  ws product-prd-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows Product Lane PRD artifact status from product metadata and artifact presence.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product PRD status
+    evidence:
+    - PRODUCT_PHASE_2_PRD_REVIEW_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd_status.py
+    - scripts/product_prd_status.py
+    confidence: high
+    notes: Reads product.yaml plus prd.md/scope_lock.md/decisions/prd_approval.md presence only; no writes, no deterministic review execution, no model/provider/agent calls.
+  ws product-wireframe --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic text/ASCII wireframes from approved PRD and locked scope.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product wireframe
+    evidence:
+    - PRODUCT_PHASE_2_PRD_REVIEW_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_wireframe.py
+    - scripts/product_wireframe.py
+    confidence: high
+    notes: Deterministic no-write text/ASCII wireframe preview from approved PRD; no model/provider/agent calls.
+  ws redact <packet>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Scans a frontier packet for redaction status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Redact packet
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_redact_packet.sh
+    confidence: high
+    notes: Prints SAFE, WARNING, or BLOCKED; no write observed.
+  ws agent-import <run>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Hidden until import behavior is verified
+    safety_class: PURE_READ
+    description: Imports or displays an existing agent run result.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-import run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_import.ps1
+    - scripts/ws_agent_run.ps1 Run-Import
+    confidence: medium
+    notes: Source suggests read/import handling; verify before TUI exposure.
+  scripts/check_health.ps1:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Direct health probe helper.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scripts/check_health.ps1
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/check_health.ps1
+    confidence: high
+    notes: Used by ws status and readiness workflows.
+  scripts/ws_apply_guard.sh:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Validates patch/apply safety conditions.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scripts/ws_apply_guard.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws_apply_guard.sh
+    confidence: high
+    notes: Guard helper; no project mutation by itself.
+  scripts/graphify_query.sh:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Queries existing graph context.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scripts/graphify_query.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/graphify_query.sh
+    confidence: high
+    notes: Query wrapper; raw graph output was not inspected.
+  ws ready:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local readiness/status report
+    safety_class: LOCAL_REPORT_WRITE
+    description: Performs readiness checks and writes readiness report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Ready
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_readiness.sh
+    - tui/app.py STATUS_COMMANDS
+    - PRD_LOCAL_AI_WORKSTATION.md
+    confidence: high
+    notes: Writes reports/READINESS_<timestamp>.md; may call frontier status.
+    tui_dispatch_policy: system_only
+    tui_dispatch_allowed: true
+    report_write_scope: readiness
+  ws frontier:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Checks frontier tooling and writes frontier registry/status scaffolding.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Frontier
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_frontier_status.sh
+    confidence: high
+    notes: Creates frontier dirs and updates registry/frontier.yaml.
+    tui_dispatch_policy: hidden_local_report
+    tui_dispatch_allowed: false
+    report_write_scope: unknown
+  ws graph <project/global>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Runs graph query and writes run output.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graph project/global
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_graph.sh
+    confidence: high
+    notes: Writes runs/<timestamp>_graph_* artifacts.
+    tui_dispatch_policy: hidden_local_report
+    tui_dispatch_allowed: false
+    report_write_scope: unknown
+  ws task-status:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Shows task status and ensures task directories exist.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_status.sh
+    - WORKSTATION_MANUAL.md
+    confidence: high
+    notes: Creates task lifecycle directories before reading status.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: task
+  ws task-next:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Shows next task and ensures task directories exist.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-next
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_next.sh
+    confidence: high
+    notes: Creates task lifecycle directories before selecting next task.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: task
+  ws apply-ready:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Produces apply-readiness report for an agent run.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Apply-ready
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_apply_ready.sh
+    confidence: high
+    notes: Does not apply changes; report artifact only.
+    tui_dispatch_policy: hidden_local_report
+    tui_dispatch_allowed: false
+    report_write_scope: unknown
+  ws agent-status:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Shows agent launcher/canary status.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_status.ps1
+    - scripts/ws_agent_run.ps1
+    confidence: medium
+    notes: The shared PowerShell runner ensures scratch directories before dispatch.
+    tui_dispatch_policy: hidden_local_report
+    tui_dispatch_allowed: false
+    report_write_scope: unknown
+  ws agent-hygiene:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local hygiene report
+    safety_class: LOCAL_REPORT_WRITE
+    description: Scans agent run hygiene and writes report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-hygiene
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_hygiene.sh
+    - tui/app.py STATUS_COMMANDS
+    confidence: high
+    notes: Writes reports/AGENT_HYGIENE_<timestamp>.md.
+    tui_dispatch_policy: system_only
+    tui_dispatch_allowed: true
+    report_write_scope: hygiene
+  ws worktree-plan:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes a worktree plan report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-plan
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_plan.sh
+    confidence: high
+    notes: Planning/report only.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: worktree
+  ws worktree-review:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes a worktree review report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-review
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_review.sh
+    confidence: high
+    notes: Review/report only.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: worktree
+  ws worktree-status:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes worktree status report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_status.sh
+    confidence: high
+    notes: Status report under workstation paths.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: worktree
+  ws loop-plan:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes loop planning report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Loop-plan
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_loop_plan.sh
+    confidence: high
+    notes: No project mutation observed.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: loop
+  ws loop-status:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes loop status report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Loop-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_loop_status.sh
+    confidence: high
+    notes: No project mutation observed.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: loop
+  ws audit-workstation:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Audits workstation files and writes audit reports.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Audit-workstation
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_audit_workstation.sh
+    confidence: high
+    notes: Writes cleanup audit markdown/JSON.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: cleanup
+  ws cleanup-plan:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes cleanup plan from audit.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Cleanup-plan
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_cleanup_plan.sh
+    confidence: high
+    notes: May run workstation audit if no audit JSON exists; writes plan markdown/JSON.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: cleanup
+  ws cleanup-status:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Shows cleanup status; ensures cleanup directories exist.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Cleanup-status
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_cleanup_status.sh
+    confidence: high
+    notes: Creates cleanup/report/archive dirs before listing status.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: cleanup
+  ws feature-report:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes final feature report artifact.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-report
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_report.sh
+    confidence: high
+    notes: Local artifact/report write.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: feature
+  ws stronghold-report:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local status/report artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes stronghold report artifact.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-report
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_report.sh
+    confidence: high
+    notes: Local artifact/report write.
+    tui_dispatch_policy: learning_only
+    tui_dispatch_allowed: true
+    report_write_scope: stronghold
+  ws task-review:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates a local review packet for task review.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-review
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_review_packet.sh
+    confidence: high
+    notes: Writes frontier packet; does not send to provider.
+  ws packet:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates local frontier packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Packet
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_context_pack.sh
+    - scripts/ws_frontier_packet.sh
+    confidence: high
+    notes: Local-first context packet; no upload observed.
+  ws use <profile>:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Changes active model profile.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Use profile
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_model_use.sh
+    confidence: high
+    notes: Writes registry/active_model.yaml.
+  ws kvuse <profile>:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Changes active KV/cache profile.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Kvuse profile
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_kv_use.sh
+    confidence: high
+    notes: Writes registry/active_kv_profile.yaml.
+  ws daily:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Applies daily model/KV defaults and unloads active model.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Daily
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_daily.sh
+    confidence: high
+    notes: Writes active model/KV registry and calls local model runtime unload.
+  ws task-new:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates a new task file/artifact.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-new
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_new.sh
+    confidence: high
+    notes: Mutates workstation task state.
+  ws task-split:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Splits task into generated task artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Task-split
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_split.sh
+    confidence: high
+    notes: Non-dry-run writes task files.
+  ws task-complete:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Marks task complete.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-complete
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_complete.sh
+    confidence: high
+    notes: Mutates task lifecycle state.
+  ws task-block:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Marks task blocked.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-block
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_block.sh
+    confidence: high
+    notes: Mutates task lifecycle state.
+  ws handoff-new:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates a local handoff directory and prompt/context artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff-new
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_handoff_new.sh
+    confidence: high
+    notes: Local handoff artifact only; no provider send observed.
+  ws handoff-copy:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: provider
+    warning_label: Copies prompt to clipboard; manual cloud handoff possible
+    safety_class: GUARDED_WRITE
+    description: Copies handoff prompt to clipboard and updates metadata/transcript.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff-copy
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_handoff_copy.sh
+    confidence: high
+    notes: Clipboard bridge can expose context to manual browser/cloud workflow.
+  ws handoff-import:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Reads clipboard and updates local handoff artifacts
+    safety_class: GUARDED_WRITE
+    description: Imports clipboard response into handoff artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff-import
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_handoff_import.sh
+    confidence: high
+    notes: Risk is importing unintended clipboard content.
+  ws handoff-review:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Reviews handoff response and writes review metadata/report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff-review
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_handoff_review.sh
+    confidence: high
+    notes: Deterministic local review/write.
+  ws feature-new:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates feature stronghold structure/state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-new
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_new.sh
+    confidence: high
+    notes: Mutates feature stronghold artifacts.
+  ws feature-plan:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes feature plan and updates feature loop state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-plan
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_plan.sh
+    confidence: high
+    notes: Reads project context and writes local feature artifacts.
+  ws feature-validate:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes feature validation evidence/state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-validate
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_validate.sh
+    confidence: high
+    notes: Checks readiness and git state; writes validation artifacts.
+  ws feature-handoff:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates feature handoff packet for a target.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-handoff
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_handoff.sh
+    confidence: high
+    notes: Does not invoke provider; target may imply later cloud/manual use.
+  ws feature-architect-handoff:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates senior architect handoff packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-architect-handoff
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_architect_handoff.sh
+    confidence: high
+    notes: Local packet creation only.
+  ws feature-run --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: branch
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates apply-ready feature handoff after dry-run gates.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-run apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_run.sh
+    confidence: high
+    notes: HANDOFF_ONLY; does not launch agent, but advances apply-ready workflow
+      state.
+  ws stronghold-new:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates stronghold structure/state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-new
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_new.sh
+    confidence: high
+    notes: Mutates stronghold artifacts.
+  ws stronghold-intake:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes stronghold intake artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-intake
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_intake.sh
+    confidence: high
+    notes: Local state/artifact write.
+  ws stronghold-intake-import:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Imports intake artifact into stronghold workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-intake-import
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_intake_import.sh
+    confidence: high
+    notes: Mutates stronghold state.
+  ws stronghold-architect-handoff:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Creates stronghold architect handoff packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: true
+    operator_label: Stronghold-architect-handoff
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_architect_handoff.sh
+    confidence: high
+    notes: Local handoff artifact; no provider call observed.
+  ws stronghold-plan-import:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Imports plan into stronghold workflow state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-plan-import
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_plan_import.sh
+    confidence: high
+    notes: Mutates stronghold state.
+  ws stronghold-decision:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes stronghold decision record and state update.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold-decision
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_decision.sh
+    confidence: high
+    notes: Decision/state mutation, not a pure report.
+  ws learning-import-answers:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Imports human answers into learning artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-import-answers
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_import_answers.sh
+    - tui/app.py DISABLED_ACTIONS
+    confidence: high
+    notes: Disabled in TUI source.
+  ws learning-decision:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic learning decision artifact/state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-decision
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_decision.sh
+    confidence: high
+    notes: Decision/state mutation.
+  ws learning-advance:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: typed
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Advances learning stronghold progress after decision.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-advance
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_advance.sh
+    - tui/app.py DISABLED_ACTIONS
+    confidence: high
+    notes: Disabled in TUI source; state advancement should be explicit.
+  ws research-decision:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic research decision artifact/state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Research-decision
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_research_decision.sh
+    confidence: high
+    notes: Decision/state mutation.
+  ws research-add-source:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Copies source text into research source artifacts and updates state.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Research-add-source
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_research_add_source.sh
+    confidence: high
+    notes: Can copy local source text; source safety matters.
+  ws worktree-create --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: branch
+    warning_label: Can mutate workstation/project state
+    safety_class: GUARDED_WRITE
+    description: Creates git branch/worktree from a prior dry-run report.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-create apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_create.sh
+    confidence: high
+    notes: Uses git branch and git worktree add; rollback branch delete on failure.
+  ws worktree-sync --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: branch
+    warning_label: Can mutate workstation/project state
+    safety_class: GUARDED_WRITE
+    description: Fast-forwards a worktree from main after dry-run/report gate.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-sync apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_sync.sh
+    confidence: high
+    notes: Uses git merge --ff-only main in worktree.
+  ws agent-mark-stale-reviewed:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: light
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Writes reviewed marker for stale agent run.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-mark-stale-reviewed
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_mark_stale_reviewed.sh
+    confidence: high
+    notes: Local marker under auto_runs.
+  scripts/graphify_project.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Can mutate workstation/project state
+    safety_class: GUARDED_WRITE
+    description: Generates Graphify output for a project.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scripts/graphify_project.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/graphify_project.sh
+    confidence: high
+    notes: Writes project graphify-out/graph.json; raw output was not inspected.
+  scripts/ai_apply_ollama_profile.ps1:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Can mutate workstation state
+    safety_class: GUARDED_WRITE
+    description: Applies Ollama environment/profile settings and restarts runtime.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/ai_apply_ollama_profile.ps1
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ai_apply_ollama_profile.ps1
+    confidence: high
+    notes: Mutates user environment/runtime process state.
+  scripts/ws_test_runner.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Can mutate workstation/project state
+    safety_class: GUARDED_WRITE
+    description: Runs test command and writes test output artifact.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scripts/ws_test_runner.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws_test_runner.sh
+    confidence: high
+    notes: Blocks some unsafe test commands but arbitrary tests may still write.
+  ws build --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Parses/builds dry-run metadata and exits before plan/apply.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Build dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_build.sh
+    confidence: high
+    notes: Creates build run artifacts before dry-run exit.
+  ws task-split --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Plans task split without creating task files.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Task-split dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_split.sh
+    confidence: high
+    notes: Creates generated/inbox dirs before dry-run.
+  ws feature-run --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes feature dry-run readiness report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Feature-run dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_run.sh
+    confidence: high
+    notes: Writes runs/feature_run_dry_run_<timestamp>.md.
+  ws learning-run --session --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes learning session plan/log/state without model call.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-run session dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_run.sh
+    - tui/app.py LEARNING_DRY_RUN_ALLOWLIST
+    confidence: high
+    notes: TUI explicitly allows this exact dry-run path.
+  ws learning-review-session --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes learning review plan/log/state without model call.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-review-session dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_review_session.sh
+    - tui/app.py LEARNING_DRY_RUN_ALLOWLIST
+    confidence: high
+    notes: TUI explicitly allows this exact dry-run path.
+  ws learning-action-pack --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Generates a dry-run learning action pack from existing stronghold state.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-action-pack dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_action_pack.sh
+    - scripts/learning_action_pack.py
+    confidence: high
+    notes: Requires --dry-run and reads learning stronghold state only; no writes, models, providers, or agents.
+  ws learning-pointer-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Generates a dry-run learning next task pointer update plan from existing stronghold state and confirmation ledger.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-pointer-plan dry-run
+    evidence:
+    - scripts/ws
+    - scripts/ws_learning_pointer_plan.sh
+    - scripts/learning_pointer_update_planner.py
+    - scripts/test_learning_pointer_update_planner.py
+    confidence: high
+    notes: Wrapper and planner enforce --dry-run-only behavior; reads state.json and learning_confirmations.jsonl and prints a proposed pointer update only; apply path is not implemented.
+  ws learning-advancement-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Generates a dry-run learning advancement readiness plan from existing stronghold state, confirmation ledger, and sync audit artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-advancement-plan dry-run
+    evidence:
+    - scripts/ws
+    - scripts/ws_learning_advancement_plan.sh
+    - scripts/learning_advancement_readiness_planner.py
+    confidence: high
+    notes: Wrapper and planner enforce --dry-run-only behavior; reads state.json, learning_confirmations.jsonl, and state_sync_audit.jsonl and may call the pointer planner in dry-run JSON mode only; apply path is not implemented.
+  ws learning-advancement-review:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Writes local advancement review report packet artifact
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates a dry-run human advancement review summary or writes a local advancement review packet under the learning stronghold.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-advancement-review
+    evidence:
+    - scripts/ws
+    - scripts/ws_learning_advancement_review.sh
+    - scripts/learning_advancement_review_packet.py
+    confidence: high
+    notes: Requires either --dry-run or --create-packet; dry-run reads stronghold state and planner outputs only, while create-packet writes a review packet under strongholds/learning/<id>/review_packets/ without invoking models, providers, or agents.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: learning_review_packet
+  ws learning-state-sync-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Generates a dry-run learning state synchronization plan from existing stronghold state and confirmation ledger.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-state-sync-plan dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_state_sync_plan.sh
+    - scripts/learning_state_sync_planner.py
+    confidence: high
+    notes: Wrapper help and planner enforce --dry-run-only behavior; reads state/ledger and prints proposed changes without applying them.
+  ws learning-state-sync-apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: Applies learning state sync changes
+    safety_class: GUARDED_WRITE
+    description: Applies eligible learning state synchronization changes with dry-run and confirm-sync modes.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-state-sync-apply
+    evidence:
+    - scripts/ws
+    - scripts/ws_learning_state_sync_apply.sh
+    - scripts/learning_state_sync_apply.py
+    confidence: high
+    notes: Route supports --dry-run preview and --confirm-sync apply mode; confirm-sync creates state_backups, rewrites learning state.json, and appends state_sync_audit.jsonl without model/provider/agent calls.
+  ws learning-ledger-repair:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Repairs learning confirmation ledger files
+    safety_class: GUARDED_WRITE
+    description: Repairs legacy learning confirmation ledger artifact paths with dry-run and repair modes.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-ledger-repair
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_ledger_repair.sh
+    - scripts/learning_confirmation_ledger_repair.py
+    confidence: high
+    notes: Route supports --dry-run preview and --repair-ledger apply mode; repair mode creates ledger_backups, rewrites learning_confirmations.jsonl, and appends ledger_repair_audit.jsonl without modifying state.json.
+  ws learning-confirm --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews learning action confirmation without writing artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-confirm dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_confirm.sh
+    - scripts/learning_confirmation_core.py
+    confidence: high
+    notes: Requires --dry-run flag; reads learning stronghold state and prints proposed confirmation record only.
+  ws learning-confirm --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes learning confirmation artifacts
+    safety_class: GUARDED_WRITE
+    description: Confirms a dry-run learning action and writes confirmation artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-confirm apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_confirm.sh
+    - scripts/learning_confirmation_core.py
+    confidence: high
+    notes: Writes confirmed_actions markdown plus learning_confirmations.jsonl under learning stronghold path.
+  ws research-run --review-paper --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes research review plan/placeholders without model call.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Research-run review-paper dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_research_run.sh
+    confidence: high
+    notes: Research cockpit is not implemented in TUI source.
+  ws worktree-create --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes worktree create dry-run report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-create dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_create.sh
+    confidence: high
+    notes: Does not create branch/worktree.
+  ws worktree-sync --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes worktree sync dry-run report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Worktree-sync dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_worktree_sync.sh
+    confidence: high
+    notes: Does not merge.
+  ws agent-run --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes agent run work order/report without launching Codex.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-run dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_run.ps1
+    - WORKSTATION_MANUAL.md
+    confidence: high
+    notes: Plan-only run artifact.
+  ws agent-run-worktree --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: light
+    warning_label: Dry-run writes local plan/report artifacts
+    safety_class: DRY_RUN_ONLY
+    description: Writes worktree agent dry-run packet/report without launching Codex.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Agent-run-worktree dry-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_run_worktree.sh
+    confidence: high
+    notes: Produces dry-run packet.
+  ws ask:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Builds local context and calls local Ollama for an answer.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Ask
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_run.sh
+    - scripts/ollama_call.py
+    confidence: high
+    notes: Writes runs/<timestamp>_* answer artifacts.
+  ws global:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local-model global question workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Global
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_global.sh
+    - scripts/ollama_call.py
+    confidence: high
+    notes: Writes run artifacts.
+  ws audit:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local-model audit workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Audit
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_audit.sh
+    - scripts/ollama_call.py
+    confidence: high
+    notes: Writes run artifacts; not same as audit-workstation.
+  ws debug:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local-model debug workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Debug
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_debug.sh
+    - scripts/ollama_call.py
+    confidence: high
+    notes: May read log files passed by user; avoid secrets.
+  ws task:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local-model task planning/draft workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Task
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_run_task.sh
+    confidence: high
+    notes: --apply path warns that apply is not implemented and still produces reviewable
+      output.
+  ws build --plan-only:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: true
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Creates build plan using local model and writes build artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Build plan-only
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_build.sh
+    - scripts/ws_build_report.sh
+    confidence: high
+    notes: Local plan only; no project mutation.
+  ws warm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Warms selected local model through Ollama.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Warm
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_warm_model.sh
+    confidence: high
+    notes: Refuses lab/big model unless explicitly allowed.
+  ws unload:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Unloads active model from Ollama runtime.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Unload
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ai_unload_model.sh
+    confidence: high
+    notes: Runtime state change; no file write observed.
+  ws feature-local-review:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local Ollama review for feature artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Feature-local-review
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_feature_local_review.sh
+    confidence: high
+    notes: Writes review/evidence/state artifacts.
+  ws stronghold-local-checklist:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local Ollama checklist generation for stronghold.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Stronghold-local-checklist
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_stronghold_local_checklist.sh
+    confidence: high
+    notes: Writes checklist/evidence/state artifacts.
+  ws learning-run --model:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local Ollama tutor/session workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Learning-run model
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_run.sh
+    - tui/app.py DISABLED_ACTIONS
+    confidence: high
+    notes: Model-backed learning actions are disabled in TUI source.
+  ws learning-assess:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local Ollama assessment workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Learning-assess
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_learning_assess.sh
+    - tui/app.py DISABLED_ACTIONS
+    confidence: high
+    notes: Disabled in TUI source.
+  ws research-run --model:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Runs local Ollama paper/research workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Research-run model
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_research_run.sh
+    confidence: high
+    notes: Reads supplied source text and writes research artifacts.
+  ws loop-start --mode local-plan:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Starts loop by running local build plan workflow.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Loop-start mode local-plan
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_loop_start.sh
+    - scripts/ws_build.sh
+    confidence: high
+    notes: Calls ws_build.sh --plan-only.
+  ws task-split --llm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: disabled
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Uses local model to split task and write generated task artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Task-split llm
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_task_split.sh
+    confidence: medium
+    notes: Local model flag path inferred from source.
+  scripts/ollama_call.py:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Direct helper for local Ollama chat calls.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/ollama_call.py
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ollama_call.py
+    confidence: high
+    notes: Helper called by multiple workflows.
+  scripts/warm_model.ps1:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Direct local model warm helper.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/warm_model.ps1
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/warm_model.ps1
+    confidence: high
+    notes: Also checks local runtime/GPU status.
+  scripts/ai_model_bench.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Benchmarks local model and writes benchmark output.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/ai_model_bench.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ai_model_bench.sh
+    confidence: high
+    notes: Benchmark/report artifact write.
+  scripts/benchmark_ollama.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Direct local Ollama benchmark path.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/benchmark_ollama.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/benchmark_ollama.sh
+    confidence: high
+    notes: Related workstation command path, not ws subcommand.
+  scripts/benchmark_ollama_v2.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Invokes local model/agent
+    safety_class: AGENT_RUN
+    description: Direct local Ollama benchmark path.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Scripts/benchmark_ollama_v2.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/benchmark_ollama_v2.sh
+    confidence: high
+    notes: Related workstation command path, not ws subcommand.
+  ws escalate codex:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Sends redacted packet to Codex CLI in read-only sandbox.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Escalate codex
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_escalate.sh
+    - START_HERE.md
+    confidence: high
+    notes: claude and gemini paths are manual-only; codex can invoke external CLI.
+  ws agent-canary:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Runs Codex canary and writes scratch/status artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Agent-canary
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_canary.ps1
+    - scripts/ws_agent_run.ps1
+    confidence: high
+    notes: Canary asks Codex to append to scratch file and writes status JSON.
+  ws agent-run:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Runs Codex-backed bounded agent workflow.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Agent-run
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_run.ps1
+    - WORKSTATION_MANUAL.md
+    confidence: high
+    notes: Can create branches and mutate project/workstation files through allowlist/gates.
+  ws agent-run-worktree --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Runs Codex agent inside a prepared worktree.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Agent-run-worktree apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_run_worktree.sh
+    - scripts/ws_agent_run.ps1
+    confidence: high
+    notes: Requires dry-run packet/worktree validation.
+  ws agent-validate:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Runs validation report plus agent status, canary, and agent dry-run.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Agent-validate
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_agent_validate.sh
+    - scripts/ws_agent_run.ps1
+    confidence: high
+    notes: Name sounds like status, but it invokes canary behavior.
+  ws build --apply --escalate codex:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Applies build patch and can escalate to Codex.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Build apply escalate codex
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_build.sh
+    confidence: high
+    notes: Highest-risk build path.
+  scripts/ai_model_pull.sh:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: External provider/cloud capable
+    safety_class: PROVIDER_CALL
+    description: Pulls/downloads model through Ollama API.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Scripts/ai_model_pull.sh
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ai_model_pull.sh
+    confidence: high
+    notes: Can download model files; not routed through ws in inspected wrapper.
+  ws build --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: branch
+    warning_label: Can mutate workstation/project state
+    safety_class: GUARDED_WRITE
+    description: Applies generated patch to project after build gates.
+    writes_local_files: true
+    writes_project_files: true
+    invokes_agent_or_model: true
+    external_provider_or_cloud: false
+    operator_label: Build apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_build.sh
+    - scripts/ws_test_runner.sh
+    confidence: high
+    notes: Without escalation it is local model plus git apply/test workflow.
+  ws cleanup-apply --apply:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: destructive
+    warning_label: Can archive/move/delete state
+    safety_class: DESTRUCTIVE
+    description: Archives high-confidence cleanup candidates.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Cleanup-apply apply
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - scripts/ws_cleanup_apply.sh
+    confidence: high
+    notes: Moves files/folders into archive; refuses without --apply.
+  ws review:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: Unknown command; hidden
+    safety_class: UNKNOWN
+    description: Wrapper route points to missing script.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Review
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - missing scripts/ws_review.sh
+    confidence: high
+    notes: Entry point exists but target script was absent.
+  ws stuck:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: Unknown command; hidden
+    safety_class: UNKNOWN
+    description: Wrapper route points to missing script.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stuck
+    evidence:
+    - WS_COMMAND_SAFETY_MATRIX.md
+    - scripts/ws
+    - missing scripts/ws_stuck.sh
+    confidence: high
+    notes: Entry point exists but target script was absent.

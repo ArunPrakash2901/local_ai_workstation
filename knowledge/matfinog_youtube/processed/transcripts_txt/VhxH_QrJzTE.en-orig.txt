@@ -1,0 +1,1 @@
+I completely forgot about this. This is a paper from 2018 breaking down how basic institutional [music] grade trading strategies work. 150 plus strategies across stock, futures, [music] options, effects, and more. With the math, structure and assumptions clearly defined. It is a very good starting point if you want to leave behind fair gaps or other silly retail concepts.

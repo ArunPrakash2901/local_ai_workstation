@@ -1,0 +1,105 @@
+# MatFinOg Topic Taxonomy
+# Version: 1.0
+# Purpose: Deterministic categorisation of YouTube transcripts for research and workflow planning.
+
+taxonomy_metadata:
+  version: "1.0"
+  last_updated: "2026-05-21"
+  description: "Initial taxonomy for MatFinOg YouTube corpus."
+
+topics:
+  - id: research_paper_replication
+    description: "Replicating academic or institutional research papers and studies."
+    keywords: ["research paper", "replicate", "study", "academic", "zarattini", "aziz"]
+    phrase_patterns: ["paper replication", "research study", "academic paper"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Focus on the methodology of replication, not the signal profitability."
+
+  - id: market_structure_inefficiency
+    description: "Inaccuracies or constraints in market structure that create tradeable opportunities."
+    keywords: ["market structure", "inefficiency", "liquidity", "auction", "opening", "closing"]
+    phrase_patterns: ["institutional constraint", "funds can only trade", "forced buying", "forced selling", "specific hours"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Analyse the 'why' of price movement, do not generate 'buy' signals."
+
+  - id: risk_management
+    description: "Managing downside, drawdowns, and protection of capital."
+    keywords: ["risk", "drawdown", "loss", "protection", "hedge", "hedging", "downside"]
+    phrase_patterns: ["position sizing", "max loss", "risk control"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Educational discussion of risk metrics only."
+
+  - id: backtesting_and_validation
+    description: "Workflows for testing strategies against historical data and validating results."
+    keywords: ["backtest", "backtesting", "validate", "validation", "robustness", "overfit", "sample", "multicharts"]
+    phrase_patterns: ["out of sample", "walk forward", "strategy validation"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Focus on the 'how to test', not 'what to trade'."
+
+  - id: execution_and_microstructure
+    description: "The mechanics of order entry, fills, and market-level interaction."
+    keywords: ["execution", "spread", "slippage", "vwap", "bid", "ask", "liquidity", "fill", "volume"]
+    phrase_patterns: ["order flow", "bid ask spread", "volume weighted average price"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Mechanical analysis of execution quality."
+
+  - id: crypto_market_structure
+    description: "Market dynamics specific to cryptocurrency exchanges and instruments."
+    keywords: ["crypto", "bitcoin", "ethereum", "regulation", "perpetual", "funding", "exchange", "liquidation"]
+    phrase_patterns: ["funding rate", "perp funding", "crypto regulation"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Sector-specific structural analysis."
+
+  - id: options_and_protection
+    description: "Using options for hedging, volatility analysis, or capital protection."
+    keywords: ["option", "options", "put", "call", "volatility", "protection", "insurance", "skew", "premium"]
+    phrase_patterns: ["put call ratio", "implied volatility", "volatility skew"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Analysis of derivative structure, not option recommendations."
+
+  - id: trading_psychology_and_process
+    description: "The mental and procedural discipline required for professional trading."
+    keywords: ["discipline", "process", "patience", "psychology", "mistakes", "journal", "routine", "plan"]
+    phrase_patterns: ["trading plan", "daily routine", "mental game"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Behavioural analysis for professional development."
+
+  - id: ai_assisted_research_workflow
+    description: "Using Large Language Models and automation to enhance research productivity."
+    keywords: ["ai", "chatgpt", "claude", "prompt", "automation", "workflow", "python"]
+    phrase_patterns: ["research assistant", "prompt engineering", "automated research"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Tooling and productivity focus."
+
+  - id: workstation_candidate_workflow
+    description: "Workflows and checklists identified for potential implementation in the Local AI Workstation."
+    keywords: ["workflow", "checklist", "process", "research", "validate", "backtest", "automate", "system", "pipeline"]
+    phrase_patterns: ["workstation feature", "automated pipeline", "research workflow"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Design patterns for the workstation software."
+
+  - id: general_market_commentary
+    description: "Broad discussion of market conditions, assets, or news events."
+    keywords: ["market", "stock", "futures", "equities", "macro", "rates", "inflation", "news"]
+    phrase_patterns: ["market update", "macro economic", "federal reserve"]
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Contextual info, not actionable signals."
+
+  - id: unknown_or_uncategorized
+    description: "Transcript does not strongly match existing taxonomy categories."
+    keywords: []
+    phrase_patterns: []
+    allowed_use: "learning, research organisation, workflow planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation"
+    safety_notes: "Catch-all category."

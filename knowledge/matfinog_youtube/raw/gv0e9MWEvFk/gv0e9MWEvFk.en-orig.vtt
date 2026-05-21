@@ -1,0 +1,168 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.000 --> 00:00:01.910 align:start position:0%
+ 
+Let's<00:00:00.240><c> go</c><00:00:00.400><c> from</c><00:00:00.560><c> zero</c><00:00:00.880><c> to</c><00:00:00.960><c> low</c><00:00:01.120><c> trader</c><00:00:01.439><c> in</c><00:00:01.680><c> 30</c>
+
+00:00:01.910 --> 00:00:01.920 align:start position:0%
+Let's go from zero to low trader in 30
+ 
+
+00:00:01.920 --> 00:00:03.270 align:start position:0%
+Let's go from zero to low trader in 30
+days.<00:00:02.240><c> We</c><00:00:02.480><c> need</c><00:00:02.560><c> to</c><00:00:02.720><c> define</c><00:00:03.040><c> something</c>
+
+00:00:03.270 --> 00:00:03.280 align:start position:0%
+days. We need to define something
+ 
+
+00:00:03.280 --> 00:00:05.590 align:start position:0%
+days. We need to define something
+extremely<00:00:03.760><c> important</c><00:00:04.319><c> position</c><00:00:04.799><c> sizing.</c><00:00:05.359><c> We</c>
+
+00:00:05.590 --> 00:00:05.600 align:start position:0%
+extremely important position sizing. We
+ 
+
+00:00:05.600 --> 00:00:08.150 align:start position:0%
+extremely important position sizing. We
+develop<00:00:05.920><c> our</c><00:00:06.160><c> strategy</c><00:00:06.640><c> using</c><00:00:07.120><c> ENQ</c><00:00:07.759><c> and</c><00:00:07.919><c> one</c>
+
+00:00:08.150 --> 00:00:08.160 align:start position:0%
+develop our strategy using ENQ and one
+ 
+
+00:00:08.160 --> 00:00:09.910 align:start position:0%
+develop our strategy using ENQ and one
+way<00:00:08.240><c> to</c><00:00:08.400><c> define</c><00:00:08.720><c> with</c><00:00:08.960><c> how</c><00:00:09.120><c> many</c><00:00:09.360><c> contracts</c><00:00:09.679><c> we</c>
+
+00:00:09.910 --> 00:00:09.920 align:start position:0%
+way to define with how many contracts we
+ 
+
+00:00:09.920 --> 00:00:11.830 align:start position:0%
+way to define with how many contracts we
+should<00:00:10.080><c> trade</c><00:00:10.559><c> is</c><00:00:10.880><c> anchoring</c><00:00:11.280><c> our</c><00:00:11.519><c> decision</c>
+
+00:00:11.830 --> 00:00:11.840 align:start position:0%
+should trade is anchoring our decision
+ 
+
+00:00:11.840 --> 00:00:13.830 align:start position:0%
+should trade is anchoring our decision
+based<00:00:12.080><c> on</c><00:00:12.240><c> our</c><00:00:12.480><c> maximum</c><00:00:12.960><c> draw</c><00:00:13.200><c> down.</c><00:00:13.599><c> Our</c>
+
+00:00:13.830 --> 00:00:13.840 align:start position:0%
+based on our maximum draw down. Our
+ 
+
+00:00:13.840 --> 00:00:15.589 align:start position:0%
+based on our maximum draw down. Our
+strategy<00:00:14.160><c> has</c><00:00:14.320><c> a</c><00:00:14.480><c> maximum</c><00:00:14.799><c> draw</c><00:00:15.040><c> down</c><00:00:15.280><c> of</c>
+
+00:00:15.589 --> 00:00:15.599 align:start position:0%
+strategy has a maximum draw down of
+ 
+
+00:00:15.599 --> 00:00:17.349 align:start position:0%
+strategy has a maximum draw down of
+$18,500
+
+00:00:17.349 --> 00:00:17.359 align:start position:0%
+$18,500
+ 
+
+00:00:17.359 --> 00:00:19.750 align:start position:0%
+$18,500
+using<00:00:17.760><c> mini</c><00:00:18.000><c> ENQ</c><00:00:18.480><c> contracts.</c><00:00:19.279><c> Obviously,</c>
+
+00:00:19.750 --> 00:00:19.760 align:start position:0%
+using mini ENQ contracts. Obviously,
+ 
+
+00:00:19.760 --> 00:00:21.590 align:start position:0%
+using mini ENQ contracts. Obviously,
+that's<00:00:20.000><c> not</c><00:00:20.240><c> tradable</c><00:00:20.800><c> considering</c><00:00:21.359><c> the</c>
+
+00:00:21.590 --> 00:00:21.600 align:start position:0%
+that's not tradable considering the
+ 
+
+00:00:21.600 --> 00:00:23.509 align:start position:0%
+that's not tradable considering the
+proper<00:00:22.160><c> maximum</c><00:00:22.480><c> draw</c><00:00:22.800><c> down</c><00:00:22.960><c> limit</c><00:00:23.199><c> at</c>
+
+00:00:23.509 --> 00:00:23.519 align:start position:0%
+proper maximum draw down limit at
+ 
+
+00:00:23.519 --> 00:00:26.550 align:start position:0%
+proper maximum draw down limit at
+$2,500.<00:00:24.960><c> So</c><00:00:25.199><c> we</c><00:00:25.359><c> will</c><00:00:25.519><c> execute</c><00:00:25.840><c> this</c><00:00:26.080><c> strategy</c>
+
+00:00:26.550 --> 00:00:26.560 align:start position:0%
+$2,500. So we will execute this strategy
+ 
+
+00:00:26.560 --> 00:00:30.390 align:start position:0%
+$2,500. So we will execute this strategy
+using<00:00:27.039><c> microNQ</c><00:00:28.160><c> rather</c><00:00:28.480><c> than</c><00:00:28.960><c> mini</c><00:00:29.279><c> NQ</c><00:00:30.160><c> which</c>
+
+00:00:30.390 --> 00:00:30.400 align:start position:0%
+using microNQ rather than mini NQ which
+ 
+
+00:00:30.400 --> 00:00:32.870 align:start position:0%
+using microNQ rather than mini NQ which
+risk<00:00:30.720><c> is</c><00:00:30.880><c> onetenth</c><00:00:31.519><c> of</c><00:00:31.679><c> the</c><00:00:31.840><c> mini</c><00:00:32.160><c> contracts.</c>
+
+00:00:32.870 --> 00:00:32.880 align:start position:0%
+risk is onetenth of the mini contracts.
+ 
+
+00:00:32.880 --> 00:00:34.549 align:start position:0%
+risk is onetenth of the mini contracts.
+So<00:00:33.120><c> using</c><00:00:33.360><c> micros</c><00:00:33.840><c> we</c><00:00:34.000><c> have</c><00:00:34.000><c> a</c><00:00:34.160><c> maximum</c>
+
+00:00:34.549 --> 00:00:34.559 align:start position:0%
+So using micros we have a maximum
+ 
+
+00:00:34.559 --> 00:00:37.590 align:start position:0%
+So using micros we have a maximum
+strategy<00:00:34.960><c> draw</c><00:00:35.200><c> down</c><00:00:35.440><c> of</c><00:00:35.760><c> $1,850</c>
+
+00:00:37.590 --> 00:00:37.600 align:start position:0%
+strategy draw down of $1,850
+ 
+
+00:00:37.600 --> 00:00:40.790 align:start position:0%
+strategy draw down of $1,850
+with<00:00:37.840><c> a</c><00:00:38.000><c> take</c><00:00:38.239><c> profit</c><00:00:38.480><c> of</c><00:00:38.800><c> $450</c><00:00:40.239><c> and</c><00:00:40.399><c> a</c><00:00:40.640><c> stop</c>
+
+00:00:40.790 --> 00:00:40.800 align:start position:0%
+with a take profit of $450 and a stop
+ 
+
+00:00:40.800 --> 00:00:43.190 align:start position:0%
+with a take profit of $450 and a stop
+loss<00:00:41.040><c> at</c><00:00:41.360><c> 100.</c><00:00:42.079><c> This</c><00:00:42.399><c> will</c><00:00:42.559><c> be</c><00:00:42.640><c> our</c><00:00:42.879><c> starting</c>
+
+00:00:43.190 --> 00:00:43.200 align:start position:0%
+loss at 100. This will be our starting
+ 
+
+00:00:43.200 --> 00:00:44.630 align:start position:0%
+loss at 100. This will be our starting
+point<00:00:43.360><c> and</c><00:00:43.600><c> tomorrow</c><00:00:43.840><c> we</c><00:00:44.079><c> will</c><00:00:44.160><c> set</c><00:00:44.320><c> up</c><00:00:44.480><c> the</c>
+
+00:00:44.630 --> 00:00:44.640 align:start position:0%
+point and tomorrow we will set up the
+ 
+
+00:00:44.640 --> 00:00:48.480 align:start position:0%
+point and tomorrow we will set up the
+strategy<00:00:45.040><c> for</c><00:00:45.440><c> automated</c><00:00:46.079><c> execution.</c>
+

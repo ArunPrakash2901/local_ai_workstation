@@ -1,0 +1,176 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.080 --> 00:00:02.389 align:start position:0%
+ 
+from<00:00:00.320><c> zero</c><00:00:00.640><c> tango</c><00:00:00.960><c> trader</c><00:00:01.280><c> in</c><00:00:01.600><c> 30</c><00:00:01.839><c> days.</c><00:00:02.240><c> We</c>
+
+00:00:02.389 --> 00:00:02.399 align:start position:0%
+from zero tango trader in 30 days. We
+ 
+
+00:00:02.399 --> 00:00:04.309 align:start position:0%
+from zero tango trader in 30 days. We
+coded<00:00:02.720><c> our</c><00:00:02.879><c> entry</c><00:00:03.200><c> logic.</c><00:00:03.439><c> We</c><00:00:03.600><c> coded</c><00:00:03.919><c> the</c><00:00:04.160><c> main</c>
+
+00:00:04.309 --> 00:00:04.319 align:start position:0%
+coded our entry logic. We coded the main
+ 
+
+00:00:04.319 --> 00:00:06.390 align:start position:0%
+coded our entry logic. We coded the main
+component<00:00:04.720><c> of</c><00:00:04.880><c> our</c><00:00:05.200><c> exit</c><00:00:05.520><c> logic.</c><00:00:06.000><c> Now</c><00:00:06.160><c> it's</c>
+
+00:00:06.390 --> 00:00:06.400 align:start position:0%
+component of our exit logic. Now it's
+ 
+
+00:00:06.400 --> 00:00:08.470 align:start position:0%
+component of our exit logic. Now it's
+time<00:00:06.560><c> to</c><00:00:06.720><c> add</c><00:00:06.960><c> take</c><00:00:07.200><c> profit</c><00:00:07.520><c> and</c><00:00:07.759><c> stop</c><00:00:08.000><c> loss.</c>
+
+00:00:08.470 --> 00:00:08.480 align:start position:0%
+time to add take profit and stop loss.
+ 
+
+00:00:08.480 --> 00:00:11.110 align:start position:0%
+time to add take profit and stop loss.
+When<00:00:08.720><c> prompting</c><00:00:09.200><c> ch,</c><00:00:10.080><c> it</c><00:00:10.320><c> is</c><00:00:10.480><c> important</c><00:00:10.719><c> to</c><00:00:10.960><c> us</c>
+
+00:00:11.110 --> 00:00:11.120 align:start position:0%
+When prompting ch, it is important to us
+ 
+
+00:00:11.120 --> 00:00:12.950 align:start position:0%
+When prompting ch, it is important to us
+to<00:00:11.280><c> include</c><00:00:11.599><c> three</c><00:00:11.920><c> inputs.</c><00:00:12.559><c> Number</c><00:00:12.800><c> of</c>
+
+00:00:12.950 --> 00:00:12.960 align:start position:0%
+to include three inputs. Number of
+ 
+
+00:00:12.960 --> 00:00:15.110 align:start position:0%
+to include three inputs. Number of
+contracts<00:00:13.360><c> with</c><00:00:13.519><c> default</c><00:00:14.000><c> value</c><00:00:14.320><c> one.</c><00:00:14.799><c> Take</c>
+
+00:00:15.110 --> 00:00:15.120 align:start position:0%
+contracts with default value one. Take
+ 
+
+00:00:15.120 --> 00:00:17.670 align:start position:0%
+contracts with default value one. Take
+profit<00:00:15.599><c> default</c><00:00:16.000><c> value</c><00:00:16.400><c> 6,000.</c><00:00:17.119><c> Stop</c><00:00:17.359><c> loss</c>
+
+00:00:17.670 --> 00:00:17.680 align:start position:0%
+profit default value 6,000. Stop loss
+ 
+
+00:00:17.680 --> 00:00:19.750 align:start position:0%
+profit default value 6,000. Stop loss
+default<00:00:18.080><c> value</c><00:00:18.400><c> 2,000.</c><00:00:18.960><c> The</c><00:00:19.199><c> default</c><00:00:19.520><c> value</c>
+
+00:00:19.750 --> 00:00:19.760 align:start position:0%
+default value 2,000. The default value
+ 
+
+00:00:19.760 --> 00:00:21.269 align:start position:0%
+default value 2,000. The default value
+for<00:00:19.920><c> the</c><00:00:20.080><c> take</c><00:00:20.320><c> profit</c><00:00:20.560><c> and</c><00:00:20.800><c> stop</c><00:00:20.960><c> loss</c>
+
+00:00:21.269 --> 00:00:21.279 align:start position:0%
+for the take profit and stop loss
+ 
+
+00:00:21.279 --> 00:00:22.950 align:start position:0%
+for the take profit and stop loss
+doesn't<00:00:21.520><c> really</c><00:00:21.760><c> matter.</c><00:00:22.080><c> We</c><00:00:22.240><c> will</c><00:00:22.480><c> optimize</c>
+
+00:00:22.950 --> 00:00:22.960 align:start position:0%
+doesn't really matter. We will optimize
+ 
+
+00:00:22.960 --> 00:00:25.349 align:start position:0%
+doesn't really matter. We will optimize
+it<00:00:23.119><c> later.</c><00:00:23.519><c> What</c><00:00:23.840><c> does</c><00:00:24.160><c> matter</c><00:00:24.720><c> is</c><00:00:24.960><c> specifying</c>
+
+00:00:25.349 --> 00:00:25.359 align:start position:0%
+it later. What does matter is specifying
+ 
+
+00:00:25.359 --> 00:00:27.029 align:start position:0%
+it later. What does matter is specifying
+that<00:00:25.600><c> the</c><00:00:25.760><c> stop-loss</c><00:00:26.240><c> and</c><00:00:26.480><c> take</c><00:00:26.720><c> profit</c>
+
+00:00:27.029 --> 00:00:27.039 align:start position:0%
+that the stop-loss and take profit
+ 
+
+00:00:27.039 --> 00:00:29.189 align:start position:0%
+that the stop-loss and take profit
+should<00:00:27.279><c> be</c><00:00:27.359><c> applied</c><00:00:27.920><c> on</c><00:00:28.160><c> a</c><00:00:28.320><c> contract</c><00:00:28.720><c> level</c>
+
+00:00:29.189 --> 00:00:29.199 align:start position:0%
+should be applied on a contract level
+ 
+
+00:00:29.199 --> 00:00:31.109 align:start position:0%
+should be applied on a contract level
+not<00:00:29.439><c> on</c><00:00:29.599><c> the</c><00:00:29.760><c> position</c><00:00:30.160><c> level.</c><00:00:30.560><c> This</c><00:00:30.800><c> will</c><00:00:30.960><c> be</c>
+
+00:00:31.109 --> 00:00:31.119 align:start position:0%
+not on the position level. This will be
+ 
+
+00:00:31.119 --> 00:00:32.870 align:start position:0%
+not on the position level. This will be
+crucial<00:00:31.519><c> later</c><00:00:31.760><c> when</c><00:00:31.920><c> we</c><00:00:32.079><c> work</c><00:00:32.320><c> on</c><00:00:32.480><c> position</c>
+
+00:00:32.870 --> 00:00:32.880 align:start position:0%
+crucial later when we work on position
+ 
+
+00:00:32.880 --> 00:00:35.350 align:start position:0%
+crucial later when we work on position
+sizing.<00:00:33.520><c> Let</c><00:00:33.760><c> JP</c><00:00:34.399><c> do</c><00:00:34.559><c> the</c><00:00:34.640><c> heavy</c><00:00:34.880><c> lifting.</c>
+
+00:00:35.350 --> 00:00:35.360 align:start position:0%
+sizing. Let JP do the heavy lifting.
+ 
+
+00:00:35.360 --> 00:00:37.510 align:start position:0%
+sizing. Let JP do the heavy lifting.
+Copy<00:00:35.600><c> the</c><00:00:35.840><c> code,</c><00:00:36.320><c> compile</c><00:00:36.719><c> your</c><00:00:36.880><c> strategy,</c>
+
+00:00:37.510 --> 00:00:37.520 align:start position:0%
+Copy the code, compile your strategy,
+ 
+
+00:00:37.520 --> 00:00:39.430 align:start position:0%
+Copy the code, compile your strategy,
+apply<00:00:37.840><c> to</c><00:00:38.079><c> your</c><00:00:38.239><c> instrument,</c><00:00:38.879><c> and</c><00:00:39.120><c> make</c><00:00:39.280><c> sure</c>
+
+00:00:39.430 --> 00:00:39.440 align:start position:0%
+apply to your instrument, and make sure
+ 
+
+00:00:39.440 --> 00:00:41.350 align:start position:0%
+apply to your instrument, and make sure
+that<00:00:39.680><c> everything</c><00:00:40.000><c> works</c><00:00:40.320><c> as</c><00:00:40.559><c> expected.</c><00:00:41.120><c> And</c>
+
+00:00:41.350 --> 00:00:41.360 align:start position:0%
+that everything works as expected. And
+ 
+
+00:00:41.360 --> 00:00:42.709 align:start position:0%
+that everything works as expected. And
+at<00:00:41.600><c> this</c><00:00:41.680><c> point</c><00:00:41.920><c> we</c><00:00:42.079><c> can</c><00:00:42.239><c> start</c><00:00:42.399><c> break</c>
+
+00:00:42.709 --> 00:00:42.719 align:start position:0%
+at this point we can start break
+ 
+
+00:00:42.719 --> 00:00:44.879 align:start position:0%
+at this point we can start break
+testing.
+

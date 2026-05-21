@@ -1,0 +1,1 @@
+What is the best data provider for volume and price data? That depends purely on what instrument you want to trade. For futures only, rhythmic. For future stocks and effects, IQ feed and trade station. For future stocks, effects in crypto, [music] the X feed. Let me know which other data providers are worth mentioning.

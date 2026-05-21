@@ -1,0 +1,53 @@
+# Strategy Inventory
+# Statuses: idea, draft_spec, spec_review, approved_for_backtest, backtested, validation_review, approved_for_paper, paper_active, paper_paused, paper_retired, rejected, live_blocked_mvp
+
+strategies:
+  - strategy_id: etf_trend_following_v1
+    owner: operator
+    status: idea
+    market: US_ETF
+    universe: [SPY, QQQ, IWM, TLT, GLD]
+    signal_definition: "10/50 day SMA crossover"
+    entry_rules: "Long when 10-day > 50-day SMA"
+    exit_rules: "Exit when 10-day < 50-day SMA"
+    rebalance_rules: "Daily at Close"
+    cost_model: "5bps per trade"
+    risk_limits:
+      max_pos_pct: 0.2
+      max_drawdown_limit: 0.15
+    validation_requirements: [walk_forward, stress_test_2020]
+    promotion_gate: Gate 1
+    material_change_rules: "Any change to SMA windows requires new backtest."
+    last_updated: "2026-05-21"
+
+  - strategy_id: etf_rotation_v1
+    owner: operator
+    status: idea
+    market: US_ETF
+    universe: [XLK, XLV, XLF, XLE, XLP, XLB, XLU, XLI, XLY]
+    signal_definition: "Relative Strength (3-month momentum)"
+    entry_rules: "Long top 3 ETFs by 3-month return"
+    exit_rules: "Rebalance monthly; drop if not in top 3"
+    rebalance_rules: "Monthly"
+    cost_model: "5bps per trade"
+    risk_limits:
+      max_pos_pct: 0.33
+    validation_requirements: [walk_forward, stress_test_2008]
+    promotion_gate: Gate 1
+    last_updated: "2026-05-21"
+
+  - strategy_id: sandbox_mean_reversion_v1
+    owner: operator
+    status: idea
+    market: US_EQUITY
+    universe: [SPY_COMPONENTS_TOP_10]
+    signal_definition: "2-day RSI < 10"
+    entry_rules: "Long at Close if RSI(2) < 10"
+    exit_rules: "Exit at Close if RSI(2) > 70"
+    rebalance_rules: "Daily"
+    cost_model: "10bps per trade"
+    risk_limits:
+      max_pos_pct: 0.1
+    validation_requirements: [monte_carlo]
+    promotion_gate: Gate 1
+    last_updated: "2026-05-21"

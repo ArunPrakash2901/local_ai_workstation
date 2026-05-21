@@ -1,0 +1,1 @@
+When I started working as institutional trader, there were teams [music] of four or five people which main task was developing a tool to download earning reports, make the PDF readable for a machine, producing immediate analysis. To put these in numbers are cost of around $50,000 per month. Today you can build something like that for $200 a

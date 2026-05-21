@@ -1,0 +1,243 @@
+# MatFinOg Workflow Taxonomy
+# Version: 1.0
+# Purpose: Deterministic extraction of reusable workflow patterns and research prompt candidates.
+
+taxonomy_metadata:
+  version: "1.0"
+  last_updated: "2026-05-21"
+  description: "Initial workflow taxonomy for MatFinOg YouTube corpus."
+
+workflows:
+  - workflow_id: research_paper_to_backtest_workflow
+    description: "Identify mentions of finding papers, reading claims, replicating strategy logic, coding a test, and validating results."
+    relevant_topic_ids:
+      - research_paper_replication
+      - backtesting_and_validation
+      - ai_assisted_research_workflow
+    keywords:
+      - research paper
+      - replicate
+      - replication
+      - paper
+      - backtest
+      - validate
+      - Python
+      - MultiCharts
+      - SSRN
+      - VWAP
+      - Zarattini
+      - Aziz
+    phrase_patterns:
+      - "research paper"
+      - "replicate"
+      - "replication"
+      - "paper"
+      - "backtest"
+      - "validate"
+      - "Python"
+      - "MultiCharts"
+      - "SSRN"
+      - "VWAP"
+      - "Zarattini"
+      - "Aziz"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Focus on the methodology of replication, not the signal profitability."
+
+  - workflow_id: market_inefficiency_hypothesis_workflow
+    description: "Identify market structure or institutional constraint ideas that can become research hypotheses."
+    relevant_topic_ids:
+      - market_structure_inefficiency
+      - execution_and_microstructure
+      - crypto_market_structure
+    keywords:
+      - inefficiency
+      - market structure
+      - forced buying
+      - forced selling
+      - institutional
+      - regulation
+      - liquidity
+      - specific hours
+      - fund managers
+      - constraints
+    phrase_patterns:
+      - "inefficiency"
+      - "market structure"
+      - "forced buying"
+      - "forced selling"
+      - "institutional"
+      - "regulation"
+      - "liquidity"
+      - "specific hours"
+      - "fund managers"
+      - "constraints"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Analyse the 'why' of price movement, do not generate 'buy' signals."
+
+  - workflow_id: risk_first_strategy_review_workflow
+    description: "Identify risk-management-first thinking before any strategy is promoted."
+    relevant_topic_ids:
+      - risk_management
+      - options_and_protection
+      - trading_psychology_and_process
+    keywords:
+      - risk
+      - drawdown
+      - loss
+      - protection
+      - hedge
+      - downside
+      - position sizing
+      - max loss
+      - insurance
+    phrase_patterns:
+      - "risk"
+      - "drawdown"
+      - "loss"
+      - "protection"
+      - "hedge"
+      - "downside"
+      - "position sizing"
+      - "max loss"
+      - "insurance"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Educational discussion of risk metrics only."
+
+  - workflow_id: execution_microstructure_review_workflow
+    description: "Identify execution, slippage, volume, spread, VWAP, liquidity, and fill-quality considerations."
+    relevant_topic_ids:
+      - execution_and_microstructure
+    keywords:
+      - execution
+      - slippage
+      - spread
+      - VWAP
+      - bid
+      - ask
+      - liquidity
+      - order flow
+      - fill
+      - volume
+    phrase_patterns:
+      - "execution"
+      - "slippage"
+      - "spread"
+      - "VWAP"
+      - "bid"
+      - "ask"
+      - "liquidity"
+      - "order flow"
+      - "fill"
+      - "volume"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Mechanical analysis of execution quality."
+
+  - workflow_id: ai_assisted_quant_learning_workflow
+    description: "Identify places where AI, coding, prompts, automation, or research assistants could help learning without bypassing validation."
+    relevant_topic_ids:
+      - ai_assisted_research_workflow
+      - workstation_candidate_workflow
+    keywords:
+      - AI
+      - ChatGPT
+      - Claude
+      - prompt
+      - code
+      - Python
+      - automation
+      - workflow
+      - research assistant
+    phrase_patterns:
+      - "AI"
+      - "ChatGPT"
+      - "Claude"
+      - "prompt"
+      - "code"
+      - "Python"
+      - "automation"
+      - "workflow"
+      - "research assistant"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Tooling and productivity focus."
+
+  - workflow_id: workstation_module_candidate_workflow
+    description: "Identify workflow fragments that could later become Local AI Workstation features."
+    relevant_topic_ids:
+      - workstation_candidate_workflow
+      - backtesting_and_validation
+      - ai_assisted_research_workflow
+    keywords:
+      - workflow
+      - checklist
+      - process
+      - validate
+      - backtest
+      - system
+      - pipeline
+      - automate
+    phrase_patterns:
+      - "workflow"
+      - "checklist"
+      - "process"
+      - "validate"
+      - "backtest"
+      - "system"
+      - "pipeline"
+      - "automate"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Design patterns for the workstation software."
+
+  - workflow_id: psychological_process_and_discipline_workflow
+    description: "Identify learning/process/discipline/journaling routines."
+    relevant_topic_ids:
+      - trading_psychology_and_process
+    keywords:
+      - discipline
+      - patience
+      - mistakes
+      - routine
+      - journal
+      - plan
+      - process
+    phrase_patterns:
+      - "discipline"
+      - "patience"
+      - "mistakes"
+      - "routine"
+      - "journal"
+      - "plan"
+      - "process"
+    minimum_score: 2
+    evidence_rules: "Keyword or phrase matches with topic overlap."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Behavioural analysis for professional development."
+
+  - workflow_id: unknown_or_low_confidence_workflow
+    description: "Catch videos where deterministic matching does not confidently map to a workflow."
+    relevant_topic_ids: []
+    keywords: []
+    phrase_patterns: []
+    minimum_score: 0
+    evidence_rules: "Catch-all category."
+    allowed_use: "learning, research organisation, workflow planning, future PRD planning"
+    forbidden_use: "financial advice, trading signals, investment recommendations, live trading automation, broker execution"
+    safety_notes: "Catch-all category."

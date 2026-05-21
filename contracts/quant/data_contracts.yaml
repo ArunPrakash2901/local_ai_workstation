@@ -1,0 +1,46 @@
+# Data Contracts
+# Defines the sources, schemas, and validation rules for all quantitative data.
+
+sources:
+  - source_name: alpaca_market_data
+    type: API
+    endpoint: "https://data.alpaca.markets/v2"
+    asset_universe: [US_ETF, US_EQUITY]
+    schema:
+      columns: [symbol, timestamp, open, high, low, close, volume, trade_count, vwap]
+      date_format: "ISO8601"
+      timezone: "America/New_York"
+    trading_calendar: "NYSE"
+    price_adjustment_policy: "split_and_dividend_adjusted"
+    null_policy: "drop_incomplete_bars"
+    survivorship_policy: "point_in_time_universe_preferred"
+    lookahead_policy: "strictly_no_future_bias"
+    freshness_policy: "max_lag_24h"
+    validation_checks:
+      - "close > 0"
+      - "volume >= 0"
+      - "low <= open, high, close"
+      - "high >= open, low, close"
+
+  - source_name: local_parquet_store
+    type: LOCAL_FILE
+    path: "data/quant/processed/"
+    format: Parquet
+    asset_universe: [US_ETF]
+    schema:
+      columns: [symbol, date, close, returns, sma_10, sma_50]
+    validation_checks:
+      - "returns.abs() < 0.5" # 50% single-day move warning
+      - "no_nulls_in_key_columns"
+
+storage_defaults:
+  raw_path: "data/quant/raw/"
+  processed_path: "data/quant/processed/"
+  engine: "DuckDB"
+  compression: "Snappy"
+
+unknown_sources:
+  - source_name: bloomberg_terminal
+    status: UNKNOWN
+    access: NO_ACCESS
+    notes: "Future institutional integration possibility only."
