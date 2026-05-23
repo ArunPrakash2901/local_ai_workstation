@@ -90,10 +90,35 @@ case "$SUBCOMMAND" in
         echo "  product-lock-scope --product <id> --confirm Lock immutable scope artifact"
         echo "  product-prd --product <id> --dry-run       Preview deterministic PRD from locked scope"
         echo "  product-prd --product <id> --confirm       Write deterministic PRD draft from locked scope"
+        echo "  product-prd-revision --product <id> --dry-run Preview deterministic PRD revision from active scope"
         echo "  product-prd-review --product <id> --dry-run Preview deterministic PRD review report"
         echo "  product-prd-approve --product <id> --confirm Approve PRD metadata after PASS review"
         echo "  product-prd-status --product <id>          Show pure-read PRD artifact status"
         echo "  product-wireframe --product <id> --dry-run Preview deterministic text/ASCII wireframes"
+        echo "  product-wireframe-review --product <id> --dry-run Preview deterministic wireframe review"
+        echo "  product-tech-plan --product <id> --dry-run Preview deterministic technical plan gated by PRD/wireframe"
+        echo "  product-tech-plan --product <id> --confirm Write deterministic technical plan artifact and metadata"
+        echo "  product-tech-plan-review --product <id> --dry-run Review active technical plan deterministically"
+        echo "  product-implementation-plan --product <id> --dry-run Preview implementation planning readiness gate"
+        echo "  product-implementation-plan-review --product <id> --dry-run Review implementation plan deterministically"
+        echo "  product-implementation-exchange-preview --product <id> --dry-run Preview implementation exchange packet draft"
+        echo ""
+        echo "Exchange Lane (Phase 0):"
+        echo "  exchange-new --target <t> --task-type <type> --summary <s> [--dry-run|--confirm]"
+        echo "  exchange-list       List exchange packet directories and status"
+        echo "  exchange-status <id> Show one exchange packet status from exchange.yaml"
+        echo "  exchange-dispatch --exchange <id> --dry-run Preview dispatch readiness without execution"
+        echo "  exchange-dispatch --exchange <id> --target codex_cli --confirm Run guarded REVIEW_ONLY Codex adapter dispatch"
+        echo "  exchange-adapter-preview --exchange <id> --target codex_cli --dry-run Preview Codex adapter invocation without execution"
+        echo "  exchange-import-result --exchange <id> --file <f> [--dry-run|--confirm] Import result text into exchange artifacts"
+        echo ""
+        echo "Runtime Sessions (Phase 4 preview slice):"
+        echo "  session-list       List runtime session manifests"
+        echo "  session-status <id> Show one runtime session manifest status"
+        echo "  session-plan --session <id> --runtime <type> --adapter <adapter> --dry-run  Preview managed runtime session plan"
+        echo "  session-plan --session <id> --runtime <type> --adapter <adapter> --confirm  Create planned runtime session metadata"
+        echo "  session-start --session <id> --dry-run  Preview runtime session start without starting a process"
+        echo "  session-cleanup --dry-run  Preview cleanup candidates without deleting files"
         echo ""
         echo "Feature Strongholds:"
         echo "  feature-new <k>     Create a local-only feature stronghold"
@@ -118,6 +143,7 @@ case "$SUBCOMMAND" in
         echo "  stronghold-decision <id> Classify next safe state/action"
         echo ""
         echo "Domain Specific Runners (Phase 6):"
+        echo "  knowledge-inventory --target <t> --dry-run  Preview knowledge raw-data inventory"
         echo "  learning-run <id> --session --dry-run Plan learning session"
         echo "  learning-import-answers <id> --from-file <f> Import completed answers"
         echo "  learning-assess <id> --model <m> Assess imported answers"
@@ -132,6 +158,8 @@ case "$SUBCOMMAND" in
         echo "  learning-advancement-review <id> [--dry-run | --create-packet] Generate human review packet v1"
         echo "  learning-state-sync-plan <id> --dry-run Generate state sync plan v1"
         echo "  learning-state-sync-apply <id> [--dry-run | --confirm-sync] Apply state sync plan v1"
+        echo "  learning-review-checklist <id> --packet-id <p> [--dry-run-init | --init-checklist | --show] Manage human review checklist v1"
+
 
 
         echo ""
@@ -141,8 +169,21 @@ case "$SUBCOMMAND" in
         echo "  research-add-source <id> --source-text <f> --label <l> Register new source"
         echo ""
         echo "Quant Trading Lane (Phase 6+):"
+        echo "  quant dashboard            Show read-only research dashboard"
+        echo "  quant idea-intake-dry-run  [--title <t>] [--idea-file <f>] Dry-run idea intake"
+        echo "  quant reports              List completed research milestone reports"
+        echo "  quant artifacts            Summarize Quant artifact counts"
+        echo "  quant lineage <id>         Lookup lineage for a specific artifact ID"
+        echo "  quant cheatsheet           Show Quant operator cheatsheet"
+        echo "  quant status               Show high-level research status"
+        echo "  quant list-tools           List standalone research CLIs"
+        echo "  quant synthetic-status     Show synthetic execution status"
+        echo "  quant gates-status         Show pre-backtest gate statuses"
         echo "  quant data-contract-check  [--dry-run] Validate YAML contracts"
         echo "  quant data-schema-check    [--dry-run] Validate sample OHLCV schema"
+        echo ""
+        echo "  SAFETY NOTICE: Real backtests, approvals, and data downloads are BLOCKED"
+        echo "  in 'ws quant' and remain restricted to standalone standalone research CLIs."
         echo "  quant data-freshness-check --latest <ts> [--dry-run] Check data freshness"
         echo "  quant data-ingest-fixture  --symbol SPY --start <iso> --end <iso> [--format <f>] [--write-fixture]"
         echo "  quant dataset-catalog      [--dry-run] Scan Quant dataset catalog"
@@ -482,6 +523,9 @@ case "$SUBCOMMAND" in
     product-prd)
         python3 "$SCRIPTS_DIR/ws_product_prd.py" "$@"
         ;;
+    product-prd-revision)
+        python3 "$SCRIPTS_DIR/ws_product_prd_revision.py" "$@"
+        ;;
     product-prd-review)
         python3 "$SCRIPTS_DIR/ws_product_prd_review.py" "$@"
         ;;
@@ -493,6 +537,57 @@ case "$SUBCOMMAND" in
         ;;
     product-wireframe)
         python3 "$SCRIPTS_DIR/ws_product_wireframe.py" "$@"
+        ;;
+    product-wireframe-review)
+        python3 "$SCRIPTS_DIR/ws_product_wireframe_review.py" "$@"
+        ;;
+    product-tech-plan)
+        python3 "$SCRIPTS_DIR/ws_product_tech_plan.py" "$@"
+        ;;
+    product-tech-plan-review)
+        python3 "$SCRIPTS_DIR/ws_product_tech_plan_review.py" "$@"
+        ;;
+    product-implementation-plan)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_plan.py" "$@"
+        ;;
+    product-implementation-plan-review)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_plan_review.py" "$@"
+        ;;
+    product-implementation-exchange-preview)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_exchange_preview.py" "$@"
+        ;;
+    exchange-new)
+        python3 "$SCRIPTS_DIR/ws_exchange_new.py" "$@"
+        ;;
+    exchange-list)
+        python3 "$SCRIPTS_DIR/ws_exchange_list.py" "$@"
+        ;;
+    exchange-status)
+        python3 "$SCRIPTS_DIR/ws_exchange_status.py" "$@"
+        ;;
+    exchange-dispatch)
+        python3 "$SCRIPTS_DIR/ws_exchange_dispatch.py" "$@"
+        ;;
+    exchange-adapter-preview)
+        python3 "$SCRIPTS_DIR/ws_exchange_adapter_preview.py" "$@"
+        ;;
+    exchange-import-result)
+        python3 "$SCRIPTS_DIR/ws_exchange_import_result.py" "$@"
+        ;;
+    session-list)
+        python3 "$SCRIPTS_DIR/ws_session_list.py" "$@"
+        ;;
+    session-status)
+        python3 "$SCRIPTS_DIR/ws_session_status.py" "$@"
+        ;;
+    session-plan)
+        python3 "$SCRIPTS_DIR/ws_session_plan.py" "$@"
+        ;;
+    session-start)
+        python3 "$SCRIPTS_DIR/ws_session_start.py" "$@"
+        ;;
+    session-cleanup)
+        python3 "$SCRIPTS_DIR/ws_session_cleanup.py" "$@"
         ;;
     feature-new)
         bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
@@ -548,6 +643,9 @@ case "$SUBCOMMAND" in
     stronghold-decision)
         bash "$SCRIPTS_DIR/ws_stronghold_decision.sh" "$@"
         ;;
+    knowledge-inventory)
+        python3 "$SCRIPTS_DIR/ws_knowledge_inventory.py" "$@"
+        ;;
     learning-run)
         bash "$SCRIPTS_DIR/ws_learning_run.sh" "$@"
         ;;
@@ -590,6 +688,9 @@ case "$SUBCOMMAND" in
     learning-state-sync-apply)
         "$SCRIPTS_DIR/ws_learning_state_sync_apply.sh" "$@"
         ;;
+    learning-review-checklist)
+        "$SCRIPTS_DIR/ws_learning_review_checklist.sh" "$@"
+        ;;
     research-run)
 
         bash "$SCRIPTS_DIR/ws_research_run.sh" "$@"
@@ -609,7 +710,27 @@ case "$SUBCOMMAND" in
         elif [ -x "$WS_HOME/runtimes/workstation_venv/Scripts/python.exe" ]; then
              PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/Scripts/python.exe"
         fi
-        PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" -m quant.cli "$@"
+        
+        case "$1" in
+            status|list-tools|synthetic-status|gates-status|dashboard|reports|artifacts|lineage|cheatsheet)
+                PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" "$WS_HOME/scripts/quant/ws_quant_summary.py" "$@"
+                ;;
+            idea-intake-dry-run)
+                # Check for forbidden --write flag
+                for arg in "$@"; do
+                    if [[ "$arg" == "--write" ]]; then
+                        echo "[SAFETY BLOCK] --write is strictly forbidden in 'ws quant' in this milestone."
+                        exit 1
+                    fi
+                done
+                # Force --dry-run and call the standalone CLI
+                shift
+                PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" "$WS_HOME/scripts/quant/idea_cli.py" idea-intake "$@" --dry-run
+                ;;
+            *)
+                PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" -m quant.cli "$@"
+                ;;
+        esac
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"

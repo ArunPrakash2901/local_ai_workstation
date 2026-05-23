@@ -665,6 +665,196 @@ commands:
     - scripts/quant/cli.py
     confidence: high
     notes: Path inspection only.
+  ws quant dashboard:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows read-only research dashboard.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant dashboard
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only research dashboard summary.
+  ws quant idea-intake-dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: 'PROTOTYPE: Dry-run only'
+    safety_class: DRY_RUN_ONLY
+    description: Dry-run idea intake (no write).
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant idea intake dry-run
+    evidence:
+    - scripts/ws
+    - scripts/quant/idea_cli.py
+    confidence: high
+    notes: Wraps idea_cli but blocks --write.
+  ws quant reports:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists completed research milestone reports.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant reports
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only report listing.
+  ws quant artifacts:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Summarizes Quant artifact counts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant artifacts
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only artifact summary.
+  ws quant lineage:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lookup lineage for a specific artifact ID.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant lineage
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only lineage lookup.
+  ws quant cheatsheet:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows Quant operator cheatsheet.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant cheatsheet
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only cheatsheet display.
+  ws quant status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows high-level research status summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant status
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only status summary.
+  ws quant list-tools:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists standalone Quant research CLIs.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant list tools
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only tool listing.
+  ws quant synthetic-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows synthetic execution status summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant synthetic status
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only synthetic status.
+  ws quant gates-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows pre-backtest gate statuses summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Quant gates status
+    evidence:
+    - scripts/ws
+    - scripts/quant/ws_quant_summary.py
+    confidence: high
+    notes: Read-only gate status summary.
   ws quant persistence-capabilities:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -1029,6 +1219,46 @@ commands:
     - scripts/product_prd.py
     confidence: high
     notes: Deterministic PRD draft from locked scope only; no model/provider/agent calls; refuses overwrite.
+  ws product-prd-revision --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic PRD revision content from active scope metadata and existing PRD context.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview product PRD revision
+    evidence:
+    - PRODUCT_PRD_REVISION_AFTER_SCOPE_CHANGE_PLAN.md
+    - scripts/ws
+    - scripts/ws_product_prd_revision.py
+    - scripts/product_prd_revision.py
+    confidence: high
+    notes: Deterministic no-write PRD revision preview from product.yaml plus active scope lock (or scope_lock.md fallback); no model/provider/agent calls.
+  ws product-prd-revision --confirm:
+    safety_class: GUARDED_WRITE
+    description: Executes the deterministic PRD revision, writes versioned PRD, and updates product metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Write revised active PRD
+    warning_label: Writes versioned PRD artifact and updates active PRD metadata
+    evidence:
+    - scripts/product_prd_revision.py
+    - scripts/ws_product_prd_revision.py
+    confidence: high
+    notes: creates prds/prd_v2.md; does not overwrite prd.md; no model/provider/agent calls.
   ws product-prd-review --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -1113,6 +1343,529 @@ commands:
     - scripts/product_wireframe.py
     confidence: high
     notes: Deterministic no-write text/ASCII wireframe preview from approved PRD; no model/provider/agent calls.
+  ws product-wireframe --confirm:
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic wireframe artifact and updates wireframe metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Write product wireframe artifact
+    warning_label: Writes versioned wireframe artifact and updates wireframe metadata
+    evidence:
+    - scripts/product_wireframe.py
+    - scripts/ws_product_wireframe.py
+    confidence: high
+    notes: deterministic wireframe artifact only; no model/provider/agent calls
+  ws product-wireframe-review --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Reviews deterministic active product wireframe structure and grounding.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Review active product wireframe
+    warning_label: ''
+    evidence:
+    - scripts/product_wireframe_review.py
+    - scripts/ws_product_wireframe_review.py
+    confidence: high
+    notes: deterministic no-write wireframe review; no model/provider/agent calls
+  ws product-tech-plan --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic product technical plan gated by approved PRD and reviewed wireframe.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview product technical plan
+    warning_label: ''
+    evidence:
+    - scripts/product_tech_plan.py
+    - scripts/ws_product_tech_plan.py
+    confidence: high
+    notes: deterministic no-write technical plan preview; no model/provider/agent calls
+  ws product-tech-plan --confirm:
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic technical plan artifact from approved active PRD, scope, and wireframe.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Write product technical plan artifact
+    warning_label: Writes technical plan artifact and updates technical plan metadata
+    evidence:
+    - scripts/product_tech_plan.py
+    - scripts/ws_product_tech_plan.py
+    confidence: high
+    notes: deterministic technical plan artifact only; no app/source code generation; no model/provider/agent calls
+  ws product-tech-plan-review --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Reviews deterministic active product technical plan structure and grounding.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Review active product technical plan
+    warning_label: ''
+    evidence:
+    - scripts/product_tech_plan_review.py
+    - scripts/ws_product_tech_plan_review.py
+    confidence: high
+    notes: deterministic no-write technical plan review; no model/provider/agent calls
+  ws product-implementation-plan --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews deterministic implementation planning readiness gate from approved active artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview product implementation plan gate
+    warning_label: ''
+    evidence:
+    - scripts/product_implementation_plan.py
+    - scripts/ws_product_implementation_plan.py
+    confidence: high
+    notes: deterministic no-write implementation planning preview only; no app/source code generation and no model/provider/agent calls
+  ws product-implementation-plan --confirm:
+    safety_class: GUARDED_WRITE
+    description: Writes deterministic implementation planning artifact and updates product metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Write product implementation plan
+    warning_label: Writes implementation plan artifact and updates implementation plan metadata
+    evidence:
+    - scripts/product_implementation_plan.py
+    - scripts/ws_product_implementation_plan.py
+    confidence: high
+    notes: deterministic implementation plan artifact only; no app/source code generation; no model/provider/agent calls
+  ws product-implementation-plan-review --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Reviews active deterministic implementation plan for structure, grounding, hash integrity, and unresolved placeholders.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Review active product implementation plan
+    warning_label: ''
+    evidence:
+    - scripts/product_implementation_plan_review.py
+    - scripts/ws_product_implementation_plan_review.py
+    confidence: high
+    notes: deterministic no-write implementation plan review; no model/provider/agent calls
+  ws product-implementation-exchange-preview --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews implementation exchange handoff from approved implementation plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview implementation exchange handoff
+    warning_label: ''
+    evidence:
+    - scripts/product_implementation_exchange_preview.py
+    - scripts/ws_product_implementation_exchange_preview.py
+    confidence: high
+    notes: deterministic no-write exchange preview; requires implementation plan review PASS; no model/provider/agent calls
+  ws knowledge-inventory --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews knowledge raw-data inventory metadata (counts, sizes, extensions).
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview knowledge raw-data inventory
+    warning_label: ''
+    evidence:
+    - KNOWLEDGE_INVENTORY_PHASE_0_PLAN.md
+    - scripts/knowledge_inventory.py
+    - scripts/ws_knowledge_inventory.py
+    confidence: high
+    notes: metadata-only inventory; no raw content parsing; no writes
+  ws exchange-new --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews an Exchange Lane packet and planned files without writing.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview exchange packet
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - scripts/ws
+    - scripts/ws_exchange_new.py
+    - scripts/exchange_registry.py
+    confidence: high
+    notes: Phase 0 packet preview only; no packet writes, no dispatch/execution, and no model/provider/agent calls.
+  ws exchange-new --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes exchange packet files under exchange/<exchange_id>/
+    safety_class: GUARDED_WRITE
+    description: Creates Exchange Lane packet files under exchange/<exchange_id>/ for later dispatch phases.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Create exchange packet
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - scripts/ws
+    - scripts/ws_exchange_new.py
+    - scripts/exchange_registry.py
+    confidence: high
+    notes: Phase 0 writes exchange packet files only; no dispatch/execution and no model/provider/agent calls.
+  ws exchange-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists Exchange Lane packet directories and packet statuses from exchange/.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: List exchanges
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - scripts/ws
+    - scripts/ws_exchange_list.py
+    - scripts/exchange_registry.py
+    confidence: high
+    notes: Pure-read listing of exchange packet metadata; no writes and no dispatch.
+  ws exchange-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows one Exchange Lane packet metadata record from exchange.yaml.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Exchange status
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - scripts/ws
+    - scripts/ws_exchange_status.py
+    - scripts/exchange_registry.py
+    confidence: high
+    notes: Pure-read packet inspection only; no writes, no dispatch/execution, and no model/provider/agent calls.
+  ws exchange-dispatch --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Validates Exchange Lane dispatch readiness from packet metadata without executing adapters.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview exchange dispatch
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - exchange/README.md
+    - scripts/ws
+    - scripts/ws_exchange_dispatch.py
+    - scripts/exchange_dispatch.py
+    - registry/ws_command_safety.yaml
+    confidence: high
+    notes: Dispatch preview gate only; validates packet shape and allowed_commands manifest coverage, reports blockers/warnings, performs no execution, and writes no files.
+  ws exchange-dispatch --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: provider
+    warning_label: Invokes Codex CLI and writes bounded adapter run artifacts
+    safety_class: PROVIDER_CALL
+    description: Runs guarded Codex CLI REVIEW_ONLY dispatch and captures adapter run artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    operator_label: Dispatch exchange to Codex
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - exchange/README.md
+    - scripts/ws
+    - scripts/ws_exchange_dispatch.py
+    - scripts/exchange_codex_adapter.py
+    confidence: high
+    notes: REVIEW_ONLY codex_cli path only; blocks unsupported targets/modes and non-empty allowed_commands; writes adapter artifacts under exchange/<exchange_id>/adapter_runs only; does not import result automatically and does not execute commands from output.
+  ws exchange-adapter-preview --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews Codex CLI adapter invocation from an exchange packet without executing adapters.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview exchange adapter
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - exchange/README.md
+    - scripts/ws
+    - scripts/ws_exchange_adapter_preview.py
+    - scripts/exchange_adapter_preview.py
+    confidence: high
+    notes: Preview only; validates codex_cli target/safety preconditions and planned prompt/output paths, warns when exchange is already completed, performs no adapter/model/provider/agent/browser/MCP execution, and writes no files.
+  ws exchange-import-result --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Validates exchange result import structure and planned writes without importing.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview exchange result import
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - exchange/README.md
+    - scripts/ws
+    - scripts/ws_exchange_import_result.py
+    - scripts/exchange_result_import.py
+    confidence: high
+    notes: Validation preview only; no file writes, no execution of imported content, and no adapter/model/provider/agent/browser/MCP calls.
+  ws exchange-import-result --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes imported result/report files under exchange/<exchange_id>/
+    safety_class: GUARDED_WRITE
+    description: Imports an existing result file and writes exchange result/report artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Import exchange result
+    evidence:
+    - EXCHANGE_LANE_MASTER_PLAN.md
+    - exchange/README.md
+    - scripts/ws
+    - scripts/ws_exchange_import_result.py
+    - scripts/exchange_result_import.py
+    confidence: high
+    notes: Imports untrusted text and writes raw_output.md, parsed_result.json, validation.md, operator_report.md, plus exchange.yaml/run_log updates under exchange/<exchange_id>/ only; content is never executed.
+  ws session-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists runtime session manifests from runtime/sessions.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Session list
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_list.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Pure-read runtime/session registry listing only; no process start and no adapter/model/provider/browser/MCP execution.
+  ws session-status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows one runtime session manifest status from runtime/sessions/<session_id>/session.yaml.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Session status
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_status.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Pure-read runtime/session manifest inspection only; no process start and no adapter/model/provider/browser/MCP execution.
+  ws session-plan --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews a managed runtime session plan without writing files or starting processes.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview runtime session plan
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_plan.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Dry-run only session planning preview; validates runtime/adapter compatibility and planned session paths with no process start or adapter execution.
+  ws session-plan --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes planned session manifest and log placeholders under runtime/sessions/<session_id>/
+    safety_class: GUARDED_WRITE
+    description: Creates a planned runtime session manifest and placeholder logs without starting any process.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Create planned runtime session
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_plan.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Writes only planned session metadata artifacts under runtime/sessions/<session_id>/; no process start, no adapter execution, and no product/exchange mutation.
+  ws session-start --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews runtime session start behavior and preconditions without
+      starting a process.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview runtime session start
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_start.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Preview only; validates start preconditions, planned invocation style,
+      and planned output paths with no process start or adapter/model/provider/browser/MCP
+      execution.
+  ws session-cleanup --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews runtime session cleanup candidates without deleting files.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Preview runtime session cleanup
+    evidence:
+    - EXCHANGE_RUNTIME_SESSION_PLAN.md
+    - runtime/README.md
+    - scripts/ws
+    - scripts/ws_session_cleanup.py
+    - scripts/session_registry.py
+    confidence: high
+    notes: Preview only; classifies keep versus cleanup-candidate sessions and possible
+      stale RUNNING metadata, with no deletion and no process/model/provider/browser/MCP
+      execution.
   ws redact <packet>:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -2600,6 +3353,26 @@ commands:
     - scripts/learning_confirmation_ledger_repair.py
     confidence: high
     notes: Route supports --dry-run preview and --repair-ledger apply mode; repair mode creates ledger_backups, rewrites learning_confirmations.jsonl, and appends ledger_repair_audit.jsonl without modifying state.json.
+  ws learning-review-checklist:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    warning_label: Writes local learning review checklist state and audit artifacts
+    safety_class: GUARDED_WRITE
+    description: Initializes or shows a learning review checklist state for a review packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Learning-review-checklist
+    evidence:
+    - scripts/ws
+    - scripts/ws_learning_review_checklist.sh
+    - scripts/learning_review_checklist_state.py
+    confidence: high
+    notes: Supports read-only modes (--dry-run-init, --show) and write mode (--init-checklist) that creates review_checklists/<packet>_checklist.json and appends checklist_audit.jsonl under learning stronghold paths; no model/provider/agent calls.
   ws learning-confirm --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
