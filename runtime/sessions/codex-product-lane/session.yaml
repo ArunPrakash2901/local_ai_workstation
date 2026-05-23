@@ -1,0 +1,37 @@
+{
+  "session_id": "codex-product-lane",
+  "runtime_type": "powershell",
+  "adapter": "codex_cli",
+  "cwd": "D:\\_ai_brain",
+  "shell": "powershell",
+  "allowed_targets": [
+    "codex_cli"
+  ],
+  "allowed_safety_modes": [
+    "REVIEW_ONLY",
+    "DRY_RUN_ONLY"
+  ],
+  "allowed_commands": [],
+  "env_policy": "workspace_safe",
+  "status": "PLANNED",
+  "pid": null,
+  "started_at": null,
+  "last_seen_at": null,
+  "transcript_path": "runtime/sessions/codex-product-lane/transcript.log",
+  "current_exchange_id": null,
+  "stop_conditions": [
+    "Stop on safety gate failure.",
+    "Stop on unknown command requirement."
+  ],
+  "planned_files": [
+    "/mnt/d/_ai_brain/runtime/sessions/codex-product-lane/session.yaml",
+    "/mnt/d/_ai_brain/runtime/sessions/codex-product-lane/stdout.log",
+    "/mnt/d/_ai_brain/runtime/sessions/codex-product-lane/stderr.log",
+    "/mnt/d/_ai_brain/runtime/sessions/codex-product-lane/transcript.log",
+    "/mnt/d/_ai_brain/runtime/sessions/codex-product-lane/heartbeat.json"
+  ],
+  "no_execution": true,
+  "compatibility_result": "PASS",
+  "blockers": [],
+  "warnings": []
+}
