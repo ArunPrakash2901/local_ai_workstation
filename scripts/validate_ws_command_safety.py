@@ -99,8 +99,6 @@ KNOWN_COMMANDS = {
     "ws product-wireframe --dry-run",
     "ws build --dry-run",
     "ws agent-run --dry-run",
-    "ws review",
-    "ws stuck",
 }
 KNOWN_CLASSIFICATIONS = {
     "ws ready": "LOCAL_REPORT_WRITE",
@@ -127,8 +125,6 @@ KNOWN_CLASSIFICATIONS = {
     "ws product-wireframe --dry-run": "DRY_RUN_ONLY",
     "ws build --dry-run": "DRY_RUN_ONLY",
     "ws agent-run --dry-run": "DRY_RUN_ONLY",
-    "ws review": "UNKNOWN",
-    "ws stuck": "UNKNOWN",
 }
 
 

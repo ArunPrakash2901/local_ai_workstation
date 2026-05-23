@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WS_SCRIPT = ROOT / "scripts" / "ws"
 MANIFEST_PATH = ROOT / "registry" / "ws_command_safety.yaml"
 
-KNOWN_MISSING_UNKNOWN_BASES = {"review", "stuck", "learning-state-sync-apply"}
+KNOWN_MISSING_UNKNOWN_BASES = set()
 UNKNOWN_NOTE_MARKERS = ("missing", "absent", "unavailable", "reserved", "disabled")
 IGNORED_ROUTE_ALIASES = {"--help", "-h"}
 SAFETY_UNKNOWN = "UNKNOWN"

@@ -152,8 +152,6 @@ def validate_class_rules(commands: dict[str, Any], app: Any, report: VisibilityR
 
 def validate_known_commands(commands: dict[str, Any], app: Any, report: VisibilityReport) -> None:
     known = {
-        "ws review": ("UNKNOWN", "hidden"),
-        "ws stuck": ("UNKNOWN", "hidden"),
         "ws ready": ("LOCAL_REPORT_WRITE", "visible_with_label"),
         "ws product-new": ("GUARDED_WRITE", "hidden"),
         "ws product-intake --confirm": ("GUARDED_WRITE", "hidden"),
@@ -188,9 +186,6 @@ def validate_known_commands(commands: dict[str, Any], app: Any, report: Visibili
         expect(entry.get("safety_class") == expected_class, report, f"{command}: expected {expected_class}, got {entry.get('safety_class')}")
         if expected_exposure:
             expect(entry.get("tui_exposure") == expected_exposure, report, f"{command}: expected exposure {expected_exposure}, got {entry.get('tui_exposure')}")
-
-    expect(not is_visible(app, "ws review", "SAFE_DRY_RUN"), report, "ws review should be hidden")
-    expect(not is_visible(app, "ws stuck", "SAFE_DRY_RUN"), report, "ws stuck should be hidden")
 
     ready = app.get_command_safety("ws ready")
     expect(ready.safety_class == "LOCAL_REPORT_WRITE", report, "ws ready helper class should be LOCAL_REPORT_WRITE")

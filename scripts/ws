@@ -61,8 +61,6 @@ case "$SUBCOMMAND" in
         echo "  packet <key> <q>    Create escalation packet (local first)"
         echo "  redact <packet>     Safety scan a packet before manual escalation"
         echo "  escalate <prov> <p> Send SAFE packet explicitly to gemini/codex"
-        echo "  review <key> <run>  Reserved; do not use until explicitly enabled"
-        echo "  stuck <key> <run>   Reserved; do not use until explicitly enabled"
         echo ""
         echo "Tasks:"
         echo "  task-new            Create canonical task in tasks/inbox"
@@ -782,12 +780,6 @@ case "$SUBCOMMAND" in
         ;;
     escalate)
         bash "$SCRIPTS_DIR/ws_escalate.sh" "$@"
-        ;;
-    review)
-        bash "$SCRIPTS_DIR/ws_review.sh" "$@"
-        ;;
-    stuck)
-        bash "$SCRIPTS_DIR/ws_stuck.sh" "$@"
         ;;
     *)
         echo "Unknown subcommand: $SUBCOMMAND"
