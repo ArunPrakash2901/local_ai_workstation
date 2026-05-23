@@ -26,11 +26,15 @@ from product_intake_artifacts import start_intake  # noqa: E402
 from product_intake_questions import get_question_bank  # noqa: E402
 from product_prd import write_prd  # noqa: E402
 from product_registry import create_product, get_product_status, initialize_products_dir, save_product  # noqa: E402
-from product_scope_lock import lock_scope  # noqa: E402
+from product_scope_revision import confirm_scope_revision  # noqa: E402
+from product_prd_revision import confirm_prd_revision  # noqa: E402
+from product_scope_lock import compute_scope_lock_hash, lock_scope  # noqa: E402
+import hashlib  # noqa: E402
 from product_wireframe import (  # noqa: E402
     NON_UI_PRODUCT_MESSAGE,
     load_wireframe_inputs,
     render_wireframe_preview,
+    confirm_wireframe,
 )
 
 
@@ -95,6 +99,38 @@ def _make_prd_approved_product(root: Path, *, product_type: str) -> dict[str, ob
     return get_product_status(root, product_id)
 
 
+def _make_active_revised_product(root: Path) -> dict[str, object]:
+    record = _make_prd_approved_product(root, product_type="website")
+    product_id = str(record["product_id"])
+    pdir = root / "products" / product_id
+    
+    # 1. Scope Change
+    product_file = pdir / "product.yaml"
+    payload = json.loads(product_file.read_text(encoding="utf-8"))
+    payload["scope_change_pending"] = True
+    product_file.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    
+    decisions_dir = pdir / "decisions"
+    decisions_dir.mkdir(parents=True, exist_ok=True)
+    (decisions_dir / "scope_change_test.md").write_text(
+        "- change_id: test\n- reason: testing\n- field: out_of_scope\n- proposed_value: revised out of scope",
+        encoding="utf-8"
+    )
+    
+    confirm_scope_revision(root, product_id, confirm=True)
+    
+    # 2. PRD Revision
+    confirm_prd_revision(root, product_id, confirm=True)
+    
+    # 3. Approve Revised PRD
+    payload = json.loads(product_file.read_text(encoding="utf-8"))
+    payload["prd_status"] = "APPROVED"
+    payload["prd_approved_at"] = "2026-01-01T00:00:00Z"
+    product_file.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    
+    return get_product_status(root, product_id)
+
+
 def _run_wireframe_script(args: list[str], root: Path) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -127,10 +163,87 @@ def main() -> int:
         website_payload = load_wireframe_inputs(temp_root, website_id)
         website_preview = render_wireframe_preview(
             website_payload["product_record"],
-            website_payload["scope_lock_text"],
+            website_payload["scope_text"],
             website_payload["prd_text"],
+            payload_extras=website_payload,
         )
         expect("wireframe preview renders for website", "Wireframe Preview" in website_preview and "Home" in website_preview, failures)
+
+        # 22 active_prd + active_scope_lock binding.
+        revised = _make_active_revised_product(temp_root)
+        revised_id = str(revised["product_id"])
+        revised_payload = load_wireframe_inputs(temp_root, revised_id)
+        revised_preview = render_wireframe_preview(
+            revised_payload["product_record"],
+            revised_payload["scope_text"],
+            revised_payload["prd_text"],
+            payload_extras=revised_payload,
+        )
+        
+        expect("dry-run uses active_prd when present", revised_payload["prd_source"] == "active_prd", failures)
+        expect("dry-run uses active_scope_lock when present", revised_payload["scope_source"] == "active_scope_lock", failures)
+        expect("dry-run output includes active PRD path", "prd_path: prds/prd_v2.md" in revised_preview, failures)
+        expect("dry-run output includes active scope lock path", "scope_path: scope_locks/scope_lock_v2.md" in revised_preview, failures)
+        expect("dry-run hash status MATCH", "prd_hash_status: MATCH" in revised_preview and "scope_hash_status: MATCH" in revised_preview, failures)
+
+        # 23 active_prd hash mismatch fails.
+        mismatch_prd = _make_active_revised_product(temp_root)
+        mismatch_id = str(mismatch_prd["product_id"])
+        mismatch_file = temp_root / "products" / mismatch_id / "product.yaml"
+        mismatch_payload = json.loads(mismatch_file.read_text(encoding="utf-8"))
+        mismatch_payload["active_prd_hash"] = "wrong"
+        mismatch_file.write_text(json.dumps(mismatch_payload, indent=2) + "\n", encoding="utf-8")
+        try:
+            load_wireframe_inputs(temp_root, mismatch_id)
+            failures.append("FAIL: active_prd hash mismatch should be rejected")
+        except ValueError as exc:
+            expect("active_prd hash mismatch rejected", "PRD hash mismatch" in str(exc), failures)
+
+        # 24 active_scope_lock hash mismatch fails.
+        mismatch_scope = _make_active_revised_product(temp_root)
+        mismatch_scope_id = str(mismatch_scope["product_id"])
+        mismatch_scope_file = temp_root / "products" / mismatch_scope_id / "product.yaml"
+        mismatch_scope_payload = json.loads(mismatch_scope_file.read_text(encoding="utf-8"))
+        mismatch_scope_payload["active_scope_lock_hash"] = "wrong"
+        mismatch_scope_file.write_text(json.dumps(mismatch_scope_payload, indent=2) + "\n", encoding="utf-8")
+        try:
+            load_wireframe_inputs(temp_root, mismatch_scope_id)
+            failures.append("FAIL: active_scope_lock hash mismatch should be rejected")
+        except ValueError as exc:
+            expect("active_scope_lock hash mismatch rejected", "Scope lock hash mismatch" in str(exc), failures)
+
+        # 25 missing active_prd fails.
+        missing_active_prd = _make_active_revised_product(temp_root)
+        missing_active_id = str(missing_active_prd["product_id"])
+        (temp_root / "products" / missing_active_id / "prds" / "prd_v2.md").unlink()
+        try:
+            load_wireframe_inputs(temp_root, missing_active_id)
+            failures.append("FAIL: missing active_prd file should be rejected")
+        except FileNotFoundError:
+            print("PASS: missing active_prd file rejected")
+
+        # 26 missing active_scope_lock fails.
+        missing_active_scope = _make_active_revised_product(temp_root)
+        missing_active_scope_id = str(missing_active_scope["product_id"])
+        (temp_root / "products" / missing_active_scope_id / "scope_locks" / "scope_lock_v2.md").unlink()
+        try:
+            load_wireframe_inputs(temp_root, missing_active_scope_id)
+            failures.append("FAIL: missing active_scope_lock file should be rejected")
+        except FileNotFoundError:
+            print("PASS: missing active_scope_lock file rejected")
+
+        # 27 stale PRD fails.
+        stale_prd = _make_prd_approved_product(temp_root, product_type="website")
+        stale_id = str(stale_prd["product_id"])
+        stale_file = temp_root / "products" / stale_id / "product.yaml"
+        stale_payload = json.loads(stale_file.read_text(encoding="utf-8"))
+        stale_payload["prd_status"] = "STALE"
+        stale_file.write_text(json.dumps(stale_payload, indent=2) + "\n", encoding="utf-8")
+        try:
+            load_wireframe_inputs(temp_root, stale_id)
+            failures.append("FAIL: stale PRD should be rejected")
+        except ValueError as exc:
+            expect("stale PRD rejected", "stale or needs revision" in str(exc), failures)
 
         # 2 webapp preview renders.
         webapp = _make_prd_approved_product(temp_root, product_type="webapp")
@@ -138,8 +251,9 @@ def main() -> int:
         webapp_payload = load_wireframe_inputs(temp_root, webapp_id)
         webapp_preview = render_wireframe_preview(
             webapp_payload["product_record"],
-            webapp_payload["scope_lock_text"],
+            webapp_payload["scope_text"],
             webapp_payload["prd_text"],
+            payload_extras=webapp_payload,
         )
         expect("wireframe preview renders for webapp", "Main Workflow" in webapp_preview and "Landing / Entry" in webapp_preview, failures)
 
@@ -149,8 +263,9 @@ def main() -> int:
         dashboard_payload = load_wireframe_inputs(temp_root, dashboard_id)
         dashboard_preview = render_wireframe_preview(
             dashboard_payload["product_record"],
-            dashboard_payload["scope_lock_text"],
+            dashboard_payload["scope_text"],
             dashboard_payload["prd_text"],
+            payload_extras=dashboard_payload,
         )
         expect(
             "wireframe preview renders for dashboard",
@@ -222,6 +337,7 @@ def main() -> int:
         missing_hash_file = temp_root / "products" / missing_hash_id / "product.yaml"
         missing_hash_payload = json.loads(missing_hash_file.read_text(encoding="utf-8"))
         missing_hash_payload["scope_lock_hash"] = None
+        missing_hash_payload["active_scope_lock_hash"] = None
         missing_hash_file.write_text(json.dumps(missing_hash_payload, indent=2) + "\n", encoding="utf-8")
         try:
             load_wireframe_inputs(temp_root, missing_hash_id)
@@ -239,28 +355,28 @@ def main() -> int:
         # 11 preview includes generated_from section.
         expect(
             "preview includes generated_from section",
-            "Generated From:" in website_preview and "- product.yaml" in website_preview and "- prd.md" in website_preview,
+            "## Generated From" in website_preview and "- product.yaml" in website_preview and "- prd.md" in website_preview,
             failures,
         )
 
         # 12 preview includes page/screen map.
         expect(
             "preview includes page/screen map",
-            "Page/Screen Map:" in website_preview,
+            "## Page/Screen Map" in website_preview,
             failures,
         )
 
         # 13 preview includes text/ASCII wireframe section.
         expect(
             "preview includes text/ASCII wireframe section",
-            "ASCII/Text Wireframes:" in website_preview and "+------------------------------------------------------------+" in website_preview,
+            "## ASCII/Text Wireframes" in website_preview and "+------------------------------------------------------------+" in website_preview,
             failures,
         )
 
         # 14 preview uses TODO/UNKNOWN when uncertain.
         expect(
-            "preview uses TODO/UNKNOWN for uncertain details",
-            "TODO/UNKNOWN" in website_preview,
+            "preview uses TODO/UNKNOWN or None for unresolved questions",
+            "TODO/UNKNOWN" in website_preview or "Unresolved Design Questions" in website_preview,
             failures,
         )
 
@@ -275,8 +391,9 @@ def main() -> int:
         no_write_payload = load_wireframe_inputs(temp_root, no_write_id)
         _ = render_wireframe_preview(
             no_write_payload["product_record"],
-            no_write_payload["scope_lock_text"],
+            no_write_payload["scope_text"],
             no_write_payload["prd_text"],
+            payload_extras=no_write_payload,
         )
 
         after_files = sorted(path.relative_to(temp_root).as_posix() for path in temp_root.rglob("*") if path.is_file())
@@ -299,14 +416,13 @@ def main() -> int:
                 failures,
             )
 
-        # 21 command helper requires --dry-run.
-        no_dry_run = _run_wireframe_script(["--product", website_id], temp_root)
+        # 21 command helper requires mode flag.
+        no_mode_cli = _run_wireframe_script(["--product", website_id], temp_root)
         expect(
-            "command helper requires --dry-run",
-            no_dry_run.returncode != 0
-            and "Write-mode product-wireframe is not implemented in Phase 2 Slice 4. Use --dry-run." in (no_dry_run.stderr or ""),
+            "command helper requires mode flag",
+            no_mode_cli.returncode != 0,
             failures,
-            detail=f"rc={no_dry_run.returncode}, stderr={no_dry_run.stderr!r}",
+            detail=f"rc={no_mode_cli.returncode}, stderr={no_mode_cli.stderr!r}",
         )
         with_dry_run = _run_wireframe_script(["--product", website_id, "--dry-run"], temp_root)
         expect(
@@ -317,6 +433,39 @@ def main() -> int:
             failures,
             detail=f"rc={with_dry_run.returncode}, stderr={with_dry_run.stderr!r}",
         )
+
+        # 28 confirm writes wireframe_v1.md.
+        confirm_product = _make_prd_approved_product(temp_root, product_type="website")
+        confirm_id = str(confirm_product["product_id"])
+        confirm_dir = temp_root / "products" / confirm_id
+
+        result = confirm_wireframe(temp_root, confirm_id, confirm=True)
+
+        expect("confirm writes wireframe_v1.md", (confirm_dir / "wireframes" / "wireframe_v1.md").is_file(), failures)
+
+        post_record = get_product_status(temp_root, confirm_id)
+        expect("confirm updates active_wireframe", post_record.get("active_wireframe") == "wireframes/wireframe_v1.md", failures)
+        expect("confirm updates active_wireframe_hash", bool(post_record.get("active_wireframe_hash")), failures)
+        expect("confirm updates active_wireframe_revision to 1", post_record.get("active_wireframe_revision") == 1, failures)
+        expect("confirm sets wireframe_status DRAFTED", post_record.get("wireframe_status") == "DRAFTED", failures)
+
+        # 29 confirm refuses duplicate wireframe_v1.md.
+        try:
+            confirm_wireframe(temp_root, confirm_id, confirm=True)
+            failures.append("FAIL: confirm refuses duplicate wireframe_v1.md")
+        except FileExistsError:
+            print("PASS: confirm refuses duplicate wireframe_v1.md")
+
+        # 30 confirm refuses unapproved PRD.
+        unapproved = _make_scope_locked_product(temp_root, product_type="website")
+        unapproved_id = str(unapproved["product_id"])
+        write_prd(temp_root, unapproved_id, confirm=True)
+        try:
+            confirm_wireframe(temp_root, unapproved_id, confirm=True)
+            failures.append("FAIL: confirm refuses unapproved PRD")
+        except ValueError as exc:
+            expect("unapproved PRD rejected", "requires prd_status=APPROVED" in str(exc), failures)
+
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)
 

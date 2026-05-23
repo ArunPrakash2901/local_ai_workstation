@@ -27,7 +27,9 @@ from product_intake_questions import get_question_bank  # noqa: E402
 from product_prd import write_prd  # noqa: E402
 from product_prd_status import get_prd_status, render_prd_status  # noqa: E402
 from product_registry import create_product, get_product_status, initialize_products_dir, save_product  # noqa: E402
+from product_scope_change import confirm_scope_change  # noqa: E402
 from product_scope_lock import lock_scope  # noqa: E402
+from product_scope_revision import confirm_scope_revision  # noqa: E402
 
 
 def expect(name: str, condition: bool, failures: list[str], detail: str = "") -> None:
@@ -78,6 +80,29 @@ def _make_prd_product(root: Path, *, product_type: str = "website") -> dict[str,
     locked = _make_scope_locked_product(root, product_type=product_type)
     write_prd(root, str(locked["product_id"]), confirm=True)
     return get_product_status(root, str(locked["product_id"]))
+
+
+def _make_revised_scope_prd_product(root: Path) -> dict[str, object]:
+    product = _make_prd_product(root, product_type="website")
+    product_id = str(product["product_id"])
+    change_file = root / f"tmp_prd_status_scope_change_{uuid4().hex}.md"
+    change_file.write_text(
+        "\n".join(
+            [
+                "change_id: add-out-of-scope-for-status-test",
+                "reason: status test",
+                "field: out_of_scope",
+                "proposed_value: >",
+                "  Backend services and auth are out of scope.",
+                "operator_note: test",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    confirm_scope_change(root, product_id, change_file, confirm=True)
+    confirm_scope_revision(root, product_id, confirm=True)
+    return get_product_status(root, product_id)
 
 
 def _run_prd_status_script(args: list[str], root: Path) -> subprocess.CompletedProcess[str]:
@@ -142,6 +167,18 @@ def main() -> int:
         # 6 approval artifact presence.
         expect("status reports approval artifact presence", approved_status["prd_approval_exists"] is True, failures)
 
+        revised_scope = _make_revised_scope_prd_product(temp_root)
+        revised_scope_id = str(revised_scope["product_id"])
+        revised_scope_status = get_prd_status(temp_root, revised_scope_id)
+        expect("status reports active_scope_lock", revised_scope_status.get("active_scope_lock") == "scope_locks/scope_lock_v2.md", failures)
+        expect("status reports stale_artifacts", "prd.md" in list(revised_scope_status.get("stale_artifacts", [])), failures)
+        expect(
+            "status suggests product-prd-revision --dry-run when prd_status is NEEDS_REVISION",
+            revised_scope_status.get("next_suggested_command") == f"ws product-prd-revision --product {revised_scope_id} --dry-run",
+            failures,
+            detail=str(revised_scope_status.get("next_suggested_command")),
+        )
+
         # 7 missing product safe failure.
         try:
             get_prd_status(temp_root, "missing-product-id")
@@ -203,4 +240,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -164,6 +164,7 @@ def main() -> int:
         missing_hash_file = temp_root / "products" / missing_hash_id / "product.yaml"
         payload_hash = json.loads(missing_hash_file.read_text(encoding="utf-8"))
         payload_hash["scope_lock_hash"] = None
+        payload_hash["active_scope_lock_hash"] = None
         missing_hash_file.write_text(json.dumps(payload_hash, indent=2) + "\n", encoding="utf-8")
         try:
             load_prd_review_inputs(temp_root, missing_hash_id)

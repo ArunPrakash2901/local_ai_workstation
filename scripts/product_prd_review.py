@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from typing import Any
@@ -10,10 +11,9 @@ from typing import Any
 from product_prd import (
     PRD_FILENAME,
     SUPPORTED_PRODUCT_TYPES,
-    load_prd_inputs,
 )
-from product_registry import validate_product_id
-from product_scope_lock import SCOPE_LOCK_FILENAME
+from product_registry import validate_product_id, get_product_status, product_dir
+from product_scope_lock import SCOPE_LOCK_FILENAME, compute_scope_lock_hash
 
 
 PRD_REVIEW_ACTION = "ws product-prd-review --dry-run"
@@ -108,8 +108,7 @@ def validate_prd_review_preconditions(root: str | Path, product_id: str) -> dict
     if not validate_product_id(product_id):
         raise ValueError(f"invalid product_id: {product_id!r}")
 
-    payload = load_prd_inputs(root, product_id)
-    product_record = payload["product_record"]
+    product_record = get_product_status(root, product_id)
     state = str(product_record.get("state", "")).strip()
     if state != SCOPE_LOCKED_STATE:
         raise ValueError(f"product must be in {SCOPE_LOCKED_STATE} for PRD review (found {state or 'UNKNOWN'})")
@@ -118,17 +117,66 @@ def validate_prd_review_preconditions(root: str | Path, product_id: str) -> dict
     if product_type not in SUPPORTED_PRODUCT_TYPES:
         raise ValueError(f"unsupported product_type for PRD review: {product_type or 'UNKNOWN'}")
 
-    paths = payload["paths"]
-    product_dir = Path(paths["product_dir"]).resolve()
-    prd_path = _safe_child(product_dir, Path(paths["prd_md"]))
-    if not prd_path.is_file():
-        raise FileNotFoundError(
-            "prd.md is missing; run ws product-prd --product <product_id> --confirm first"
-        )
+    pdir = product_dir(root, product_id)
 
-    payload["prd_path"] = prd_path
-    payload["prd_text"] = prd_path.read_text(encoding="utf-8")
-    return payload
+    active_scope_lock = str(product_record.get("active_scope_lock", "")).strip()
+    if active_scope_lock:
+        scope_path = _safe_child(pdir, pdir / active_scope_lock)
+        scope_hash_expected = product_record.get("active_scope_lock_hash")
+    else:
+        scope_path = _safe_child(pdir, pdir / SCOPE_LOCK_FILENAME)
+        scope_hash_expected = product_record.get("scope_lock_hash")
+
+    if not scope_path.is_file():
+        raise FileNotFoundError(f"scope lock file is missing: {scope_path}")
+
+    if not scope_hash_expected:
+        raise ValueError("scope_lock_hash is required for PRD review")
+
+    scope_hash_expected = str(scope_hash_expected).strip()
+    scope_text = scope_path.read_text(encoding="utf-8")
+    actual_scope_hash = compute_scope_lock_hash(scope_text)
+    active_scope_hash_status = "MATCH" if (scope_hash_expected and actual_scope_hash == scope_hash_expected) else "MISMATCH"
+
+    active_prd = str(product_record.get("active_prd", "")).strip()
+    prd_status = str(product_record.get("prd_status", "")).strip().upper()
+
+    if prd_status in {"NEEDS_REVISION", "STALE"} and not active_prd:
+        raise ValueError(f"PRD status is {prd_status}. Next step: ws product-prd-revision --product {product_id} --dry-run")
+
+    if active_prd:
+        prd_path = _safe_child(pdir, pdir / active_prd)
+        review_target = "active_prd"
+        active_prd_hash_expected = str(product_record.get("active_prd_hash", "")).strip()
+    else:
+        prd_path = _safe_child(pdir, pdir / PRD_FILENAME)
+        review_target = "legacy_prd"
+        active_prd_hash_expected = ""
+
+    if not prd_path.is_file():
+        if review_target == "active_prd":
+            raise FileNotFoundError(f"active_prd file missing: {active_prd}")
+        else:
+            raise FileNotFoundError("prd.md is missing; run ws product-prd --product <product_id> --confirm first")
+
+    prd_text = prd_path.read_text(encoding="utf-8")
+    
+    prd_hash_status = "UNSET"
+    if active_prd_hash_expected:
+        actual_prd_hash = hashlib.sha256(prd_text.encode("utf-8")).hexdigest()
+        prd_hash_status = "MATCH" if actual_prd_hash == active_prd_hash_expected else "MISMATCH"
+
+    return {
+        "product_record": product_record,
+        "scope_lock_text": scope_text,
+        "prd_path": prd_path,
+        "prd_text": prd_text,
+        "review_target": review_target,
+        "active_scope_lock": active_scope_lock or SCOPE_LOCK_FILENAME,
+        "active_scope_hash_status": active_scope_hash_status,
+        "prd_hash_status": prd_hash_status,
+        "scope_hash_expected": scope_hash_expected,
+    }
 
 
 def load_prd_review_inputs(root: str | Path, product_id: str) -> dict[str, Any]:
@@ -139,10 +187,18 @@ def review_prd_text(
     product_record: dict[str, Any],
     scope_lock_text: str,
     prd_text: str,
+    payload_extras: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    del scope_lock_text  # preconditions already verify lock/hash integrity via load_prd_inputs.
+    del scope_lock_text
     if not isinstance(prd_text, str) or not prd_text.strip():
         raise ValueError("prd text must be a non-empty string")
+
+    payload_extras = payload_extras or {}
+    review_target = payload_extras.get("review_target", "legacy_prd")
+    active_scope_lock = payload_extras.get("active_scope_lock", SCOPE_LOCK_FILENAME)
+    active_scope_hash_status = payload_extras.get("active_scope_hash_status", "UNSET")
+    prd_hash_status = payload_extras.get("prd_hash_status", "UNSET")
+    scope_hash_expected = payload_extras.get("scope_hash_expected", "")
 
     product_id = str(product_record.get("product_id", "")).strip()
     product_type = str(product_record.get("product_type", "")).strip()
@@ -150,7 +206,6 @@ def review_prd_text(
     prd_status = str(product_record.get("prd_status", "")).strip()
     if not prd_status:
         prd_status = "DRAFTED" if str(product_record.get("prd_created_at", "")).strip() else "UNKNOWN"
-    scope_lock_hash = str(product_record.get("scope_lock_hash", "")).strip()
 
     sections = _extract_sections(prd_text)
     required_sections_present = [name for name in REQUIRED_SECTIONS if name in sections]
@@ -160,16 +215,22 @@ def review_prd_text(
     warnings: list[str] = []
     fail_reasons: list[str] = []
 
+    if active_scope_hash_status == "MISMATCH":
+        fail_reasons.append("active_scope_lock hash mismatch")
+        
+    if prd_hash_status == "MISMATCH":
+        fail_reasons.append("active_prd hash mismatch")
+
     has_generated_from = "Generated From" in sections
     if not has_generated_from:
         fail_reasons.append("Generated From section is missing.")
 
     lower_prd = prd_text.lower()
-    has_scope_reference = ("scope_lock.md" in lower_prd) or (
-        bool(scope_lock_hash) and scope_lock_hash in prd_text
+    has_scope_reference = (Path(active_scope_lock).name.lower() in lower_prd) or ("scope_lock.md" in lower_prd) or (
+        bool(scope_hash_expected) and scope_hash_expected in prd_text
     )
     if not has_scope_reference:
-        fail_reasons.append("PRD does not reference scope_lock.md or scope_lock_hash.")
+        fail_reasons.append(f"PRD does not reference {active_scope_lock} or its hash.")
 
     if missing_sections:
         fail_reasons.append("Missing required sections: " + ", ".join(missing_sections))
@@ -205,7 +266,7 @@ def review_prd_text(
         "product_type": product_type,
         "current_state": current_state,
         "prd_status": prd_status,
-        "scope_lock_hash": scope_lock_hash,
+        "scope_lock_hash": scope_hash_expected,
         "required_sections_total": len(REQUIRED_SECTIONS),
         "required_sections_present": required_sections_present,
         "missing_sections": missing_sections,
@@ -217,6 +278,10 @@ def review_prd_text(
         "next_step": next_step,
         "no_write": True,
         "no_model_provider_agent": True,
+        "review_target": review_target,
+        "active_scope_lock": active_scope_lock,
+        "active_scope_hash_status": active_scope_hash_status,
+        "prd_hash_status": prd_hash_status,
     }
 
 
@@ -246,8 +311,11 @@ def render_prd_review_report(
         f"- product_type: `{review_result.get('product_type', '')}`",
         f"- current_state: `{review_result.get('current_state', '')}`",
         f"- prd_status: `{review_result.get('prd_status', '')}`",
+        f"- review_target: `{review_result.get('review_target', 'legacy_prd')}`",
         f"- prd_path: `{Path(prd_path)}`",
-        f"- scope_lock_hash: `{review_result.get('scope_lock_hash', '')}`",
+        f"- prd_hash_status: `{review_result.get('prd_hash_status', 'UNSET')}`",
+        f"- active_scope_lock: `{review_result.get('active_scope_lock', 'scope_lock.md')}`",
+        f"- active_scope_hash_status: `{review_result.get('active_scope_hash_status', 'UNSET')}`",
         "",
         "## Required Section Checklist",
         "",

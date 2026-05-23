@@ -41,11 +41,14 @@ def _append_action_log(path: Path, *, timestamp: str, message: str) -> None:
         handle.write(f"- {timestamp} {message}\n")
 
 
-def prd_approval_path(root: str | Path, product_id: str) -> Path:
+def prd_approval_path(root: str | Path, product_id: str, revision: int | None = None) -> Path:
     if not validate_product_id(product_id):
         raise ValueError(f"invalid product_id: {product_id!r}")
     pdir = product_dir(root, product_id)
-    return _safe_child(pdir, pdir / PRD_APPROVAL_DIR / PRD_APPROVAL_FILENAME)
+    filename = PRD_APPROVAL_FILENAME
+    if revision and revision > 1:
+        filename = f"prd_approval_v{revision}.md"
+    return _safe_child(pdir, pdir / PRD_APPROVAL_DIR / filename)
 
 
 def render_prd_approval_record(
@@ -57,7 +60,12 @@ def render_prd_approval_record(
 ) -> str:
     product_id = str(product_record.get("product_id", "")).strip()
     product_type = str(product_record.get("product_type", "")).strip()
-    scope_lock_hash = str(product_record.get("scope_lock_hash", "")).strip()
+    
+    active_scope_lock = str(product_record.get("active_scope_lock", "")).strip() or "scope_lock.md"
+    active_scope_lock_hash = str(product_record.get("active_scope_lock_hash", "")).strip() or str(product_record.get("scope_lock_hash", "")).strip()
+    active_prd = str(product_record.get("active_prd", "")).strip() or "prd.md"
+    active_prd_hash = str(product_record.get("active_prd_hash", "")).strip()
+    
     required_total = int(review_result.get("required_sections_total", 0))
     required_present = len(list(review_result.get("required_sections_present", [])))
     missing_sections = list(review_result.get("missing_sections", []))
@@ -69,11 +77,13 @@ def render_prd_approval_record(
         "",
         f"- product_id: `{product_id}`",
         f"- product_type: `{product_type}`",
-        f"- prd_path: `{prd_path}`",
+        f"- prd_path: `{active_prd}`",
+        f"- prd_hash: `{active_prd_hash or 'UNSET'}`",
+        f"- scope_path: `{active_scope_lock}`",
+        f"- scope_hash: `{active_scope_lock_hash}`",
         f"- approved_at: `{approved_at}`",
         f"- approval_status: `{APPROVED_STATUS}`",
         f"- review_status: `{review_result.get('status', '')}`",
-        f"- scope_lock_hash: `{scope_lock_hash}`",
         "",
         "## Required Sections Result",
         "",
@@ -111,14 +121,14 @@ def render_prd_approval_record(
             "## Safety Notes",
             "",
             "- No model/provider/agent calls were used for this approval.",
-            "- This approval does not modify prd.md.",
-            "- This approval does not modify scope_lock.md.",
+            "- This approval does not modify prd.md or active PRD files.",
+            "- This approval does not modify scope_lock.md or active scope files.",
             "",
             "## Generated From",
             "",
             "- product.yaml",
-            "- scope_lock.md",
-            "- prd.md",
+            f"- {active_scope_lock}",
+            f"- {active_prd}",
             "- deterministic product-prd-review",
             "",
         ]
@@ -138,30 +148,40 @@ def validate_prd_approval_preconditions(root: str | Path, product_id: str) -> di
         )
 
     current_prd_status = str(product_record.get("prd_status", "")).strip().upper()
-    if current_prd_status == APPROVED_STATUS:
-        raise FileExistsError("PRD is already approved for this product")
+    if current_prd_status in {"NEEDS_REVISION", "STALE"}:
+        raise ValueError("PRD status is NEEDS_REVISION or STALE. Please revise PRD before approving.")
 
     payload = load_prd_review_inputs(root, product_id)
+    
+    if payload.get("prd_hash_status") == "MISMATCH":
+        raise ValueError("active_prd hash mismatch")
+    if payload.get("active_scope_hash_status") == "MISMATCH":
+        raise ValueError("active_scope_lock hash mismatch")
+        
     review_result = review_prd_text(
         payload["product_record"],
         payload["scope_lock_text"],
         payload["prd_text"],
+        payload_extras=payload,
     )
 
     review_status = str(review_result.get("status", "")).strip().upper()
     if review_status != "PASS":
         raise ValueError(f"PRD approval requires deterministic review PASS (found {review_status or 'UNKNOWN'})")
 
-    pdir = Path(payload["paths"]["product_dir"]).resolve()
-    prd_file = _safe_child(pdir, pdir / PRD_FILENAME)
-    scope_lock_file = _safe_child(pdir, pdir / SCOPE_LOCK_FILENAME)
-    approval_file = _safe_child(pdir, pdir / PRD_APPROVAL_DIR / PRD_APPROVAL_FILENAME)
+    pdir = Path(payload["paths"]["product_dir"]).resolve() if "paths" in payload else product_dir(root, product_id)
+    prd_file = payload["prd_path"]
+    scope_lock_file = _safe_child(pdir, pdir / payload.get("active_scope_lock", SCOPE_LOCK_FILENAME))
+    
+    active_prd_revision = product_record.get("active_prd_revision")
+    approval_file = prd_approval_path(root, product_id, active_prd_revision)
+    
     action_log = _safe_child(pdir, pdir / ACTION_LOG_FILENAME)
 
     if not prd_file.is_file():
-        raise FileNotFoundError("prd.md is required before approval")
+        raise FileNotFoundError(f"PRD file is required before approval: {prd_file.name}")
     if not scope_lock_file.is_file():
-        raise FileNotFoundError("scope_lock.md is required before approval")
+        raise FileNotFoundError(f"scope lock file is required before approval: {scope_lock_file.name}")
     if approval_file.exists():
         raise FileExistsError(f"approval artifact already exists: {approval_file}")
 

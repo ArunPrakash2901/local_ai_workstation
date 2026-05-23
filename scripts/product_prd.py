@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -469,6 +470,18 @@ def write_prd(
     updated_record["updated_at"] = timestamp
     updated_record["last_action"] = PRD_WRITE_ACTION
     updated_record["prd_created_at"] = timestamp
+    
+    # New active artifact pattern
+    updated_record["active_prd"] = PRD_FILENAME
+    updated_record["active_prd_hash"] = hashlib.sha256(prd_text.rstrip().encode("utf-8") + b"\n").hexdigest()
+    updated_record["active_prd_revision"] = 1
+    
+    # Also ensure active scope is set if missing (for legacy transition)
+    if not updated_record.get("active_scope_lock"):
+        updated_record["active_scope_lock"] = SCOPE_LOCK_FILENAME
+        updated_record["active_scope_lock_hash"] = str(product_record.get("scope_lock_hash", "")).strip()
+        updated_record["active_scope_revision"] = 1
+
     product_file = save_product(updated_record, root, confirm=True, allow_overwrite=True)
 
     if action_log.is_file():

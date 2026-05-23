@@ -3,13 +3,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from product_prd import PRD_FILENAME
-from product_registry import PRODUCT_FILENAME, get_product_status, product_dir, validate_product_id
-from product_scope_lock import SCOPE_LOCK_FILENAME
+from product_registry import ACTION_LOG_FILENAME, PRODUCT_FILENAME, get_product_status, product_dir, save_product, validate_product_id
+from product_scope_lock import SCOPE_LOCK_FILENAME, compute_scope_lock_hash
 
 
 SCOPE_LOCKED_STATE = "SCOPE_LOCKED"
@@ -20,6 +22,14 @@ NON_UI_PRODUCT_MESSAGE = (
     "Wireframe preview is not applicable for this product type; use future "
     "product-tech-plan --dry-run."
 )
+WIREFRAME_ACTION_CONFIRM = "ws product-wireframe --confirm"
+WIREFRAMES_DIR = "wireframes"
+WIREFRAME_V1_FILENAME = "wireframe_v1.md"
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
 
 SECTION_HEADER_RE = re.compile(r"^##\s+(.*)$")
 
@@ -73,7 +83,7 @@ def classify_product_ui_type(product_record: dict[str, Any]) -> str | None:
 
 def extract_prd_sections(prd_text: str) -> dict[str, list[str]]:
     if not isinstance(prd_text, str) or not prd_text.strip():
-        raise ValueError("prd.md must contain non-empty text")
+        raise ValueError("prd text must contain non-empty text")
 
     sections: dict[str, list[str]] = {}
     current: str | None = None
@@ -325,10 +335,6 @@ def validate_wireframe_preconditions(root: str | Path, product_id: str) -> dict[
     product_record = get_product_status(root, product_id)
     pdir = product_dir(root, product_id)
 
-    product_file = _safe_child(pdir, pdir / PRODUCT_FILENAME)
-    scope_lock_path = _safe_child(pdir, pdir / SCOPE_LOCK_FILENAME)
-    prd_path = _safe_child(pdir, pdir / PRD_FILENAME)
-
     state = str(product_record.get("state", "")).strip()
     if state != SCOPE_LOCKED_STATE:
         raise ValueError(
@@ -336,29 +342,66 @@ def validate_wireframe_preconditions(root: str | Path, product_id: str) -> dict[
         )
 
     prd_status = str(product_record.get("prd_status", "")).strip().upper()
+    stale_artifacts = list(product_record.get("stale_artifacts", []) or [])
+    active_prd = str(product_record.get("active_prd", "")).strip()
+    
+    current_prd_stale = (not active_prd and PRD_FILENAME in stale_artifacts) or (prd_status in {"NEEDS_REVISION", "STALE"})
+    if current_prd_stale:
+         raise ValueError("Current PRD is stale or needs revision. Approve a revised PRD first.")
+
     if prd_status != APPROVED_STATUS:
         raise ValueError(
-            "wireframe preview requires prd_status=APPROVED; run ws product-prd-status --product <product_id>"
+            f"wireframe preview requires prd_status={APPROVED_STATUS} (found {prd_status or 'UNSET'})"
         )
 
-    scope_lock_hash_raw = product_record.get("scope_lock_hash")
-    scope_lock_hash = (
-        scope_lock_hash_raw.strip()
-        if isinstance(scope_lock_hash_raw, str)
-        else ""
-    )
-    if not scope_lock_hash:
-        raise ValueError("scope_lock_hash is required for wireframe preview")
+    # 1. Determine Scope Source
+    active_scope_lock = str(product_record.get("active_scope_lock", "")).strip()
+    if active_scope_lock:
+        scope_source = "active_scope_lock"
+        scope_path = _safe_child(pdir, pdir / active_scope_lock)
+        scope_display_path = active_scope_lock
+        scope_hash_expected = product_record.get("active_scope_lock_hash")
+    else:
+        scope_source = "legacy_scope_lock"
+        scope_path = _safe_child(pdir, pdir / SCOPE_LOCK_FILENAME)
+        scope_display_path = SCOPE_LOCK_FILENAME
+        scope_hash_expected = product_record.get("scope_lock_hash")
 
-    if not scope_lock_path.is_file():
-        raise FileNotFoundError(
-            "scope_lock.md is missing; run ws product-lock-scope --product <product_id> --confirm first"
-        )
+    if not scope_path.is_file():
+        raise FileNotFoundError(f"Scope lock file not found: {scope_path}")
+    
+    if not scope_hash_expected:
+        raise ValueError(f"Scope lock hash is missing in product.yaml for {scope_source}")
+
+    scope_hash_expected = str(scope_hash_expected).strip()
+    scope_text = scope_path.read_text(encoding="utf-8")
+    actual_scope_hash = compute_scope_lock_hash(scope_text)
+    if actual_scope_hash != scope_hash_expected:
+        raise ValueError(f"Scope lock hash mismatch for {scope_source}")
+
+    # 2. Determine PRD Source
+    if active_prd:
+        prd_source = "active_prd"
+        prd_path = _safe_child(pdir, pdir / active_prd)
+        prd_display_path = active_prd
+        prd_hash_expected = product_record.get("active_prd_hash")
+    else:
+        prd_source = "legacy_prd"
+        prd_path = _safe_child(pdir, pdir / PRD_FILENAME)
+        prd_display_path = PRD_FILENAME
+        prd_hash_expected = "" # Legacy PRD might not have a hash in some versions
 
     if not prd_path.is_file():
-        raise FileNotFoundError(
-            "prd.md is missing; run ws product-prd --product <product_id> --confirm first"
-        )
+        raise FileNotFoundError(f"PRD file not found: {prd_path}")
+    
+    prd_text = prd_path.read_text(encoding="utf-8")
+    prd_hash_status = "UNSET"
+    if prd_hash_expected:
+        prd_hash_expected = str(prd_hash_expected).strip()
+        actual_prd_hash = hashlib.sha256(prd_text.encode("utf-8")).hexdigest()
+        if actual_prd_hash != prd_hash_expected:
+            raise ValueError(f"PRD hash mismatch for {prd_source}")
+        prd_hash_status = "MATCH"
 
     ui_type = classify_product_ui_type(product_record)
     if ui_type is None:
@@ -367,28 +410,32 @@ def validate_wireframe_preconditions(root: str | Path, product_id: str) -> dict[
     return {
         "product_record": product_record,
         "product_dir": pdir,
-        "paths": {
-            "product_file": product_file,
-            "scope_lock_md": scope_lock_path,
-            "prd_md": prd_path,
-        },
         "ui_type": ui_type,
+        "prd_source": prd_source,
+        "prd_path": prd_path,
+        "prd_display_path": prd_display_path,
+        "prd_text": prd_text,
+        "prd_hash_status": prd_hash_status,
+        "scope_source": scope_source,
+        "scope_path": scope_path,
+        "scope_display_path": scope_display_path,
+        "scope_text": scope_text,
+        "scope_hash_status": "MATCH",
+        "prd_status": prd_status,
+        "current_prd_stale": current_prd_stale,
     }
 
 
 def load_wireframe_inputs(root: str | Path, product_id: str) -> dict[str, Any]:
-    payload = validate_wireframe_preconditions(root, product_id)
-    scope_lock_path: Path = payload["paths"]["scope_lock_md"]
-    prd_path: Path = payload["paths"]["prd_md"]
-    payload["scope_lock_text"] = scope_lock_path.read_text(encoding="utf-8")
-    payload["prd_text"] = prd_path.read_text(encoding="utf-8")
-    return payload
+    return validate_wireframe_preconditions(root, product_id)
 
 
 def render_wireframe_preview(
     product_record: dict[str, Any],
     scope_lock_text: str,
     prd_text: str,
+    *,
+    payload_extras: dict[str, Any] | None = None,
 ) -> str:
     del scope_lock_text  # Scope lock integrity preconditions are checked before rendering.
 
@@ -396,8 +443,16 @@ def render_wireframe_preview(
     product_type = str(product_record.get("product_type", "")).strip()
     label = str(product_record.get("label", "")).strip() or product_id or TODO_UNKNOWN
     state = str(product_record.get("state", "")).strip() or "UNKNOWN"
-    prd_status = str(product_record.get("prd_status", "")).strip() or "UNSET"
-    scope_lock_hash = str(product_record.get("scope_lock_hash", "")).strip() or TODO_UNKNOWN
+    
+    payload_extras = payload_extras or {}
+    prd_status = payload_extras.get("prd_status") or str(product_record.get("prd_status", "")).strip() or "UNSET"
+    current_prd_stale = payload_extras.get("current_prd_stale", False)
+    prd_source = payload_extras.get("prd_source", "legacy_prd")
+    prd_display_path = payload_extras.get("prd_display_path", PRD_FILENAME)
+    prd_hash_status = payload_extras.get("prd_hash_status", "UNSET")
+    scope_source = payload_extras.get("scope_source", "legacy_scope_lock")
+    scope_display_path = payload_extras.get("scope_display_path", SCOPE_LOCK_FILENAME)
+    scope_hash_status = payload_extras.get("scope_hash_status", "UNSET")
 
     ui_type = classify_product_ui_type(product_record)
     if ui_type is None:
@@ -433,8 +488,8 @@ def render_wireframe_preview(
     navigation_model = [
         "Top-level navigation between primary screens/pages",
         "Contextual links from list/overview to detail",
-        "Return paths (breadcrumbs/back action) TODO/UNKNOWN",
-        "Direct entry handling for deep links TODO/UNKNOWN",
+        "Return paths (breadcrumbs/back action)",
+        "Direct entry handling for deep links",
     ]
 
     content_hierarchy = [
@@ -447,13 +502,13 @@ def render_wireframe_preview(
     responsive_notes = [
         "Desktop-first multi-column layouts collapse to single column on small screens.",
         "Navigation reduces to compact menu on narrow widths.",
-        "Dense modules (grids/charts/tables) need stacked fallback TODO/UNKNOWN.",
+        "Dense modules (grids/charts/tables) need stacked fallback.",
     ]
 
     accessibility_notes = [
         "Ensure semantic landmarks (header/main/nav/footer).",
         "Keyboard focus order must follow visual reading order.",
-        "Color contrast and non-color state indicators required TODO/UNKNOWN.",
+        "Color contrast and non-color state indicators required.",
         "Interactive controls require explicit labels and states.",
     ]
 
@@ -471,48 +526,57 @@ def render_wireframe_preview(
         f"- label/title: {label}",
         f"- product_state: {state}",
         f"- prd_status: {prd_status}",
-        f"- scope_lock_hash: {scope_lock_hash}",
+        f"- current_prd_stale: {current_prd_stale}",
+        "",
+        "Artifact Sources:",
+        f"- prd_source: {prd_source}",
+        f"- prd_path: {prd_display_path}",
+        f"- prd_hash_status: {prd_hash_status}",
+        f"- scope_source: {scope_source}",
+        f"- scope_path: {scope_display_path}",
+        f"- scope_hash_status: {scope_hash_status}",
         "",
         "Design Assumptions (from PRD):",
     ]
 
     lines.extend(f"- {item}" for item in assumptions)
 
-    lines.extend(["", "Page/Screen Map:"])
+    lines.extend(["", "## Page/Screen Map", ""])
     for index, page in enumerate(pages, start=1):
         lines.append(f"- {index}. {page['name']}: {page['purpose']}")
 
-    lines.extend(["", "ASCII/Text Wireframes:"])
+    lines.extend(["", "## ASCII/Text Wireframes", ""])
     for page in pages:
         lines.append("")
-        lines.append(f"[{page['name']}]")
+        lines.append(f"### {page['name']}")
         lines.extend(page["ascii"])
 
-    lines.extend(["", "Component Inventory:"])
+    lines.extend(["", "## Component Inventory", ""])
     lines.extend(f"- {item}" for item in component_inventory)
 
-    lines.extend(["", "Navigation Model:"])
+    lines.extend(["", "## Navigation Model", ""])
     lines.extend(f"- {item}" for item in navigation_model)
 
-    lines.extend(["", "Content Hierarchy:"])
+    lines.extend(["", "## Content Hierarchy", ""])
     lines.extend(f"- {item}" for item in content_hierarchy)
 
-    lines.extend(["", "Responsive Notes:"])
+    lines.extend(["", "## Responsive Notes", ""])
     lines.extend(f"- {item}" for item in responsive_notes)
 
-    lines.extend(["", "Accessibility Notes:"])
+    lines.extend(["", "## Accessibility Notes", ""])
     lines.extend(f"- {item}" for item in accessibility_notes)
 
-    lines.extend(["", "Unresolved Design Questions:"])
+    lines.extend(["", "## Unresolved Design Questions", ""])
     lines.extend(f"- {item}" for item in open_questions)
 
     lines.extend(
         [
             "",
-            "Generated From:",
+            "## Generated From",
+            "",
             "- product.yaml",
-            "- scope_lock.md",
-            "- prd.md",
+            f"- {prd_display_path}",
+            f"- {scope_display_path}",
             "",
             "Next Step:",
             "- future ws product-wireframe --confirm (not implemented in Phase 2 Slice 4)",
@@ -524,3 +588,78 @@ def render_wireframe_preview(
     lines.append("- future ws product-tech-plan --dry-run")
 
     return "\n".join(lines)
+
+
+def confirm_wireframe(root: str | Path, product_id: str, *, confirm: bool) -> dict[str, Any]:
+    if not confirm:
+        raise PermissionError("confirm_wireframe requires explicit confirm=True")
+
+    payload = load_wireframe_inputs(root, product_id)
+    product_record = payload["product_record"]
+    pdir = payload["product_dir"]
+    
+    artifact_dir = pdir / WIREFRAMES_DIR
+    artifact_path = artifact_dir / WIREFRAME_V1_FILENAME
+    
+    if artifact_path.exists():
+        raise FileExistsError(f"Wireframe artifact already exists: {artifact_path}")
+    
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    
+    preview_text = render_wireframe_preview(
+        product_record,
+        payload["scope_text"],
+        payload["prd_text"],
+        payload_extras=payload,
+    )
+    lines: list[str] = []
+    for raw_line in preview_text.splitlines():
+        line = raw_line
+        if line == "Wireframe Preview":
+            line = f"# Wireframe v1: {product_record.get('label') or product_id}"
+        elif line == "=================":
+            continue
+        elif line == "DRY RUN - no files written.":
+            continue
+        elif line == "No product state changes.":
+            continue
+        elif line.startswith("- future ws product-wireframe --confirm"):
+            line = f"- Generated by `{WIREFRAME_ACTION_CONFIRM}`"
+        lines.append(line)
+    wireframe_text = "\n".join(lines).rstrip() + "\n"
+    artifact_path.write_text(wireframe_text, encoding="utf-8", newline="\n")
+    
+    wireframe_hash = hashlib.sha256(wireframe_text.encode("utf-8")).hexdigest()
+    timestamp = _utc_now_iso()
+    
+    updated_record = dict(product_record)
+    updated_record["active_wireframe"] = f"{WIREFRAMES_DIR}/{WIREFRAME_V1_FILENAME}"
+    updated_record["active_wireframe_hash"] = wireframe_hash
+    updated_record["active_wireframe_revision"] = 1
+    updated_record["wireframe_status"] = "DRAFTED"
+    updated_record["wireframe_created_at"] = timestamp
+    updated_record["wireframe_reviewed_at"] = None
+    updated_record["wireframe_approved_at"] = None
+    updated_record["last_action"] = WIREFRAME_ACTION_CONFIRM
+    updated_record["updated_at"] = timestamp
+    
+    product_file = save_product(updated_record, root, confirm=True, allow_overwrite=True)
+    
+    action_log = _safe_child(pdir, pdir / ACTION_LOG_FILENAME)
+    if action_log.is_file():
+        with action_log.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(f"- {timestamp} Wireframe drafted via {WIREFRAME_ACTION_CONFIRM}\n")
+            
+    files_written = [str(artifact_path), str(product_file)]
+    if action_log.is_file():
+        files_written.append(str(action_log))
+        
+    return {
+        "product_id": product_id,
+        "wireframe_path": str(artifact_path),
+        "product_file": str(product_file),
+        "active_wireframe_hash": wireframe_hash,
+        "wireframe_created_at": timestamp,
+        "files_written": files_written,
+        "used_model_provider_agent": False,
+    }

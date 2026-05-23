@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -79,12 +80,19 @@ def _make_prd_product(root: Path, *, product_type: str = "website") -> dict[str,
     write_prd(root, str(locked["product_id"]), confirm=True)
     return get_product_status(root, str(locked["product_id"]))
 
-
 def _make_prd_review_pass(root: Path, product_id: str) -> None:
-    prd_file = root / "products" / product_id / "prd.md"
+    pdir = root / "products" / product_id
+    prd_file = pdir / "prd.md"
     text = prd_file.read_text(encoding="utf-8")
     patched = text.replace("TODO/UNKNOWN", "Operator-provided value")
     prd_file.write_text(patched, encoding="utf-8", newline="\n")
+
+    # Update hash in metadata
+    new_hash = hashlib.sha256(patched.encode("utf-8")).hexdigest()
+    product_file = pdir / "product.yaml"
+    payload = json.loads(product_file.read_text(encoding="utf-8"))
+    payload["active_prd_hash"] = new_hash
+    product_file.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def _run_prd_approve_script(args: list[str], root: Path) -> subprocess.CompletedProcess[str]:

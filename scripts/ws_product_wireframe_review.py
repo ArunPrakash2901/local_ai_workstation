@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview deterministic Product Lane PRD review report (dry-run only)."""
+"""Deterministic no-write Product Lane wireframe review CLI."""
 
 from __future__ import annotations
 
@@ -8,29 +8,23 @@ import os
 import sys
 from pathlib import Path
 
-from product_prd_review import (
-    load_prd_review_inputs,
-    render_prd_review_report,
-    review_prd_text,
+from product_wireframe_review import (
+    load_wireframe_review_inputs,
+    render_wireframe_review_report,
+    review_wireframe_text,
+    validate_wireframe_review_preconditions,
 )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Preview deterministic Product Lane PRD review from product.yaml, "
-            "scope_lock.md, and prd.md (Phase 2 Slice 3A dry-run only)."
-        )
+        description="Deterministic Product Lane wireframe review (no-write)."
     )
-    parser.add_argument(
-        "--product",
-        dest="product_id",
-        help="Existing product id slug.",
-    )
+    parser.add_argument("--product", dest="product_id", help="Existing product id slug.")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Required in Phase 2 Slice 3A. Write-mode is not implemented.",
+        help="Review wireframe content without writing files.",
     )
     parser.add_argument(
         "--root",
@@ -46,8 +40,7 @@ def main() -> int:
 
     if not args.dry_run:
         print(
-            "ERROR: Write-mode product-prd-review is not implemented in Phase 2 Slice 3A.\n"
-            "Use --dry-run.",
+            "Write-mode product-wireframe-review is not implemented. Use --dry-run.",
             file=sys.stderr,
         )
         return 2
@@ -57,17 +50,16 @@ def main() -> int:
         return 2
 
     try:
-        payload = load_prd_review_inputs(root, str(args.product_id).strip())
-        review_result = review_prd_text(
+        payload = validate_wireframe_review_preconditions(root, str(args.product_id).strip())
+        review_result = review_wireframe_text(
             payload["product_record"],
-            payload["scope_lock_text"],
-            payload["prd_text"],
+            payload["wireframe_text"],
             payload_extras=payload,
         )
-        output = render_prd_review_report(
+        output = render_wireframe_review_report(
             payload["product_record"],
             review_result,
-            prd_path=payload["prd_path"],
+            wireframe_path=payload["wireframe_path"],
         )
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -80,9 +72,8 @@ def main() -> int:
         return 2
 
     print(output.rstrip())
-    return 3 if review_result.get("status") == "FAIL" else 0
+    return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

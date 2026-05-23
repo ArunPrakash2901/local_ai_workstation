@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview deterministic Product Lane PRD review report (dry-run only)."""
+"""Deterministic no-write Product Lane implementation plan review CLI."""
 
 from __future__ import annotations
 
@@ -8,29 +8,22 @@ import os
 import sys
 from pathlib import Path
 
-from product_prd_review import (
-    load_prd_review_inputs,
-    render_prd_review_report,
-    review_prd_text,
+from product_implementation_plan_review import (
+    render_implementation_plan_review_report,
+    review_implementation_plan_text,
+    validate_implementation_plan_review_preconditions,
 )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Preview deterministic Product Lane PRD review from product.yaml, "
-            "scope_lock.md, and prd.md (Phase 2 Slice 3A dry-run only)."
-        )
+        description="Review deterministic Product Lane implementation plan (dry-run)."
     )
-    parser.add_argument(
-        "--product",
-        dest="product_id",
-        help="Existing product id slug.",
-    )
+    parser.add_argument("--product", dest="product_id", help="Existing product id slug.")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Required in Phase 2 Slice 3A. Write-mode is not implemented.",
+        help="Run implementation plan review without writing files.",
     )
     parser.add_argument(
         "--root",
@@ -45,11 +38,7 @@ def main() -> int:
     root = Path(args.root).expanduser().resolve()
 
     if not args.dry_run:
-        print(
-            "ERROR: Write-mode product-prd-review is not implemented in Phase 2 Slice 3A.\n"
-            "Use --dry-run.",
-            file=sys.stderr,
-        )
+        print("ERROR: --dry-run is required. Review is currently dry-run only.", file=sys.stderr)
         return 2
 
     if not args.product_id or not str(args.product_id).strip():
@@ -57,18 +46,20 @@ def main() -> int:
         return 2
 
     try:
-        payload = load_prd_review_inputs(root, str(args.product_id).strip())
-        review_result = review_prd_text(
+        payload = validate_implementation_plan_review_preconditions(root, str(args.product_id).strip())
+        review_result = review_implementation_plan_text(
             payload["product_record"],
-            payload["scope_lock_text"],
-            payload["prd_text"],
+            payload["impl_plan_text"],
             payload_extras=payload,
         )
-        output = render_prd_review_report(
+        report = render_implementation_plan_review_report(
             payload["product_record"],
             review_result,
-            prd_path=payload["prd_path"],
+            impl_plan_path=payload["impl_plan_path"],
         )
+        print(report.rstrip())
+        return 0 if review_result["status"] in ("PASS", "WARN") else 1
+
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
@@ -79,10 +70,6 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    print(output.rstrip())
-    return 3 if review_result.get("status") == "FAIL" else 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
