@@ -1,0 +1,54 @@
+# Manual Dataset Import Schema
+
+version: "1.0"
+description: "Schema for manually provided local dataset import validation."
+
+required_fields:
+  - import_id
+  - linked_strategy_candidate_id
+  - linked_data_source_decision_id
+  - import_status
+  - source_file_path
+  - file_exists
+  - file_size_bytes
+  - file_format
+  - row_count
+  - column_names
+  - required_columns_present
+  - missing_required_columns
+  - max_file_size_bytes
+  - schema_validation_status
+  - synthetic_fixture
+  - human_provided
+  - data_downloaded_by_system
+  - data_quality_checks
+  - known_gaps
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  import_status:
+    - draft
+    - blocked_file_missing
+    - blocked_file_too_large
+    - blocked_missing_required_columns
+    - valid_for_human_dataset_review
+    - rejected
+
+forbidden_statuses:
+  - approved_backtest
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - data_downloaded_by_system MUST be false
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

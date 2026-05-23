@@ -1,0 +1,48 @@
+# Pre-Backtest Readiness Schema
+
+version: "1.0"
+description: "Schema for evaluating if a strategy candidate is complete enough to proceed to backtest."
+
+required_fields:
+  - readiness_id
+  - linked_strategy_candidate_id
+  - readiness_status
+  - required_data_complete
+  - universe_defined
+  - timeframe_defined
+  - feature_requirements_defined
+  - cost_model_defined
+  - slippage_model_defined
+  - execution_assumptions_defined
+  - risk_controls_defined
+  - bias_checks_defined
+  - validation_checks_defined
+  - failure_modes_defined
+  - human_review_required
+  - blocking_issues
+  - warnings
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  readiness_status:
+    - not_ready
+    - needs_more_detail
+    - ready_for_human_backtest_review
+    - rejected
+
+forbidden_statuses:
+  - approved_backtest
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

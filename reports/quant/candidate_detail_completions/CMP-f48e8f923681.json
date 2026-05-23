@@ -1,0 +1,26 @@
+{
+  "completion_id": "CMP-f48e8f923681",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R1",
+  "source_candidate_file": "reports/quant/strategy_candidates/CAN-951be4d5c93a-R1.json",
+  "completion_status": "draft",
+  "human_supplied_universe_definition": "UNKNOWN",
+  "human_supplied_timeframe_definition": "UNKNOWN",
+  "human_supplied_feature_requirements": "UNKNOWN",
+  "human_supplied_cost_model": "UNKNOWN",
+  "human_supplied_slippage_model": "UNKNOWN",
+  "human_supplied_execution_assumptions": "UNKNOWN",
+  "human_supplied_validation_requirements": "UNKNOWN",
+  "human_supplied_risk_controls": "UNKNOWN",
+  "human_supplied_failure_modes": "UNKNOWN",
+  "fields_completed": [],
+  "fields_still_unknown": [
+    "all_manually_supplied_in_note"
+  ],
+  "reviewer": "OPERATOR",
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:31:38.265762+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

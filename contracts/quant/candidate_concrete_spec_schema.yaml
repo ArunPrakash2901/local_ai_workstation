@@ -1,0 +1,55 @@
+# Candidate Concrete Spec Schema
+
+version: "1.0"
+description: "Schema for human-supplied concrete strategy candidate details."
+
+required_fields:
+  - concrete_spec_id
+  - linked_strategy_candidate_id
+  - source_candidate_file
+  - concrete_spec_status
+  - concrete_universe
+  - concrete_tickers
+  - concrete_timeframe
+  - concrete_bar_frequency
+  - concrete_required_columns
+  - concrete_feature_requirements
+  - concrete_entry_logic_description
+  - concrete_exit_logic_description
+  - concrete_position_sizing_description
+  - concrete_cost_model_description
+  - concrete_slippage_model_description
+  - concrete_execution_assumptions
+  - concrete_validation_requirements
+  - concrete_risk_controls
+  - concrete_failure_modes
+  - fields_completed
+  - fields_still_unknown
+  - reviewer
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  concrete_spec_status:
+    - draft
+    - needs_human_review
+    - ready_for_candidate_update
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

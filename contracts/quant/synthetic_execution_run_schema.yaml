@@ -1,0 +1,46 @@
+# Synthetic Execution Run Schema
+
+version: "1.0"
+description: "Schema for synthetic-only execution runs to validate workstation plumbing."
+
+required_fields:
+  - synthetic_run_id
+  - linked_strategy_candidate_id
+  - linked_manual_dataset_import_id
+  - linked_preflight_id
+  - run_status
+  - synthetic_fixture
+  - real_market_data_used
+  - real_strategy_logic_used
+  - candidate_strategy_executed
+  - execution_allowed_for_real_candidate
+  - input_fixture_path
+  - row_count
+  - columns_used
+  - initial_capital
+  - toy_exposure_rule
+  - equity_curve
+  - metrics
+  - limitations
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  run_status:
+    - synthetic_smoke_test_only
+    - blocked
+    - invalid
+
+safety_rules:
+  - synthetic_fixture MUST be true
+  - real_market_data_used MUST be false
+  - real_strategy_logic_used MUST be false
+  - candidate_strategy_executed MUST be false
+  - execution_allowed_for_real_candidate MUST be false
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

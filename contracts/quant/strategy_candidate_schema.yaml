@@ -1,0 +1,61 @@
+# Strategy Candidate Schema
+
+version: "1.0"
+description: "Schema for a human-reviewed strategy candidate draft before backtesting."
+
+required_fields:
+  - strategy_candidate_id
+  - linked_idea_id
+  - linked_hypothesis_id
+  - linked_paper_id
+  - linked_replication_plan_id
+  - title
+  - source_type
+  - source_references
+  - candidate_status
+  - strategy_family
+  - market_or_asset_class
+  - universe_definition
+  - timeframe_definition
+  - proposed_edge_mechanism
+  - signal_concepts
+  - entry_logic_conceptual
+  - exit_logic_conceptual
+  - position_sizing_conceptual
+  - risk_controls_required
+  - data_requirements
+  - feature_requirements
+  - execution_assumptions
+  - transaction_cost_assumptions
+  - slippage_assumptions
+  - validation_requirements
+  - known_failure_modes
+  - known_unknowns
+  - human_owner
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  candidate_status:
+    - draft
+    - needs_human_review
+    - accepted_for_pre_backtest_readiness
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

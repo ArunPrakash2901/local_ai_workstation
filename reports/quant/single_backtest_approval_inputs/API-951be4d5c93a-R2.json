@@ -1,0 +1,28 @@
+{
+  "approval_input_id": "API-951be4d5c93a-R2",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R2",
+  "linked_readiness_id": "UNKNOWN",
+  "linked_data_requirement_id": "UNKNOWN",
+  "linked_dataset_mapping_id": "UNKNOWN",
+  "linked_data_source_decision_id": "UNKNOWN",
+  "linked_backtest_plan_id": "UNKNOWN",
+  "approval_input_status": "draft",
+  "reviewer": "UNKNOWN",
+  "reviewer_statement": "UNKNOWN",
+  "approved_scope": "single_backtest_only",
+  "explicit_approval_for_single_backtest": false,
+  "approval_conditions": [
+    "UNKNOWN"
+  ],
+  "forbidden_actions": [
+    "paper_trading",
+    "live_trading",
+    "broker_execution"
+  ],
+  "expires_at": "UNKNOWN",
+  "created_at": "2026-05-22T04:39:48.840426+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

@@ -1,0 +1,49 @@
+# Backtest Approval Validation Schema
+
+version: "1.0"
+description: "Schema for validating a future single-backtest approval input."
+
+required_fields:
+  - approval_validation_id
+  - linked_approval_input_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - linked_backtest_plan_id
+  - validation_status
+  - explicit_approval_present
+  - reviewer_present
+  - approval_scope_valid
+  - expiration_valid
+  - forbidden_actions_absent
+  - readiness_allows_review
+  - backtest_plan_allows_review
+  - data_source_allows_review
+  - blocking_issues
+  - warnings
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  validation_status:
+    - blocked
+    - invalid
+    - pending_human_completion
+    - valid_for_single_backtest_plan_review
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+  - broker_execution
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

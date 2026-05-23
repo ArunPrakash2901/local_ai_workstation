@@ -1,0 +1,49 @@
+# Candidate Detail Completion Schema
+
+version: "1.0"
+description: "Schema for a human-supplied candidate detail completion record."
+
+required_fields:
+  - completion_id
+  - linked_strategy_candidate_id
+  - source_candidate_file
+  - completion_status
+  - human_supplied_universe_definition
+  - human_supplied_timeframe_definition
+  - human_supplied_feature_requirements
+  - human_supplied_cost_model
+  - human_supplied_slippage_model
+  - human_supplied_execution_assumptions
+  - human_supplied_validation_requirements
+  - human_supplied_risk_controls
+  - human_supplied_failure_modes
+  - fields_completed
+  - fields_still_unknown
+  - reviewer
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  completion_status:
+    - draft
+    - needs_human_review
+    - ready_for_candidate_revision
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

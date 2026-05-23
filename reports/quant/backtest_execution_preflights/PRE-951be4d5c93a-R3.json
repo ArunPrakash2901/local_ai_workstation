@@ -1,0 +1,36 @@
+{
+  "preflight_id": "PRE-951be4d5c93a-R3",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R3",
+  "linked_readiness_id": "UNKNOWN",
+  "linked_backtest_plan_id": "UNKNOWN",
+  "linked_approval_validation_id": "UNKNOWN",
+  "linked_eligibility_report_id": "UNKNOWN",
+  "linked_manual_dataset_import_id": "IMP-e948cb959f40",
+  "preflight_status": "blocked",
+  "all_gates_valid": false,
+  "dataset_import_valid": true,
+  "approval_valid": false,
+  "eligibility_valid": false,
+  "backtest_runner_available": false,
+  "execution_allowed": false,
+  "blocking_issues": [
+    "Human approval validation failed or is missing.",
+    "Master eligibility report is blocked or missing."
+  ],
+  "allowed_next_actions": [
+    "human_review"
+  ],
+  "forbidden_next_actions": [
+    "generate_trading_signal",
+    "place_order",
+    "paper_trade",
+    "live_trade",
+    "broker_execution"
+  ],
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:56:53.371238+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

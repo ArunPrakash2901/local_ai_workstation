@@ -1,0 +1,37 @@
+# Future Real Backtest Runner Contract
+status: proposed_future
+version: 1
+implementation_allowed: false
+requires_future_human_approval: true
+no_real_backtest_now: true
+no_trading_authorization: true
+
+purpose: |
+  Defines the mandatory technical boundaries for the first local, deterministic, 
+  single-strategy backtest engine.
+  
+constraints:
+  - max_candidates: 1
+  - max_datasets: 1
+  - cpu_limit: single_thread
+  - ram_limit_mb: 2048
+  - vram_limit_mb: 0
+  - data_format: csv_ohlcv
+  - max_data_rows: 100000 # Safety cap for initial research
+  
+required_gates:
+  - backtest_eligibility_report: PASS
+  - backtest_execution_preflight: READY
+  - human_backtest_approval: SIGNED_AND_VALIDATED
+  
+output_artifacts:
+  - backtest_metrics.json
+  - equity_curve.png
+  - trade_list.csv
+  - experiment_manifest.yaml
+  
+safety_labels:
+  - safety_financial_advice_generated: false
+  - synthetic_fixture: false # Set true if using synthetic, false for real
+  - strategy_logic_used: true
+  - research_only_status: true

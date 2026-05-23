@@ -1,0 +1,35 @@
+{
+  "eligibility_report_id": "ELG-951be4d5c93a-R2",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R2",
+  "linked_readiness_id": "RDY-951be4d5c93a-R2",
+  "linked_data_source_decision_id": "DSD-951be4d5c93a-R2",
+  "linked_backtest_plan_id": "BTP-UNKNOWN-20260522143926-R2",
+  "linked_approval_validation_id": "VLD-951be4d5c93a-R2",
+  "eligibility_status": "blocked",
+  "readiness_status": "needs_more_detail",
+  "data_source_status": "draft",
+  "backtest_plan_status": "blocked",
+  "approval_validation_status": "blocked",
+  "blocking_issues": [
+    "Readiness gate is needs_more_detail.",
+    "Data source gate is draft.",
+    "Backtest plan gate is blocked.",
+    "Approval validation gate is blocked."
+  ],
+  "allowed_next_actions": [
+    "human_review"
+  ],
+  "forbidden_next_actions": [
+    "generate_trading_signal",
+    "place_order",
+    "paper_trade",
+    "live_trade",
+    "broker_execution"
+  ],
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:41:28.454593+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

@@ -1,0 +1,46 @@
+# Human Backtest Approval Schema
+
+version: "1.0"
+description: "Schema for logging the explicit human authorization required before a backtest plan can be executed."
+
+required_fields:
+  - approval_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - linked_handoff_id
+  - linked_backtest_plan_id
+  - approval_status
+  - reviewer
+  - review_timestamp
+  - approval_scope
+  - approval_notes
+  - required_conditions
+  - forbidden_actions
+  - expires_at
+  - human_signature_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  approval_status:
+    - pending
+    - approved_for_single_backtest_plan
+    - rejected
+    - expired
+    - revoked
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+  - broker_execution
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

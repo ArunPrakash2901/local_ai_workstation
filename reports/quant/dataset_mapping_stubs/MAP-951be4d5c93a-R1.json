@@ -1,0 +1,21 @@
+{
+  "mapping_id": "MAP-951be4d5c93a-R1",
+  "linked_data_requirement_id": "DTR-951be4d5c93a-R1",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R1",
+  "mapping_status": "needs_source_decision",
+  "required_dataset": "UNKNOWN",
+  "proposed_local_dataset_path": "UNKNOWN",
+  "proposed_source_name": "UNKNOWN",
+  "source_status": "UNKNOWN",
+  "local_file_exists": false,
+  "schema_known": "UNKNOWN",
+  "freshness_known": "UNKNOWN",
+  "data_quality_known": "UNKNOWN",
+  "gaps": "Manual dataset mapping required.",
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:20:56.886856+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

@@ -1,0 +1,61 @@
+# Research Paper Schema
+
+version: "1.0"
+description: "Schema for manually captured research paper metadata before attempting replication."
+
+required_fields:
+  - paper_id
+  - title
+  - authors
+  - year
+  - source_url
+  - source_type
+  - source_reference
+  - local_note_file
+  - abstract_or_summary
+  - core_claims
+  - claimed_market
+  - claimed_asset_class
+  - claimed_timeframe
+  - claimed_edge_mechanism
+  - claimed_results
+  - data_used_in_paper
+  - methodology_summary
+  - assumptions
+  - limitations
+  - replication_relevance
+  - human_owner
+  - review_status
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  source_type:
+    - manual_note
+    - research_paper
+    - ssrn_reference
+    - journal_reference
+    - blog_reference
+    - other
+  review_status:
+    - draft
+    - needs_human_review
+    - accepted_for_replication_planning
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

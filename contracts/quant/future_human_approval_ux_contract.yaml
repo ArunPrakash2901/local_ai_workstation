@@ -1,0 +1,33 @@
+# Future Human Approval UX Contract
+status: proposed_future
+version: 1
+implementation_allowed: false
+requires_future_human_approval: true
+no_real_backtest_now: true
+no_trading_authorization: true
+
+purpose: |
+  Defines the mandatory fields and validation rules for the Human-in-the-Loop (HITL) 
+  backtest execution authorization gate.
+
+mandatory_fields:
+  - candidate_id: string
+  - plan_id: string
+  - dataset_id: string
+  - expiry_timestamp: iso8601
+  - execution_intent: string
+  - explicit_research_confirmation: boolean
+  - explicit_no_trading_confirmation: boolean
+  - operator_signature: string
+
+validation_rules:
+  - preflight_status_must_be: READY
+  - linked_candidate_hash_must_match: true
+  - intent_regex_guard: "(?i)(profit|guarantee|live|trade|broker)" # Refuse if matches
+  - expiry_max_duration_hours: 48
+
+artifact_storage:
+  path: reports/quant/backtest_approvals/
+  format: json
+  include_full_draft_content: true
+  generate_unique_approval_id: true

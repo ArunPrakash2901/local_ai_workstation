@@ -1,0 +1,30 @@
+{
+  "data_source_decision_id": "DSD-951be4d5c93a-R2",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R2",
+  "linked_data_requirement_id": "DTR-951be4d5c93a-R1",
+  "decision_status": "draft",
+  "candidate_data_sources": [
+    "local_existing_dataset",
+    "future_yfinance_adapter",
+    "manual_csv_import"
+  ],
+  "selected_data_source": "UNKNOWN",
+  "selected_data_source_type": "unknown",
+  "api_required": false,
+  "credentials_required": false,
+  "download_required": false,
+  "local_dataset_required": false,
+  "local_dataset_path": "UNKNOWN",
+  "source_limitations": "UNKNOWN",
+  "licensing_notes": "UNKNOWN",
+  "reliability_notes": "UNKNOWN",
+  "cost_notes": "UNKNOWN",
+  "reason_for_selection": "UNKNOWN",
+  "reason_for_rejection_of_alternatives": "UNKNOWN",
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:31:58.659662+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

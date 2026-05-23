@@ -1,0 +1,62 @@
+# Paper Replication Plan Schema
+
+version: "1.0"
+description: "Schema for a structured plan to replicate claims made in a research paper."
+
+required_fields:
+  - replication_plan_id
+  - linked_idea_id
+  - linked_hypothesis_id
+  - linked_paper_id
+  - replication_objective
+  - claim_to_replicate
+  - falsifiable_replication_question
+  - required_data
+  - data_availability_status
+  - universe_definition
+  - timeframe_definition
+  - methodology_steps
+  - expected_outputs
+  - validation_checks
+  - bias_checks
+  - risk_checks
+  - execution_considerations
+  - transaction_cost_considerations
+  - failure_conditions
+  - assumptions
+  - unknowns
+  - implementation_readiness
+  - human_review_required
+  - review_status
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  implementation_readiness:
+    - not_ready
+    - needs_more_sources
+    - needs_data_mapping
+    - ready_for_research_planning
+    - rejected
+  review_status:
+    - draft
+    - needs_human_review
+    - accepted_for_research_planning
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

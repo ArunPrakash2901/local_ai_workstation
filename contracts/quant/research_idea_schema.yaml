@@ -1,0 +1,57 @@
+# Research Idea Schema
+
+version: "1.0"
+description: "Schema for capturing a raw quantitative research idea prior to any backtesting or strategy formulation."
+
+required_fields:
+  - idea_id
+  - title
+  - source_type
+  - source_reference
+  - source_url
+  - source_artifact
+  - source_workflow_id
+  - source_topic_ids
+  - raw_idea_text
+  - idea_category
+  - market_or_asset_class
+  - timeframe_hypothesis
+  - proposed_edge_mechanism
+  - required_data
+  - required_validation
+  - known_risks
+  - known_unknowns
+  - human_owner
+  - review_status
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  source_type:
+    - human_note
+    - matfinog_prompt
+    - research_paper
+    - market_structure_observation
+    - cloud_model_suggestion
+    - other
+  review_status:
+    - draft
+    - needs_human_review
+    - accepted_for_hypothesis_contract
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

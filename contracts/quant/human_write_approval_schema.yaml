@@ -1,0 +1,72 @@
+# Human Write Approval Schema (Q46)
+version: 1
+approval_type: research_idea_intake_write
+required_fields:
+  - approval_id
+  - approval_type
+  - target_command
+  - target_command_safety_class
+  - source_input_file
+  - source_input_hash
+  - dry_run_command
+  - dry_run_output_hash
+  - intended_output_directory
+  - intended_output_filename
+  - intended_artifact_type
+  - operator_name
+  - operator_confirmation
+  - reason_for_write
+  - approval_scope
+  - approval_status
+  - expires_at
+  - created_at
+  - forbidden_actions
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+  - safety_backtest_run
+  - safety_broker_logic_generated
+  - safety_live_trading_authorized
+
+allowed_values:
+  approval_type:
+    - research_idea_intake_write
+  approval_status:
+    - draft
+    - pending_review
+    - rejected
+    - expired
+    - approved_for_single_local_write
+  target_command_safety_class:
+    - GUARDED_WRITE
+  approval_scope:
+    - single_local_write_only
+  intended_artifact_type:
+    - research_idea_json
+
+forbidden_actions_mandatory:
+  - run_backtest
+  - generate_signal
+  - approve_strategy
+  - paper_trade
+  - live_trade
+  - broker_execution
+  - download_data
+
+safety_boundary:
+  must_be_false:
+    - safety_financial_advice_generated
+    - safety_trading_signal_generated
+    - safety_bot_logic_generated
+    - safety_live_trading_logic_generated
+    - safety_backtest_run
+    - safety_broker_logic_generated
+    - safety_live_trading_authorized
+
+path_constraints:
+  allowed_input_folders:
+    - scratch/quant_ideas/
+    - scratch/quant_papers/
+  allowed_output_folders:
+    - reports/quant/research_ideas/

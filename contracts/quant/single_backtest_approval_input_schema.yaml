@@ -1,0 +1,47 @@
+# Single Backtest Approval Input Schema
+
+version: "1.0"
+description: "Schema for future human approval input."
+
+required_fields:
+  - approval_input_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - linked_data_requirement_id
+  - linked_dataset_mapping_id
+  - linked_data_source_decision_id
+  - linked_backtest_plan_id
+  - approval_input_status
+  - reviewer
+  - reviewer_statement
+  - approved_scope
+  - explicit_approval_for_single_backtest
+  - approval_conditions
+  - forbidden_actions
+  - expires_at
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  approval_input_status:
+    - draft
+    - pending_human_completion
+    - human_completed_pending_validation
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+  - broker_execution
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

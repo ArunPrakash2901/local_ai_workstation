@@ -1,0 +1,45 @@
+# Strategy Candidate Revision Schema
+
+version: "1.0"
+description: "Schema for capturing human revisions to a Strategy Candidate based on a Gap Report."
+
+required_fields:
+  - revision_id
+  - linked_strategy_candidate_id
+  - source_candidate_file
+  - source_gap_report_id
+  - revision_status
+  - revised_fields
+  - unchanged_fields
+  - human_supplied_clarifications
+  - still_unknown_fields
+  - remaining_blocking_issues
+  - revision_summary
+  - candidate_record_after_revision
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  revision_status:
+    - draft
+    - needs_human_review
+    - ready_for_readiness_recheck
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

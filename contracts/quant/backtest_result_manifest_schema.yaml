@@ -1,0 +1,43 @@
+# Backtest Result Manifest Schema
+
+version: "1.0"
+description: "Schema for capturing the results and artifacts of a backtest run."
+
+required_fields:
+  - result_manifest_id
+  - linked_backtest_plan_id
+  - linked_strategy_candidate_id
+  - result_status
+  - data_source_type
+  - synthetic_fixture
+  - backtest_run
+  - strategy_logic_used
+  - metrics
+  - artifacts
+  - limitations
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  result_status:
+    - synthetic_smoke_test_only
+    - blocked
+    - invalid
+    - needs_human_review
+
+forbidden_statuses:
+  - backtest_passed
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

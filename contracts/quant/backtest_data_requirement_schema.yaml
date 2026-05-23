@@ -1,0 +1,54 @@
+# Backtest Data Requirement Schema
+
+version: "1.0"
+description: "Schema for required data before a backtest can be considered."
+
+required_fields:
+  - data_requirement_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - requirement_status
+  - required_datasets
+  - required_columns
+  - required_frequency
+  - required_time_range
+  - required_universe
+  - corporate_actions_required
+  - adjusted_prices_required
+  - volume_required
+  - transaction_cost_data_required
+  - slippage_assumption_required
+  - benchmark_required
+  - data_quality_checks
+  - missing_data_policy
+  - survivorship_bias_policy
+  - lookahead_bias_policy
+  - timezone_calendar_requirements
+  - known_gaps
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  requirement_status:
+    - draft
+    - blocked_missing_candidate_detail
+    - needs_data_mapping
+    - ready_for_dataset_mapping_review
+    - rejected
+
+forbidden_statuses:
+  - approved_backtest
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

@@ -1,0 +1,46 @@
+# Dataset Mapping Stub Schema
+
+version: "1.0"
+description: "Schema for mapping required data to local or future datasets."
+
+required_fields:
+  - mapping_id
+  - linked_data_requirement_id
+  - linked_strategy_candidate_id
+  - mapping_status
+  - required_dataset
+  - proposed_local_dataset_path
+  - proposed_source_name
+  - source_status
+  - local_file_exists
+  - schema_known
+  - freshness_known
+  - data_quality_known
+  - gaps
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  mapping_status:
+    - draft
+    - no_dataset_available
+    - needs_source_decision
+    - ready_for_human_dataset_review
+    - rejected
+
+forbidden_statuses:
+  - approved_backtest
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

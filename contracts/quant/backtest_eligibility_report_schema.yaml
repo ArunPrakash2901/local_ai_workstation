@@ -1,0 +1,44 @@
+# Backtest Eligibility Report Schema
+
+version: "1.0"
+description: "Schema for a final eligibility report before a backtest."
+
+required_fields:
+  - eligibility_report_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - linked_data_source_decision_id
+  - linked_backtest_plan_id
+  - linked_approval_validation_id
+  - eligibility_status
+  - readiness_status
+  - data_source_status
+  - backtest_plan_status
+  - approval_validation_status
+  - blocking_issues
+  - allowed_next_actions
+  - forbidden_next_actions
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  eligibility_status:
+    - blocked
+    - pending_human_approval
+    - ready_for_future_single_backtest_execution
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

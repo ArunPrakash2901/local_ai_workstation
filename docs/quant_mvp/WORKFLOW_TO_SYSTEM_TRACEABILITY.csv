@@ -1,0 +1,9 @@
+corpus_workflow_id,corpus_workflow_count,related_topic_ids,workstation_requirement_id,proposed_module,source_artifact,implementation_phase,safety_notes
+market_inefficiency_hypothesis_workflow,56,"market_structure_inefficiency,execution_and_microstructure,crypto_market_structure",REQ-MF-001,Hypothesis Builder,workflow_index.csv,Phase 3,Human approval required before progressing
+research_paper_to_backtest_workflow,42,"research_paper_replication,backtesting_and_validation,ai_assisted_research_workflow",REQ-MF-002,Paper Replication Scaffold,workflow_index.csv,Phase 4,No guarantees on paper profitability
+risk_first_strategy_review_workflow,59,"risk_management,options_and_protection,trading_psychology_and_process",REQ-MF-003,Risk Review Gate,workflow_index.csv,Phase 7,System blocks without risk parameters
+execution_microstructure_review_workflow,29,execution_and_microstructure,REQ-MF-004,Microstructure Gate,workflow_index.csv,Phase 7,Must state backtests are theoretical
+ai_assisted_quant_learning_workflow,52,"ai_assisted_research_workflow,workstation_candidate_workflow",REQ-MF-005,AI Research Assistant,workflow_index.csv,Phase 3-5,No financial advice or broker logic
+psychological_process_and_discipline_workflow,18,trading_psychology_and_process,REQ-MF-006,Learning Loop / Journal,workflow_index.csv,Phase 8,AI cannot alter human reflections
+workstation_module_candidate_workflow,56,"workstation_candidate_workflow,backtesting_and_validation,ai_assisted_research_workflow",UNKNOWN,Workstation Core,workflow_index.csv,Phase 3-8,General scaffolding guidance
+unknown_or_low_confidence_workflow,51,,UNKNOWN,N/A,workflow_index.csv,N/A,Excluded due to low confidence

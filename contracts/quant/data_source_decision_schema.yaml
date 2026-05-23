@@ -1,0 +1,60 @@
+# Data Source Decision Schema
+
+version: "1.0"
+description: "Schema for a data-source decision record."
+
+required_fields:
+  - data_source_decision_id
+  - linked_strategy_candidate_id
+  - linked_data_requirement_id
+  - decision_status
+  - candidate_data_sources
+  - selected_data_source
+  - selected_data_source_type
+  - api_required
+  - credentials_required
+  - download_required
+  - local_dataset_required
+  - local_dataset_path
+  - source_limitations
+  - licensing_notes
+  - reliability_notes
+  - cost_notes
+  - reason_for_selection
+  - reason_for_rejection_of_alternatives
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  decision_status:
+    - draft
+    - needs_human_review
+    - selected_for_future_data_adapter_review
+    - rejected
+    - archived
+  selected_data_source_type:
+    - local_existing_dataset
+    - future_yfinance_adapter
+    - future_stooq_adapter
+    - future_alpaca_market_data
+    - future_ibkr_market_data
+    - manual_csv_import
+    - unknown
+
+forbidden_statuses:
+  - data_downloaded
+  - approved_backtest
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

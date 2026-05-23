@@ -1,0 +1,31 @@
+{
+  "approval_validation_id": "VLD-951be4d5c93a-R2",
+  "linked_approval_input_id": "API-951be4d5c93a-R2",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R2",
+  "linked_readiness_id": "RDY-951be4d5c93a-R2",
+  "linked_backtest_plan_id": "BTP-UNKNOWN-20260522143926-R2",
+  "validation_status": "blocked",
+  "explicit_approval_present": false,
+  "reviewer_present": false,
+  "approval_scope_valid": true,
+  "expiration_valid": false,
+  "forbidden_actions_absent": true,
+  "readiness_allows_review": false,
+  "backtest_plan_allows_review": false,
+  "data_source_allows_review": false,
+  "blocking_issues": [
+    "Explicit human approval is false.",
+    "Reviewer is unknown or blank.",
+    "Expiration date is missing.",
+    "Readiness gate not passed.",
+    "Backtest plan is blocked or invalid.",
+    "Data source decision is not finalized."
+  ],
+  "warnings": "NONE",
+  "human_review_required": true,
+  "created_at": "2026-05-22T04:40:30.774157+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}

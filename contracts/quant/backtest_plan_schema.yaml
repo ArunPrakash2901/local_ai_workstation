@@ -1,0 +1,53 @@
+# Backtest Plan Schema
+
+version: "1.0"
+description: "Schema for a formal backtest testing plan before execution."
+
+required_fields:
+  - backtest_plan_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - linked_handoff_id
+  - plan_status
+  - plan_scope
+  - dataset_requirements
+  - feature_requirements
+  - universe_definition
+  - timeframe_definition
+  - initial_capital_assumption
+  - position_sizing_assumption
+  - cost_model
+  - slippage_model
+  - execution_model
+  - rebalance_frequency
+  - validation_protocol
+  - bias_checks
+  - risk_checks
+  - expected_outputs
+  - human_approval_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  plan_status:
+    - draft
+    - blocked
+    - needs_more_detail
+    - ready_for_human_backtest_review
+
+forbidden_statuses:
+  - backtest_running
+  - backtest_passed
+  - approved_strategy
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

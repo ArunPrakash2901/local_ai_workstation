@@ -1,0 +1,49 @@
+# Future Quant Command Surface Contract
+status: proposed_future
+version: 1
+implementation_allowed: false
+requires_future_human_approval: true
+no_real_backtest_now: true
+no_trading_authorization: true
+
+purpose: |
+  Defines the mapping and safety requirements for integrating standalone Quant CLIs 
+  into the unified 'ws quant' command surface.
+
+integration_targets:
+  - group: idea
+    scripts: [idea_cli.py]
+    safety_class: GUARDED_WRITE
+  - group: paper
+    scripts: [paper_replication_cli.py]
+    safety_class: GUARDED_WRITE
+  - group: candidate
+    scripts: [strategy_candidate_cli.py]
+    safety_class: GUARDED_WRITE
+  - group: readiness
+    scripts: [strategy_candidate_cli.py, readiness_remediation_cli.py]
+    safety_class: LOCAL_REPORT_WRITE
+  - group: plan
+    scripts: [backtest_cli.py, backtest_eligibility_cli.py]
+    safety_class: GUARDED_WRITE
+  - group: data
+    scripts: [backtest_preparation_cli.py, backtest_execution_gate_cli.py]
+    safety_class: GUARDED_WRITE
+  - group: eligibility
+    scripts: [backtest_eligibility_cli.py]
+    safety_class: LOCAL_REPORT_WRITE
+  - group: preflight
+    scripts: [backtest_execution_gate_cli.py]
+    safety_class: LOCAL_REPORT_WRITE
+  - group: synthetic
+    scripts: [synthetic_execution_cli.py]
+    safety_class: LOCAL_REPORT_WRITE
+  - group: approval
+    scripts: [backtest_eligibility_cli.py, single_backtest_approval_input.py]
+    safety_class: GUARDED_WRITE
+
+global_requirements:
+  - default_dry_run: true
+  - require_confirm_flag_for_writes: true
+  - dispatcher_source_of_truth: scripts/ws
+  - safety_manifest_source_of_truth: registry/ws_command_safety.yaml

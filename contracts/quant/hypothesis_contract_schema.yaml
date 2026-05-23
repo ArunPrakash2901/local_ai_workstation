@@ -1,0 +1,48 @@
+# Hypothesis Contract Schema
+
+version: "1.0"
+description: "Schema for transforming an accepted research idea into a falsifiable hypothesis contract."
+
+required_fields:
+  - hypothesis_id
+  - linked_idea_id
+  - hypothesis_statement
+  - falsifiable_claim
+  - expected_mechanism
+  - required_data
+  - data_availability_status
+  - test_design
+  - validation_checks
+  - risk_checks
+  - execution_considerations
+  - failure_conditions
+  - assumptions
+  - unknowns
+  - human_review_required
+  - review_status
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  review_status:
+    - draft
+    - needs_human_review
+    - accepted_for_research_planning
+    - rejected
+    - archived
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

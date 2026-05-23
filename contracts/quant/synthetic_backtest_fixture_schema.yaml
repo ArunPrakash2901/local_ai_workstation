@@ -1,0 +1,15 @@
+# Synthetic Backtest Fixture Schema
+
+version: "1.0"
+description: "Schema for toy synthetic data fixtures used to smoke test the backtest engine."
+
+required_fields:
+  - fixture_id
+  - synthetic_fixture
+  - not_market_data
+  - not_strategy_result
+  - rows
+
+row_fields:
+  - timestamp
+  - close

@@ -1,0 +1,50 @@
+# Readiness Gap Report Schema
+
+version: "1.0"
+description: "Schema for capturing the gaps that prevent a Strategy Candidate from proceeding to backtesting."
+
+required_fields:
+  - gap_report_id
+  - linked_strategy_candidate_id
+  - linked_readiness_id
+  - source_candidate_file
+  - source_readiness_file
+  - readiness_status_observed
+  - missing_fields
+  - incomplete_fields
+  - unknown_fields
+  - blocking_issues
+  - warnings
+  - remediation_actions
+  - required_human_inputs
+  - required_data_clarifications
+  - required_risk_clarifications
+  - required_execution_clarifications
+  - required_validation_clarifications
+  - recommended_next_status
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  recommended_next_status:
+    - needs_more_detail
+    - revise_candidate
+    - reject_candidate
+    - request_human_review
+
+forbidden_statuses:
+  - approved_strategy
+  - approved_backtest
+  - approved_signal
+  - paper_trading
+  - live_trading
+
+safety_rules:
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

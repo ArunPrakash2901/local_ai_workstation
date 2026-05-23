@@ -1,0 +1,43 @@
+# Synthetic Result Review Schema
+
+version: "1.0"
+description: "Schema for reviewing synthetic backtest results and labeling them for plumbing-only use."
+
+required_fields:
+  - synthetic_review_id
+  - linked_synthetic_run_id
+  - review_status
+  - synthetic_fixture_confirmed
+  - real_market_data_used
+  - real_strategy_logic_used
+  - candidate_strategy_executed
+  - metrics_present
+  - limitations_present
+  - forbidden_interpretations_absent
+  - acceptable_for_engine_plumbing_validation
+  - acceptable_for_strategy_evaluation
+  - blocking_issues
+  - warnings
+  - human_review_required
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+
+allowed_values:
+  review_status:
+    - valid_synthetic_plumbing_test
+    - blocked
+    - invalid
+    - needs_human_review
+
+safety_rules:
+  - real_market_data_used MUST be false
+  - real_strategy_logic_used MUST be false
+  - candidate_strategy_executed MUST be false
+  - acceptable_for_strategy_evaluation MUST be false
+  - safety_financial_advice_generated MUST be false
+  - safety_trading_signal_generated MUST be false
+  - safety_bot_logic_generated MUST be false
+  - safety_live_trading_logic_generated MUST be false

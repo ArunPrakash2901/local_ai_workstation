@@ -1,0 +1,41 @@
+{
+  "synthetic_run_id": "SYN-f30f839cbcb1",
+  "linked_strategy_candidate_id": "CAN-951be4d5c93a-R3",
+  "linked_manual_dataset_import_id": "UNKNOWN",
+  "linked_preflight_id": "UNKNOWN",
+  "run_status": "synthetic_smoke_test_only",
+  "synthetic_fixture": true,
+  "real_market_data_used": false,
+  "real_strategy_logic_used": false,
+  "candidate_strategy_executed": false,
+  "execution_allowed_for_real_candidate": false,
+  "input_fixture_path": "scratch/quant_data_imports/example_spy_daily_synthetic.csv",
+  "row_count": 5,
+  "columns_used": [
+    "timestamp",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "initial_capital": 10000,
+  "toy_exposure_rule": "passive long synthetic fixture for arithmetic validation",
+  "equity_curve": [
+    10000,
+    10035.225048923678,
+    10062.622309197652,
+    10068.49315068493,
+    10095.890410958902
+  ],
+  "metrics": {
+    "total_return": 0.009589041095890207,
+    "final_equity": 10095.890410958902
+  },
+  "limitations": "Synthetic arithmetic only. Not a performance result.",
+  "created_at": "2026-05-22T05:06:22.455895+00:00",
+  "safety_financial_advice_generated": false,
+  "safety_trading_signal_generated": false,
+  "safety_bot_logic_generated": false,
+  "safety_live_trading_logic_generated": false
+}
