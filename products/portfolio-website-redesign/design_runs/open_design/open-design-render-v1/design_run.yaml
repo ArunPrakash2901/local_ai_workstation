@@ -1,0 +1,28 @@
+{
+  "run_id": "open-design-render-v1",
+  "product_id": "portfolio-website-redesign",
+  "tool": "open-design",
+  "status": "PREPARED_NOT_EXECUTED",
+  "execution_mode": "NOT_EXECUTED",
+  "created_at": "2026-05-24T14:06:46Z",
+  "source_artifacts": {
+    "active_scope_lock": "scope_locks/scope_lock_v2.md",
+    "active_scope_lock_hash": "375c515260c14d87e77655f3e46a6f8eabba8edb52d854ed8a12646f50456871",
+    "active_prd": "prds/prd_v2.md",
+    "active_prd_hash": "92bb6bbf237f2ba27e56bc74424366c681756bc37cdee5a02b4e1f1af808d513",
+    "active_wireframe": "wireframes/wireframe_v1.md",
+    "active_wireframe_hash": "157b72805487baf8c5bc9014b054d30f271683ba76d568e802a1a1f21ef86010",
+    "active_technical_plan": "technical_plans/technical_plan_v1.md",
+    "active_technical_plan_hash": "efa9b338e1314ff6e4eb6f4676bf7125e8cd51e973130bc4a0e8d20c167bcc55"
+  },
+  "allowed_write_root": "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/",
+  "forbidden_paths": [
+    "src/",
+    "app/",
+    "components/",
+    "package.json"
+  ],
+  "external_calls_policy": "NOT_ALLOWED_IN_PREPARE_PHASE",
+  "validation_status": "PREPARED",
+  "operator_review_status": "NOT_REVIEWED"
+}

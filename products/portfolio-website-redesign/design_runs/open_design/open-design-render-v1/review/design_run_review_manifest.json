@@ -1,0 +1,26 @@
+{
+  "product_id": "portfolio-website-redesign",
+  "tool": "open-design",
+  "run_id": "open-design-render-v1",
+  "review_status": "PASS",
+  "generated_at": "2026-05-24T14:27:48Z",
+  "source_packet_files": {
+    "design_run.yaml": "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/design_run.yaml",
+    "design_input.yaml": "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/design_input.yaml",
+    "design_prompt.md": "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/design_prompt.md",
+    "operator_report.md": "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/operator_report.md"
+  },
+  "source_packet_hashes": {
+    "design_input.yaml": "cfa186739ba569585d4a46c9a3a4991603928a60635fdee20f40480b968ec645",
+    "design_prompt.md": "54f22dab136a3d91f82053cd110a20168531e3eee0cb14d81e39db3cc1b7cd3f",
+    "design_run.yaml": "a4d5c778e216370309336728b7e8b0caad7dfef3e30a2d1e104a04ad7d7a365c",
+    "operator_report.md": "2967075e630088221eac97d1a8d1b8e77d22bf4fc7da7dbdf0a3ad92956dda1c"
+  },
+  "output_files": [
+    "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/review/design_run_review.html",
+    "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/review/design_run_review_manifest.json",
+    "products/portfolio-website-redesign/design_runs/open_design/open-design-render-v1/review/design_run_review_report.md"
+  ],
+  "canonical_source_warning": "Markdown/YAML packet files are canonical source of truth. This HTML page is a human review surface only.",
+  "no_execution_statement": "Open Design was not executed by this command and no render output folders were created."
+}

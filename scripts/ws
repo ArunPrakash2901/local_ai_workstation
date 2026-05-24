@@ -100,6 +100,35 @@ case "$SUBCOMMAND" in
         echo "  product-implementation-plan --product <id> --dry-run Preview implementation planning readiness gate"
         echo "  product-implementation-plan-review --product <id> --dry-run Review implementation plan deterministically"
         echo "  product-implementation-exchange-preview --product <id> --dry-run Preview implementation exchange packet draft"
+        echo "  product-design-adapter-preview --product <id> --tool open-design --dry-run Preview design adapter sandbox run"
+        echo "  product-design-render --product <id> --tool open-design --dry-run Preview design render schema sandbox run"
+        echo "  product-design-run-prepare --product <id> --tool open-design --confirm Prepare sandbox design run packet files only"
+        echo "  product-design-run-status --product <id> --tool open-design Show prepared sandbox design run status"
+        echo "  product-design-run-review --product <id> --tool open-design [--dry-run|--confirm] Preview or write static design run review surface"
+        echo "  product-design-runtime-probe --tool open-design --dry-run Probe local Open Design runtime visibility without execution"
+        echo "  product-design-install-checklist --tool open-design --dry-run Preview manual Open Design install/evaluation checklist"
+        echo "  product-design-runtime-report --tool open-design --dry-run Show operator-friendly Open Design runtime visibility report"
+        echo ""
+        echo "Discovery Lane:"
+        echo "  discovery intake-set <path> Validate a set of phase-wise Markdown research reports"
+        echo "  discovery ingest-set <id> Ingest one READY_FOR_INGEST research set"
+        echo "  discovery approve-set <id> --dry-run Plan set-level approval review without approving"
+        echo "  discovery handoff-list  List approved Discovery Lane handoff bundles"
+        echo "  discovery queue-plan <id> [--write-report] Build non-executing execution queue plan"
+        echo "  discovery ingest       Ingest completed Markdown research reports into phase packets"
+        echo "  discovery status       Show Discovery Lane status and index"
+        echo "  discovery review-list  List phase packets needing human review"
+        echo "  discovery approve <id> [--branch <b>] Record human approval and handoff plan"
+        echo "  discovery reject <id> --reason <r> Record human rejection"
+        echo "  discovery handoff <id> Show approved handoff bundle"
+        echo "  discovery branch-plan <id> Show planned branch metadata"
+        echo "  discovery audit        Audit Discovery Lane state without execution"
+        echo "  discovery help         Show Discovery Lane help"
+        echo ""
+        echo "Product Development Lane:"
+        echo "  product-dev build-packet --queue <q> Build product-development artifacts from a READY Discovery queue"
+        echo "  product-dev audit       Audit Product Development Lane artifacts"
+        echo "  product-dev help        Show Product Development Lane help"
         echo ""
         echo "Exchange Lane (Phase 0):"
         echo "  exchange-new --target <t> --task-type <type> --summary <s> [--dry-run|--confirm]"
@@ -553,6 +582,36 @@ case "$SUBCOMMAND" in
         ;;
     product-implementation-exchange-preview)
         python3 "$SCRIPTS_DIR/ws_product_implementation_exchange_preview.py" "$@"
+        ;;
+    product-design-adapter-preview)
+        python3 "$SCRIPTS_DIR/ws_product_design_adapter_preview.py" "$@"
+        ;;
+    product-design-render)
+        python3 "$SCRIPTS_DIR/ws_product_design_render.py" "$@"
+        ;;
+    product-design-run-prepare)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_prepare.py" "$@"
+        ;;
+    product-design-run-status)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_status.py" "$@"
+        ;;
+    product-design-run-review)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_review.py" "$@"
+        ;;
+    product-design-runtime-probe)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_probe.py" "$@"
+        ;;
+    product-design-install-checklist)
+        python3 "$SCRIPTS_DIR/ws_product_design_install_checklist.py" "$@"
+        ;;
+    product-design-runtime-report)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_report.py" "$@"
+        ;;
+    discovery)
+        python3 "$WS_HOME/discovery_lane/tools/discovery_command.py" "$@"
+        ;;
+    product-dev)
+        python3 "$WS_HOME/product_development_lane/tools/product_dev_command.py" "$@"
         ;;
     exchange-new)
         python3 "$SCRIPTS_DIR/ws_exchange_new.py" "$@"

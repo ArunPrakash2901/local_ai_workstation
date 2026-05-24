@@ -49,9 +49,27 @@ Notes:
 - `ws product-prd-approve --product <product_id> --confirm` (GUARDED_WRITE): Writes `decisions/prd_approval.md` and updates PRD approval metadata in `product.yaml`.
 - `ws product-prd-status --product <product_id>` (PURE_READ): Reports PRD artifact maturity and presence checks only. No writes.
 - `ws product-wireframe --product <product_id> --dry-run` (DRY_RUN_ONLY): Previews deterministic text/ASCII wireframes from approved PRD and locked scope. No writes.
+- `ws product-design-adapter-preview --product <product_id> --tool open-design --dry-run` (DRY_RUN_ONLY): Previews a future Open Design adapter sandbox run from active scope/PRD/wireframe artifacts. No writes and no tool execution.
+- `ws product-design-render --product <product_id> --tool open-design --dry-run` (DRY_RUN_ONLY): Previews future design run schema artifacts and sandbox paths from active scope/PRD/wireframe artifacts. No writes and no tool execution.
+- `ws product-design-run-prepare --product <product_id> --tool open-design --confirm` (GUARDED_WRITE): Writes only sandbox packet files for a future Open Design run under `products/<product_id>/design_runs/open_design/open-design-render-v1/`. No tool execution.
+- `ws product-design-run-status --product <product_id> --tool open-design` (PURE_READ): Reads prepared sandbox run metadata and file presence only. No writes.
+- `ws product-design-run-review --product <product_id> --tool open-design --dry-run` (DRY_RUN_ONLY): Previews static review artifact generation for a prepared run packet. No writes.
+- `ws product-design-run-review --product <product_id> --tool open-design --confirm` (LOCAL_REPORT_WRITE): Writes static HTML/JSON/Markdown review artifacts under `products/<product_id>/design_runs/open_design/open-design-render-v1/review/` only. No tool execution.
+- `ws product-design-runtime-probe --tool open-design --dry-run` (DRY_RUN_ONLY): Read-only local runtime visibility probe for future render execution planning. No writes and no tool execution.
+- `ws product-design-install-checklist --tool open-design --dry-run` (DRY_RUN_ONLY): Previews the manual Open Design install/evaluation checklist and current runtime probe summary. No writes, no installs, and no tool execution.
+- `ws product-design-runtime-report --tool open-design --dry-run` (DRY_RUN_ONLY): Shows an operator-friendly runtime visibility report from read-only probe checks. No writes and no tool execution.
 
 Current Product Lane commands do not call agents, models, providers, browser automation, cloud CLIs, or apply workflows outside `products/<product_id>/`.
 `ws product-wireframe --dry-run` does not write `wireframes.md`, does not update `product.yaml`, and does not create UX/technical/build planning files.
+`ws product-design-adapter-preview --dry-run` does not create `design_runs/`, does not execute or install Open Design, and does not write `design_input.yaml`, `design_prompt.md`, or `design_run.yaml`.
+`ws product-design-render --dry-run` does not create `design_runs/`, does not execute or install Open Design, and previews planned schema files/folders only.
+`ws product-design-run-prepare --confirm` writes only sandbox packet files (`design_input.yaml`, `design_prompt.md`, `design_run.yaml`, optional `operator_report.md`) and does not execute or install Open Design.
+`ws product-design-run-status` is pure read and reports `NOT_PREPARED`/`PREPARED_NOT_EXECUTED` without running Open Design.
+`ws product-design-run-review --dry-run` previews review surface generation only, writes no files, and does not create `review/`.
+`ws product-design-run-review --confirm` writes only local review artifacts (`design_run_review.html`, `design_run_review_manifest.json`, `design_run_review_report.md`) under the prepared run `review/` directory; HTML is a review surface while Markdown/YAML packet files remain canonical.
+`ws product-design-runtime-probe --dry-run` reports PATH/runtime visibility and readiness classification only; it does not execute Open Design, does not execute agent CLIs, does not install tools, and does not write files.
+`ws product-design-install-checklist --dry-run` previews manual evaluation guidance only; it does not install Open Design, does not run package managers, and does not write files.
+`ws product-design-runtime-report --dry-run` provides a read-only runtime visibility report; it does not execute Open Design, does not run package managers, and does not write files.
 `ws product-scope-change --dry-run` does not write decision records, does not update `product.yaml`, and does not regenerate scope/PRD/wireframes.
 `ws product-scope-change --confirm` does not rewrite `scope_lock.md`, does not rewrite `prd.md`, does not edit `answers.md`, and does not generate a revised scope lock in this slice.
 `ws product-scope-revision --dry-run` does not write `scope_lock_v2.md`, does not update `product.yaml`, and does not regenerate `prd.md`.

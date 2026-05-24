@@ -64,6 +64,15 @@ Current Product Lane supports:
 - Approving deterministic PRD metadata (`ws product-prd-approve --product <id> --confirm`)
 - Reading PRD artifact maturity (`ws product-prd-status --product <id>`)
 - Previewing deterministic text/ASCII wireframes (`ws product-wireframe --product <id> --dry-run`)
+- Previewing Open Design adapter input/sandbox run (`ws product-design-adapter-preview --product <id> --tool open-design --dry-run`)
+- Previewing Open Design render schema/sandbox run (`ws product-design-render --product <id> --tool open-design --dry-run`)
+- Preparing Open Design sandbox packet files only (`ws product-design-run-prepare --product <id> --tool open-design --confirm`)
+- Reading Open Design sandbox packet status (`ws product-design-run-status --product <id> --tool open-design`)
+- Previewing Open Design run review artifacts (`ws product-design-run-review --product <id> --tool open-design --dry-run`)
+- Writing Open Design run review artifacts (`ws product-design-run-review --product <id> --tool open-design --confirm`)
+- Probing Open Design runtime visibility without execution (`ws product-design-runtime-probe --tool open-design --dry-run`)
+- Previewing Open Design manual install/evaluation checklist (`ws product-design-install-checklist --tool open-design --dry-run`)
+- Showing Open Design runtime visibility report (`ws product-design-runtime-report --tool open-design --dry-run`)
 
 See `products/README.md` for the on-disk registry layout.
 
@@ -157,6 +166,15 @@ wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-prd --product <product
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-lock-scope --product <product_id> --confirm'
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-prd --product <product_id> --dry-run'
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-wireframe --product <product_id> --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-adapter-preview --product <product_id> --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-render --product <product_id> --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-run-prepare --product <product_id> --tool open-design --confirm'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-run-status --product <product_id> --tool open-design'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-run-review --product <product_id> --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-run-review --product <product_id> --tool open-design --confirm'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-probe --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-install-checklist --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-report --tool open-design --dry-run'
 ```
 
 ### Safety Notes
@@ -177,6 +195,18 @@ wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-wireframe --product <p
 - `ws product-prd --confirm` is `GUARDED_WRITE`, requires `SCOPE_LOCKED`, writes immutable `prd.md`, and updates `product.yaml` metadata (`updated_at`, `last_action`, `prd_created_at`).
 - `ws product-prd-status` is `PURE_READ` and reports PRD readiness metadata without writing files.
 - `ws product-wireframe --dry-run` is `DRY_RUN_ONLY`, requires `SCOPE_LOCKED`, `prd_status=APPROVED`, `scope_lock.md`, `scope_lock_hash`, and `prd.md`, writes no files, and does not create `wireframes.md`.
+- `ws product-design-adapter-preview --dry-run` is `DRY_RUN_ONLY`, validates active scope/PRD/wireframe hashes and deterministic wireframe review `PASS`, writes no files, does not create `design_runs/`, and does not execute or install Open Design.
+- `ws product-design-render --dry-run` is `DRY_RUN_ONLY`, validates active scope/PRD/wireframe hashes and deterministic wireframe review `PASS`, previews design run schema paths/files, writes no files, does not create `design_runs/`, and does not execute or install Open Design.
+- `ws product-design-run-prepare` is `GUARDED_WRITE`, requires explicit `--confirm`, writes only sandbox packet files under `products/<id>/design_runs/open_design/open-design-render-v1/`, and does not execute or install Open Design.
+- `ws product-design-run-status` is `PURE_READ`, reports prepared sandbox packet state only, and does not execute or install Open Design.
+- `ws product-design-run-review --dry-run` is `DRY_RUN_ONLY`, validates prepared run packet safety fields, previews static review artifact paths, writes no files, and does not execute or install Open Design.
+- `ws product-design-run-review --confirm` is `LOCAL_REPORT_WRITE`, writes only static review artifacts under `products/<id>/design_runs/open_design/open-design-render-v1/review/`, does not update `product.yaml`, and does not execute or install Open Design.
+- `ws product-design-runtime-probe --dry-run` is `DRY_RUN_ONLY`, reports local runtime PATH/prerequisite visibility only, writes no files, does not execute Open Design, does not execute agent CLIs, and does not install tools.
+- `ws product-design-install-checklist --dry-run` is `DRY_RUN_ONLY`, previews manual install/evaluation steps and stop conditions only, writes no files, does not install Open Design, and does not execute package managers.
+- `ws product-design-runtime-report --dry-run` is `DRY_RUN_ONLY`, reports operator-friendly runtime visibility only, writes no files, does not execute Open Design, and does not execute package managers.
+- Human shortcut for this preview is `/design`; canonical machine command is `ws product-design-adapter-preview --product <id> --tool open-design --dry-run`.
+- Planned human subaction is `/design render`; canonical machine command is `ws product-design-render --product <id> --tool open-design --dry-run`.
+- Planned human subactions include `/design prepare`, `/design status`, `/design review`, `/design probe`, `/design install-check`, and `/design runtime` mapped to canonical `ws product-design-run-prepare`, `ws product-design-run-status`, `ws product-design-run-review`, `ws product-design-runtime-probe`, `ws product-design-install-checklist`, and `ws product-design-runtime-report`.
 - `ws product-new` requires `--confirm` for actual creation; use `--dry-run` first to preview paths and the record.
 - `ws product-intake --confirm` requires `--product <product_id>`; use `--dry-run` first.
 - `ws product-answer-import --confirm` requires both `--product <product_id>` and `--file <answers_file>`.

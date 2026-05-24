@@ -1514,6 +1514,206 @@ commands:
     - scripts/ws_product_implementation_exchange_preview.py
     confidence: high
     notes: deterministic no-write exchange preview; requires implementation plan review PASS; no model/provider/agent calls
+  ws product-design-adapter-preview --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews Open Design adapter inputs and sandbox design run path from approved Product Lane artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview product design adapter run
+    warning_label: ''
+    evidence:
+    - SLASH_COMMAND_INTEGRATION_POLICY.md
+    - scripts/product_design_adapter.py
+    - scripts/ws_product_design_adapter_preview.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design
+    notes: previews Open Design adapter inputs and sandbox path only; no tool execution or install and no writes
+  ws product-design-render --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews Open Design render sandbox path and planned artifact schema from approved Product Lane artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview product design render
+    warning_label: ''
+    evidence:
+    - PRODUCT_DESIGN_RUN_SCHEMA.md
+    - scripts/product_design_adapter.py
+    - scripts/ws_product_design_render.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design render
+    notes: previews Open Design render sandbox and artifact schema only; no tool execution or install and no writes
+  ws product-design-run-prepare:
+    safety_class: GUARDED_WRITE
+    description: Prepares sandboxed Open Design run packet files from approved Product Lane artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Prepare product design run packet
+    warning_label: Writes sandboxed design input packet files only
+    evidence:
+    - PRODUCT_DESIGN_RUN_SCHEMA.md
+    - scripts/product_design_run.py
+    - scripts/ws_product_design_run_prepare.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design prepare
+    notes: prepares Open Design input packet files under products/<id>/design_runs/open_design/open-design-render-v1/; does not execute/install Open Design and does not write app/source repos
+  ws product-design-run-status:
+    safety_class: PURE_READ
+    description: Shows prepared sandbox Open Design run status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show product design run status
+    warning_label: ''
+    evidence:
+    - scripts/product_design_run.py
+    - scripts/ws_product_design_run_status.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design status
+    notes: reads sandboxed design run metadata only; does not execute or install Open Design
+  ws product-design-run-review --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews static HTML review artifacts for a prepared Open Design run packet.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview product design run review
+    warning_label: ''
+    evidence:
+    - scripts/product_design_run_review.py
+    - scripts/ws_product_design_run_review.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design review
+    notes: previews static HTML review generation only; no writes and no Open Design execution
+  ws product-design-run-review --confirm:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes static HTML review artifacts for a prepared Open Design run packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Write product design run review surface
+    warning_label: Writes local review report artifacts only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: product_design_run_review
+    evidence:
+    - scripts/product_design_run_review.py
+    - scripts/ws_product_design_run_review.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design review-write
+    notes: writes review/design_run_review.html, review/design_run_review_manifest.json, and review/design_run_review_report.md only; does not execute Open Design or modify source packet artifacts
+  ws product-design-runtime-probe --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Probes local Open Design runtime prerequisite visibility without execution or installation.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Probe product design runtime
+    warning_label: ''
+    evidence:
+    - OPEN_DESIGN_EXECUTION_READINESS_AUDIT.md
+    - PRODUCT_DESIGN_RENDER_CONFIRM_PLAN.md
+    - scripts/product_design_runtime_probe.py
+    - scripts/ws_product_design_runtime_probe.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design probe
+    notes: read-only PATH/prerequisite probe only; does not execute Open Design, does not execute agent CLIs, does not install tools, and does not write files
+  ws product-design-install-checklist --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews manual Open Design install/evaluation checklist and current runtime probe summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview Open Design install checklist
+    warning_label: ''
+    evidence:
+    - OPEN_DESIGN_MANUAL_INSTALL_EVALUATION_CHECKLIST.md
+    - scripts/product_design_install_checklist.py
+    - scripts/ws_product_design_install_checklist.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design install-check
+    notes: checklist preview only; no install, no Open Design execution, and no package manager execution
+  ws product-design-runtime-report --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Shows operator-friendly Open Design runtime visibility report from safe read-only probe checks.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show Open Design runtime report
+    warning_label: ''
+    evidence:
+    - OPEN_DESIGN_EXECUTION_READINESS_AUDIT.md
+    - scripts/product_design_runtime_probe.py
+    - scripts/ws_product_design_runtime_report.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime
+    notes: safe read-only runtime visibility report; no secret values, no install, and no Open Design execution
+
   ws knowledge-inventory --dry-run:
     safety_class: DRY_RUN_ONLY
     description: Previews knowledge raw-data inventory metadata (counts, sizes, extensions).
@@ -1534,6 +1734,410 @@ commands:
     - scripts/ws_knowledge_inventory.py
     confidence: high
     notes: metadata-only inventory; no raw content parsing; no writes
+  ws discovery ingest:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Ingests completed Markdown research reports into Discovery Lane phase packets, worker prompts, manifests, and index.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Ingest discovery reports
+    warning_label: Writes local Discovery Lane report and handoff-prep artifacts
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/ingest_research_reports.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Reads Markdown reports already supplied by the operator and writes derived Discovery Lane artifacts only; no browser research, model/provider calls, worker execution, or git actions.
+  ws discovery intake-set:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Validates a set of already-created phase-wise Markdown research reports and writes set-level intake metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Intake discovery research set
+    warning_label: Writes local Discovery Lane research-set manifests and intake reports
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_research_set_artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/intake_research_set.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Reads Markdown reports already supplied by the operator and writes research set manifest/intake report artifacts only; no phase packet generation, approval, worker execution, model/provider calls, branch creation, commit, push, or merge.
+  ws discovery ingest-set:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Ingests one READY_FOR_INGEST Discovery Lane research set into set-prefixed phase packets, worker prompts, manifests, and set ingest reports.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Ingest discovery research set
+    warning_label: Writes local Discovery Lane report artifacts for one research set
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_research_set_ingest_artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/ingest_research_set.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Reads only source reports listed in a READY_FOR_INGEST research set manifest and writes derived Discovery Lane artifacts; no approval, handoff, branch creation, worker execution, model/provider calls, commit, push, or merge.
+  ws discovery approve-set --dry-run:
+    safety_class: PURE_READ
+    description: Previews which generated packets from one ingested Discovery Lane research set are ready for human approval.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview discovery set approval review
+    warning_label: ''
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/approve_research_set.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Dry-run review planner only; reads ingest manifests, generated packets, worker prompts, phase manifests, approval records, and handoffs; no approval, handoff creation, branch-plan creation, worker execution, branch creation, model/provider calls, commit, push, or merge.
+  ws discovery approve-set --dry-run --write-report:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes an advisory Markdown approval review plan for one ingested Discovery Lane research set.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Write discovery set approval review plan
+    warning_label: Writes local Discovery Lane report/status approval review plan
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_approval_review_plan
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/approve_research_set.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes only approval_records/<set_id>_approval_review_plan.md as an advisory report; does not approve packets, create handoffs, create branch plans, execute workers, create branches, call models, commit, push, or merge.
+  ws discovery handoff-list:
+    safety_class: PURE_READ
+    description: Lists approved Discovery Lane handoff bundles and planned branch metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: List discovery handoffs
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read handoff registry view; no worker execution, branch creation, checkout, approval, handoff creation, model/provider calls, commit, push, or merge.
+  ws discovery queue-plan:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Builds a non-executing execution queue manifest for one Discovery Lane research set.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Build discovery execution queue plan
+    warning_label: Writes local Discovery Lane report/status execution queue plan
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_execution_queue_artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/build_execution_queue.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes execution queue planning artifacts only; does not execute worker prompts, create or checkout branches, approve packets, create handoffs, call models, commit, push, or merge.
+  ws discovery queue-plan --write-report:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Builds a non-executing execution queue manifest and Markdown report for one Discovery Lane research set.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Build discovery execution queue report
+    warning_label: Writes local Discovery Lane report/status execution queue report
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: discovery_lane_execution_queue_report_artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/build_execution_queue.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes execution queue JSON and Markdown report only; does not execute worker prompts, create or checkout branches, approve packets, create handoffs, call models, commit, push, or merge.
+  ws discovery status:
+    safety_class: PURE_READ
+    description: Shows Discovery Lane status counts and discovery index.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show discovery status
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read status summary over Discovery Lane files; no writes, execution, model/provider calls, or git actions.
+  ws discovery review-list:
+    safety_class: PURE_READ
+    description: Lists Discovery Lane packets that need human review.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: List discovery review queue
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read review queue summary; no writes, execution, model/provider calls, or git actions.
+  ws discovery approve:
+    safety_class: GUARDED_WRITE
+    description: Records human approval of a reviewed Discovery Lane phase packet and creates handoff and branch-plan artifacts.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Approve discovery handoff
+    warning_label: Writes Discovery Lane approval, handoff, and branch-plan artifacts
+    evidence:
+    - discovery_lane/README.md
+    - discovery_lane/tools/approve_phase_packet.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes only under discovery_lane approval/handoff/branch-plan paths; does not execute worker prompts and does not create, checkout, merge, push, or delete branches.
+  ws discovery reject:
+    safety_class: GUARDED_WRITE
+    description: Records human rejection of a Discovery Lane phase packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Reject discovery packet
+    warning_label: Writes Discovery Lane rejection record and rejected packet snapshot
+    evidence:
+    - discovery_lane/tools/approve_phase_packet.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes rejection metadata and snapshot only under discovery_lane; no worker execution, model/provider calls, or git actions.
+  ws discovery handoff:
+    safety_class: PURE_READ
+    description: Shows an approved Discovery Lane handoff bundle.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show discovery handoff
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read handoff inspection; no writes, execution, model/provider calls, or git actions.
+  ws discovery branch-plan:
+    safety_class: PURE_READ
+    description: Shows a Discovery Lane planned branch metadata record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show discovery branch plan
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read branch-plan inspection; branch status remains PLANNED_NOT_CREATED and no git action is performed.
+  ws discovery audit:
+    safety_class: PURE_READ
+    description: Audits Discovery Lane structure, manifests, approvals, handoffs, and branch plans without writing files.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Audit discovery lane
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/audit_discovery_lane.py
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read safety audit; no writes, worker execution, model/provider calls, or git actions.
+  ws discovery help:
+    safety_class: PURE_READ
+    description: Shows Discovery Lane command help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show discovery help
+    warning_label: ''
+    evidence:
+    - discovery_lane/tools/discovery_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read help output only.
+  ws product-dev help:
+    safety_class: PURE_READ
+    description: Shows Product Development Lane command help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show product development lane help
+    warning_label: ''
+    evidence:
+    - product_development_lane/README.md
+    - product_development_lane/tools/product_dev_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read help output only; no worker execution, branch creation, model/provider calls, commit, push, or merge.
+  ws product-dev audit:
+    safety_class: PURE_READ
+    description: Audits Product Development Lane structure and generated planning artifacts without writing files.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Audit product development lane
+    warning_label: ''
+    evidence:
+    - product_development_lane/tools/audit_product_development_lane.py
+    - product_development_lane/tools/product_dev_command.py
+    - scripts/ws
+    confidence: high
+    notes: Read-only audit of Product Development Lane artifacts; no worker execution, branch creation, model/provider calls, commit, push, or merge.
+  ws product-dev build-packet:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Builds non-executing Product Development Lane artifacts from a READY Discovery Lane queue manifest.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Build product development packet
+    warning_label: Writes local report/status Product Development Lane planning artifacts
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: product_development_lane_artifacts
+    evidence:
+    - product_development_lane/README.md
+    - product_development_lane/tools/build_product_packet.py
+    - product_development_lane/tools/product_dev_command.py
+    - scripts/ws
+    confidence: high
+    notes: Reads a READY Discovery Lane execution queue plus referenced approved handoff artifacts and writes product packet, PRD brief, wireframe brief, UI/UX brief, feature spec, implementation plan, manifest, and report; does not modify Discovery artifacts, execute worker prompts, create branches, call models/providers, commit, push, or merge.
   ws exchange-new --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
