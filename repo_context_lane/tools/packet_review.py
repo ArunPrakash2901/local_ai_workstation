@@ -3,8 +3,7 @@ import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
-import inventory
-from inventory import RISKY_FOLDERS, RISKY_EXTENSIONS
+from .inventory import RISKY_FOLDERS, RISKY_EXTENSIONS
 
 def list_packets(output_root: Path) -> List[Dict[str, Any]]:
     packet_dir = output_root / "context_packets"

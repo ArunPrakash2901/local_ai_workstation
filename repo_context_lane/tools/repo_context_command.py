@@ -7,12 +7,13 @@ import json
 from pathlib import Path
 from typing import Optional, Iterable
 
-import inventory
-import graphify_plan
-import summarize
-import context_packet
-import packet_review
-import audit_repo_context_lane
+from . import inventory
+from . import graphify_plan
+from . import summarize
+from . import context_packet
+from . import packet_review
+from . import context_handoff
+from . import audit_repo_context_lane
 
 DEFAULT_ROOT = Path("repo_context_lane")
 
@@ -149,6 +150,28 @@ def command_packet_approve(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+def command_handoff(args: argparse.Namespace) -> int:
+    try:
+        packet_path = Path(args.packet)
+        target = args.target
+        output_root = Path(args.output or DEFAULT_ROOT)
+        success, message, manifest = context_handoff.generate_handoff(packet_path, target, output_root, dry_run=args.dry_run)
+        
+        if success:
+            if args.dry_run:
+                print(json.dumps(manifest, indent=2))
+            else:
+                print(f"SUCCESS: {message}")
+                print(f"Handoff: {output_root}/handoffs/")
+                print(f"Manifest: {output_root}/handoff_manifests/")
+            return 0
+        else:
+            print(f"FAILURE: {message}", file=sys.stderr)
+            return 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Repo Context Lane command dispatcher.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -193,6 +216,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_app.add_argument("--output", help="Output root.")
     p_app.add_argument("--confirm", action="store_true", help="Required confirmation flag.")
     p_app.set_defaults(func=command_packet_approve)
+
+    handoff = sub.add_parser("handoff", help="Generate a context handoff for a target agent.")
+    handoff.add_argument("--packet", required=True, help="Path to approved packet JSON.")
+    handoff.add_argument("--target", required=True, choices=["codex", "gemini", "local"], help="Target agent.")
+    handoff.add_argument("--output", help="Output root.")
+    handoff.add_argument("--dry-run", action="store_true", help="Print result without writing files.")
+    handoff.set_defaults(func=command_handoff)
 
     aud = sub.add_parser("audit", help="Audit Repo Context Lane state.")
     aud.add_argument("--root", help="Lane root.")

@@ -2,8 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
-import inventory
-from inventory import RISKY_FOLDERS, RISKY_EXTENSIONS
+from .inventory import RISKY_FOLDERS, RISKY_EXTENSIONS
 
 REQUIRED_FOLDERS = [
     "project_inventories",
@@ -11,6 +10,8 @@ REQUIRED_FOLDERS = [
     "graph_summaries",
     "context_packets",
     "review_reports",
+    "handoffs",
+    "handoff_manifests",
     "schemas",
     "tools"
 ]
@@ -25,6 +26,8 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
         "summaries": 0,
         "packets": 0,
         "reports": 0,
+        "handoffs": 0,
+        "manifests": 0,
         "invalid_json": 0
     }
     
@@ -121,6 +124,32 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
     if report_dir.exists():
         for path in report_dir.glob("*.md"):
             counts["reports"] += 1
+
+    # Check handoffs
+    handoff_dir = root / "handoffs"
+    if handoff_dir.exists():
+        for path in handoff_dir.glob("*.md"):
+            counts["handoffs"] += 1
+
+    # Check handoff_manifests
+    manifest_dir = root / "handoff_manifests"
+    if manifest_dir.exists():
+        for path in manifest_dir.glob("*.json"):
+            counts["manifests"] += 1
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    
+                    if data.get("execution_status") != "NOT_EXECUTED":
+                        errors.append(f"Handoff manifest has invalid execution_status: {path.name}")
+                    
+                    source_packet = data.get("source_packet")
+                    if source_packet and not Path(source_packet).exists():
+                        errors.append(f"Handoff manifest source packet missing: {path.name}")
+                        
+            except Exception as e:
+                errors.append(f"Invalid JSON in manifest: {path.name} ({e})")
+                counts["invalid_json"] += 1
 
     return {"errors": errors, "warnings": warnings}, counts
 

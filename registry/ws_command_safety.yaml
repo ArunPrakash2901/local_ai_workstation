@@ -2310,6 +2310,153 @@ commands:
     - scripts/ws
     confidence: high
     notes: Updates Runtime Session Lane blocker/session JSON only; does not run CLIs/models, approve prompts, create branches, commit, push, or merge.
+  ws runtime assign:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Records a runtime assignment metadata record for a session.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Assign runtime task source
+    warning_label: Writes local assignment status report only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_assignments
+    evidence:
+    - runtime_lane/contracts/runtime_assignment_contract.md
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Writes only runtime_lane/assignments/<assignment_id>.json; does not start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+    slash_command: /sessions assign
+  ws runtime assignment-list:
+    safety_class: PURE_READ
+    description: Lists runtime assignment metadata records.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: List runtime assignments
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read assignment registry listing only; no terminal start, CLI/model execution, prompt approval, branch creation, commit, push, or merge.
+    slash_command: /sessions assignments
+  ws runtime assignment-status:
+    safety_class: PURE_READ
+    description: Shows one runtime assignment metadata record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show runtime assignment status
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read assignment detail inspection only; no terminal start, CLI/model execution, prompt approval, branch creation, commit, push, or merge.
+  ws runtime update-assignment:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Updates an existing runtime assignment metadata status.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Update runtime assignment status
+    warning_label: Writes local assignment status report only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_assignments
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Updates only existing Runtime Session Lane assignment JSON; does not start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+  ws runtime workload:
+    safety_class: PURE_READ
+    description: Shows Runtime Session Lane workload dashboard.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show runtime workload dashboard
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read workload dashboard only; no terminal start, CLI/model execution, prompt approval, branch creation, commit, push, or merge.
+    slash_command: /sessions workload
+  ws runtime workload --write-report:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes a runtime workload dashboard report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Write runtime workload report
+    warning_label: Writes local workload report only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_workload_reports
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Writes only runtime_lane/workload_reports/runtime_workload_report.md; does not start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+  ws runtime unassigned:
+    safety_class: PURE_READ
+    description: Lists conservative unassigned runtime task-source candidates.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show unassigned runtime candidates
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read scan of conservative candidate task sources; does not assign anything, start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+    slash_command: /sessions unassigned
   ws exchange-new --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -5055,6 +5202,84 @@ commands:
     tui_dispatch_policy: preview_only
     tui_dispatch_allowed: false
     report_write_scope: repo_context_packet
+  ws repo-context packet-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists generated context packets.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: List Packets
+    evidence:
+    - repo_context_lane/tools/packet_review.py
+    confidence: high
+    notes: Reads context_packets/ directory.
+  ws repo-context packet-review --packet <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local safety review reports to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Reviews a context packet for safety.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Review Packet
+    evidence:
+    - repo_context_lane/tools/packet_review.py
+    confidence: high
+    notes: Validates candidates and metadata; writes review report.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_packet_review
+  ws repo-context packet-approve --packet <path> --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: 'Modifies context packet approval metadata'
+    safety_class: GUARDED_WRITE
+    description: Approves a context packet for downstream use.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Approve Packet
+    evidence:
+    - repo_context_lane/tools/packet_review.py
+    confidence: high
+    notes: Updates human_approval_status to APPROVED_FOR_CONTEXT_USE.
+  ws repo-context handoff --packet <path> --target <codex|gemini|local>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: 'Writes local handoff prompts and manifests'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates a bounded handoff for a downstream agent.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Context Handoff
+    evidence:
+    - repo_context_lane/tools/context_handoff.py
+    confidence: high
+    notes: Writes artifacts under repo_context_lane/handoffs/ and handoff_manifests/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_handoff
   ws repo-context help:
     read_only_strict: true
     read_only_with_local_reports: true

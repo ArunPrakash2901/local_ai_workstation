@@ -54,6 +54,12 @@ Runtime Lane:
 Knowledge Lane:
 - `/inventory`
 
+Repo Context Lane:
+- `/repo`
+- `/context`
+- `/graph`
+- `/map`
+
 ## Immediate Mapping Added In This Slice
 
 Slash command:
@@ -83,8 +89,18 @@ Planned subaction mapping:
 - `/design review-write`
 - `ws product-design-run-review --product <current_product> --tool open-design --confirm`
 
+Repo Context Lane Mapping:
+- `/repo inventory <path>`
+- `ws repo-context inventory --project <path> --dry-run`
+- `/repo plan <path>`
+- `ws repo-context graphify-plan --project <path> --dry-run`
+- `/repo summarize <path>`
+- `ws repo-context summarize --graph <path> --dry-run`
+- `/repo audit`
+- `ws repo-context audit`
+
 Safety inheritance:
-- safety class: `DRY_RUN_ONLY`
+- safety class: `PURE_READ`
 - writes: `false`
 - tool execution: `false`
 

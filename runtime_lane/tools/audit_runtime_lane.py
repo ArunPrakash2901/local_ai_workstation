@@ -21,11 +21,22 @@ if str(TOOL_DIR) not in sys.path:
 import runtime_session  # noqa: E402
 
 
-REQUIRED_FOLDERS = ("contracts", "adapters", "sessions", "blockers", "reports", "tools", "examples")
+REQUIRED_FOLDERS = (
+    "contracts",
+    "adapters",
+    "sessions",
+    "blockers",
+    "assignments",
+    "workload_reports",
+    "reports",
+    "tools",
+    "examples",
+)
 REQUIRED_CONTRACTS = (
     "runtime_session_contract.md",
     "adapter_profile_contract.md",
     "blocker_contract.md",
+    "runtime_assignment_contract.md",
 )
 REQUIRED_PROFILES = (
     "codex_cli_profile.json",
@@ -111,6 +122,46 @@ def audit_runtime_lane(root: Path) -> AuditResult:
         if not data.get("operator_action_required") and not data.get("suggested_safe_response"):
             result.error(f"{path}: blocker needs operator_action_required or suggested_safe_response")
 
+    for path in sorted((root / "assignments").glob("*.json")):
+        data = load_json(path, result)
+        if data is None:
+            continue
+        status = data.get("assignment_status")
+        if status not in runtime_session.ASSIGNMENT_STATUSES:
+            result.error(f"{path}: invalid assignment status {status!r}")
+        task_source_type = data.get("task_source_type")
+        if task_source_type not in runtime_session.TASK_SOURCE_TYPES:
+            result.error(f"{path}: invalid task_source_type {task_source_type!r}")
+        task_source_path = str(data.get("task_source_path", ""))
+        if task_source_path:
+            source_path = Path(task_source_path)
+            if status != "ABANDONED" and not data.get("task_source_missing") and not source_path.exists():
+                result.error(f"{path}: missing task_source_path {task_source_path}")
+        else:
+            result.error(f"{path}: missing task_source_path")
+        session_id = str(data.get("session_id", ""))
+        session_path = root / "sessions" / f"{session_id}.json"
+        if status in runtime_session.ACTIVE_ASSIGNMENT_STATUSES:
+            if not session_path.exists():
+                result.error(f"{path}: active assignment references missing session {session_id!r}")
+            else:
+                session = load_json(session_path, result)
+                if session is not None and data.get("adapter_id") != session.get("adapter_type"):
+                    result.error(f"{path}: adapter_id does not match session adapter_type")
+        for field in ("execution_allowed", "commit_allowed", "push_allowed", "merge_allowed"):
+            if data.get(field) not in {False, None}:
+                result.error(f"{path}: unsafe assignment field {field}={data.get(field)!r}")
+        if data.get("human_approval_required") not in {True, None}:
+            result.error(f"{path}: human_approval_required must default true")
+        for field in ("execution_performed", "branch_created", "commit_performed", "push_performed", "merge_performed", "git_actions_performed"):
+            if data.get(field) not in {False, None}:
+                result.error(f"{path}: assignment claims forbidden action field {field}={data.get(field)!r}")
+        if status in runtime_session.BLOCKED_ASSIGNMENT_STATUSES:
+            blocker_ids = data.get("blocker_ids", [])
+            notes = data.get("operator_notes", [])
+            if not blocker_ids and not notes:
+                result.error(f"{path}: blocked assignment requires blocker_ids or operator notes")
+
     return result
 
 
@@ -147,4 +198,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

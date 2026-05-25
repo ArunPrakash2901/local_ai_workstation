@@ -204,6 +204,7 @@ CHECK_STEPS = (
     ("Product design runtime report validation", ROOT / "scripts" / "test_product_design_runtime_report.py"),
     ("Discovery Lane validation", ROOT / "scripts" / "test_discovery_lane.py"),
     ("Product Development Lane validation", ROOT / "scripts" / "test_product_development_lane.py"),
+    ("Repo Context Lane validation", ROOT / "scripts" / "test_repo_context_lane.py"),
     ("Runtime Session Lane validation", ROOT / "scripts" / "test_runtime_lane.py"),
     ("Knowledge inventory validation", ROOT / "scripts" / "test_knowledge_inventory.py"),
     ("Exchange registry validation", ROOT / "scripts" / "test_exchange_registry.py"),
@@ -268,6 +269,7 @@ def main() -> int:
 
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONPATH"] = str(ROOT)
     for step_name, script_path in CHECK_STEPS:
         rc = run_python_step(step_name, script_path, env)
         if rc != 0:

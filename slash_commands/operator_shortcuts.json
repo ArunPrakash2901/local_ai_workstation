@@ -23,6 +23,24 @@
       "safety_class": "DRY_RUN_ONLY",
       "writes_local_files": false,
       "tool_execution": false
+    },
+    {
+      "command": "/sessions",
+      "status": "PLANNED_MAPPING",
+      "default_action": "Show Runtime Session Lane status",
+      "maps_to": "ws runtime status",
+      "subactions": {
+        "register": "ws runtime register --session-id <id> --adapter <adapter_id> --label <label> --cwd <path> --lane <lane> --task <task>",
+        "blocker": "ws runtime report-blocker --session-id <id> --type <blocker_type> --description <description>",
+        "audit": "ws runtime audit",
+        "workload": "ws runtime workload",
+        "assign": "ws runtime assign --session-id <id> --task-source <path> --label <label> --type <task_source_type>",
+        "assignments": "ws runtime assignment-list",
+        "unassigned": "ws runtime unassigned"
+      },
+      "safety_class": "PURE_READ",
+      "writes_local_files": false,
+      "tool_execution": false
     }
   ]
 }

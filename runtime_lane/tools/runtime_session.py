@@ -9,10 +9,12 @@ perform git actions.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +38,40 @@ SESSION_STATUSES = {
     "CLOSED",
 }
 
+ASSIGNMENT_STATUSES = {
+    "PLANNED",
+    "ASSIGNED_NOT_STARTED",
+    "IN_PROGRESS",
+    "WAITING_FOR_OPERATOR_APPROVAL",
+    "BLOCKED_SESSION",
+    "BLOCKED_QUOTA",
+    "BLOCKED_DEPENDENCY",
+    "BLOCKED_MISSING_CONTEXT",
+    "COMPLETED_PENDING_REVIEW",
+    "CLOSED",
+    "ABANDONED",
+}
+
+ACTIVE_ASSIGNMENT_STATUSES = {
+    "PLANNED",
+    "ASSIGNED_NOT_STARTED",
+    "IN_PROGRESS",
+    "WAITING_FOR_OPERATOR_APPROVAL",
+    "BLOCKED_SESSION",
+    "BLOCKED_QUOTA",
+    "BLOCKED_DEPENDENCY",
+    "BLOCKED_MISSING_CONTEXT",
+    "COMPLETED_PENDING_REVIEW",
+}
+
+BLOCKED_ASSIGNMENT_STATUSES = {
+    "WAITING_FOR_OPERATOR_APPROVAL",
+    "BLOCKED_SESSION",
+    "BLOCKED_QUOTA",
+    "BLOCKED_DEPENDENCY",
+    "BLOCKED_MISSING_CONTEXT",
+}
+
 BLOCKER_TYPES = {
     "WAITING_FOR_PERMISSION_PROMPT",
     "QUOTA_EXHAUSTED_OR_RATE_LIMITED",
@@ -46,6 +82,17 @@ BLOCKER_TYPES = {
     "GIT_DIRTY_UNEXPECTED",
     "VALIDATION_FAILED",
     "UNKNOWN_BLOCKER",
+}
+
+TASK_SOURCE_TYPES = {
+    "discovery_execution_queue",
+    "discovery_handoff_bundle",
+    "product_development_manifest",
+    "product_development_implementation_plan",
+    "product_review_artifact",
+    "product_design_run_packet",
+    "manual_operator_task",
+    "other_metadata_artifact",
 }
 
 BLOCKER_STATUS_MAP = {
@@ -78,7 +125,7 @@ def require_id(value: str, label: str) -> str:
 
 
 def ensure_dirs(root: Path) -> None:
-    for name in ("sessions", "blockers"):
+    for name in ("sessions", "blockers", "assignments", "workload_reports"):
         (root / name).mkdir(parents=True, exist_ok=True)
 
 
@@ -107,6 +154,10 @@ def blocker_path(root: Path, blocker_id: str) -> Path:
     return root / "blockers" / f"{require_id(blocker_id, 'blocker_id')}.json"
 
 
+def assignment_path(root: Path, assignment_id: str) -> Path:
+    return root / "assignments" / f"{require_id(assignment_id, 'assignment_id')}.json"
+
+
 def adapter_profiles(root: Path) -> dict[str, dict[str, Any]]:
     profiles: dict[str, dict[str, Any]] = {}
     adapter_root = root / "adapters"
@@ -116,6 +167,469 @@ def adapter_profiles(root: Path) -> dict[str, dict[str, Any]]:
         if adapter_id:
             profiles[adapter_id] = data
     return profiles
+
+
+def load_session(root: Path, session_id: str) -> dict[str, Any]:
+    return load_json(session_path(root, session_id))
+
+
+def load_assignment(root: Path, assignment_id: str) -> dict[str, Any]:
+    return load_json(assignment_path(root, assignment_id))
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(8192), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def normalize_path_for_compare(path_text: str) -> Path:
+    path = Path(path_text).expanduser()
+    try:
+        return path.resolve()
+    except OSError:
+        return path.absolute()
+
+
+def open_blocker_ids(root: Path, session_id: str) -> list[str]:
+    blocker_ids: list[str] = []
+    for path in sorted((root / "blockers").glob("*.json")):
+        data = load_json(path)
+        if data.get("session_id") == session_id and not data.get("resolved_at"):
+            blocker_ids.append(str(data.get("blocker_id", path.stem)))
+    return blocker_ids
+
+
+def assignment_status_for_session(session: dict[str, Any], blocker_ids: list[str]) -> str:
+    session_status = str(session.get("status", ""))
+    if session_status == "BLOCKED_QUOTA":
+        return "BLOCKED_QUOTA"
+    if session_status == "WAITING_FOR_OPERATOR_APPROVAL":
+        return "WAITING_FOR_OPERATOR_APPROVAL"
+    if session_status in {"BLOCKED_ERROR", "BLOCKED_MISSING_CONTEXT"}:
+        return "BLOCKED_SESSION"
+    if blocker_ids:
+        return "BLOCKED_SESSION"
+    if session_status == "READY":
+        return "ASSIGNED_NOT_STARTED"
+    return "ASSIGNED_NOT_STARTED"
+
+
+def load_assignments(root: Path) -> list[dict[str, Any]]:
+    assignments: list[dict[str, Any]] = []
+    assignments_root = root / "assignments"
+    for path in sorted(assignments_root.glob("*.json")):
+        assignments.append(load_json(path))
+    return assignments
+
+
+def assignment_display_blockers(root: Path, assignment: dict[str, Any]) -> list[str]:
+    blockers = [str(blocker_id) for blocker_id in assignment.get("blocker_ids", []) if blocker_id]
+    if blockers:
+        return blockers
+    session_id = str(assignment.get("session_id", ""))
+    if session_id:
+        return open_blocker_ids(root, session_id)
+    return []
+
+
+def duplicate_active_assignment_exists(root: Path, session_id: str, task_source_path: Path) -> bool:
+    target = normalize_path_for_compare(str(task_source_path))
+    for assignment in load_assignments(root):
+        if assignment.get("session_id") != session_id:
+            continue
+        if str(assignment.get("assignment_status", "")) not in ACTIVE_ASSIGNMENT_STATUSES:
+            continue
+        existing_path = str(assignment.get("task_source_path", ""))
+        if existing_path and normalize_path_for_compare(existing_path) == target:
+            return True
+    return False
+
+
+def derive_task_source_checksum(path: Path) -> str:
+    if path.is_file():
+        return sha256_file(path)
+    return ""
+
+
+def assignment_is_blocked(assignment: dict[str, Any]) -> bool:
+    status = str(assignment.get("assignment_status", ""))
+    return status in BLOCKED_ASSIGNMENT_STATUSES
+
+
+def create_assignment(
+    root: Path,
+    *,
+    session_id: str,
+    task_source: str,
+    label: str,
+    task_source_type: str,
+    allow_duplicate: bool = False,
+) -> Path:
+    ensure_dirs(root)
+    session = load_session(root, session_id)
+    profiles = adapter_profiles(root)
+    adapter_id = str(session.get("adapter_type", ""))
+    if adapter_id not in profiles:
+        raise RuntimeSessionError(f"session references unknown adapter: {adapter_id}")
+    if task_source_type not in TASK_SOURCE_TYPES:
+        raise RuntimeSessionError(f"invalid task source type: {task_source_type}")
+    source_path = Path(task_source).expanduser()
+    if not source_path.exists():
+        raise RuntimeSessionError(f"task source does not exist: {task_source}")
+    resolved_source = normalize_path_for_compare(str(source_path))
+    if duplicate_active_assignment_exists(root, session_id, resolved_source) and not allow_duplicate:
+        raise RuntimeSessionError(f"active assignment already exists for session {session_id} and task source {resolved_source}")
+
+    blockers = open_blocker_ids(root, session_id)
+    now = utc_now()
+    assignment_id = require_id(
+        f"{session_id}__{task_source_type}__{source_path.stem}__{now.replace(':', '').replace('-', '').replace('Z', 'z')}",
+        "assignment_id",
+    )
+    session_status = assignment_status_for_session(session, blockers)
+    assignment = {
+        "assignment_id": assignment_id,
+        "session_id": session_id,
+        "adapter_id": adapter_id,
+        "assignment_label": label,
+        "task_source_type": task_source_type,
+        "task_source_path": str(resolved_source),
+        "task_source_checksum": derive_task_source_checksum(resolved_source),
+        "lane": session.get("lane", ""),
+        "intended_worker": adapter_id,
+        "assigned_at": now,
+        "last_updated": now,
+        "assignment_status": session_status if session_status.startswith("BLOCKED") or session_status == "WAITING_FOR_OPERATOR_APPROVAL" else "ASSIGNED_NOT_STARTED",
+        "priority": "normal",
+        "expected_outputs": [],
+        "allowed_write_roots": list(session.get("allowed_write_roots", [])) or [session.get("cwd", "")],
+        "forbidden_paths": list(session.get("forbidden_paths", [])),
+        "human_approval_required": True,
+        "depends_on_assignments": [],
+        "blocker_ids": blockers,
+        "quota_notes": session.get("quota_status", ""),
+        "operator_notes": [],
+        "execution_allowed": False,
+        "commit_allowed": False,
+        "push_allowed": False,
+        "merge_allowed": False,
+        "task_source_missing": False,
+    }
+    write_json(assignment_path(root, assignment_id), assignment)
+    return assignment_path(root, assignment_id)
+
+
+def update_assignment(root: Path, *, assignment_id: str, status: str, note: str) -> Path:
+    if status not in ASSIGNMENT_STATUSES:
+        raise RuntimeSessionError(f"invalid assignment status: {status}")
+    path = assignment_path(root, assignment_id)
+    data = load_json(path)
+    data["assignment_status"] = status
+    data["last_updated"] = utc_now()
+    notes = data.setdefault("operator_notes", [])
+    if not isinstance(notes, list):
+        notes = []
+        data["operator_notes"] = notes
+    if note:
+        notes.append({"timestamp": data["last_updated"], "note": note})
+    write_json(path, data)
+    return path
+
+
+def list_assignments(root: Path) -> list[dict[str, Any]]:
+    return load_assignments(root)
+
+
+def assignment_summary_line(assignment: dict[str, Any]) -> tuple[str, str]:
+    blockers = assignment.get("blocker_ids", [])
+    blocker_text = ", ".join(str(item) for item in blockers) if blockers else "none"
+    return (
+        f"- {assignment.get('assignment_id', '')} | session={assignment.get('session_id', '')} | "
+        f"adapter={assignment.get('adapter_id', '')} | status={assignment.get('assignment_status', '')} | "
+        f"last_updated={assignment.get('last_updated', '')}"
+    ), blocker_text
+
+
+def render_assignment_list(root: Path) -> str:
+    assignments = sorted(
+        list_assignments(root),
+        key=lambda item: (
+            str(item.get("last_updated", "")),
+            str(item.get("assignment_id", "")),
+        ),
+    )
+    lines = [
+        "Runtime Assignment Registry",
+        "===========================",
+        f"root: {root}",
+        f"assignments: {len(assignments)}",
+        "",
+    ]
+    if not assignments:
+        lines.append("- none")
+        return "\n".join(lines)
+    for assignment in assignments:
+        line, blocker_text = assignment_summary_line(assignment)
+        lines.append(line)
+        lines.append(f"  label: {assignment.get('assignment_label', '')}")
+        lines.append(f"  source: {assignment.get('task_source_path', '')}")
+        lines.append(f"  blockers: {blocker_text}")
+    return "\n".join(lines)
+
+
+def render_assignment_status(root: Path, assignment_id: str) -> str:
+    assignment = load_assignment(root, assignment_id)
+    session_id = str(assignment.get("session_id", ""))
+    session = load_session(root, session_id)
+    blockers = assignment_display_blockers(root, assignment)
+    lines = [
+        "Runtime Assignment Status",
+        "=========================",
+        f"root: {root}",
+        f"assignment_id: {assignment.get('assignment_id', '')}",
+        f"assignment_status: {assignment.get('assignment_status', '')}",
+        f"assignment_label: {assignment.get('assignment_label', '')}",
+        f"session_id: {session_id}",
+        f"session_status: {session.get('status', '')}",
+        f"session_blocked_reason: {session.get('blocked_reason', '')}",
+        f"adapter_id: {assignment.get('adapter_id', '')}",
+        f"intended_worker: {assignment.get('intended_worker', '')}",
+        f"task_source_type: {assignment.get('task_source_type', '')}",
+        f"task_source_path: {assignment.get('task_source_path', '')}",
+        f"task_source_checksum: {assignment.get('task_source_checksum', '')}",
+        f"lane: {assignment.get('lane', '')}",
+        f"priority: {assignment.get('priority', '')}",
+        f"quota_notes: {assignment.get('quota_notes', '')}",
+        f"human_approval_required: {assignment.get('human_approval_required', '')}",
+        f"execution_allowed: {assignment.get('execution_allowed', '')}",
+        f"commit_allowed: {assignment.get('commit_allowed', '')}",
+        f"push_allowed: {assignment.get('push_allowed', '')}",
+        f"merge_allowed: {assignment.get('merge_allowed', '')}",
+        f"blocked_by_session: {'yes' if session.get('status') in {'WAITING_FOR_OPERATOR_APPROVAL', 'BLOCKED_QUOTA', 'BLOCKED_ERROR', 'BLOCKED_MISSING_CONTEXT'} else 'no'}",
+        f"linked_blockers: {', '.join(blockers) if blockers else 'none'}",
+        "operator_notes:",
+    ]
+    notes = assignment.get("operator_notes", [])
+    if isinstance(notes, list) and notes:
+        for note in notes:
+            if isinstance(note, dict):
+                lines.append(f"- {note.get('timestamp', '')}: {note.get('note', '')}")
+            else:
+                lines.append(f"- {note}")
+    else:
+        lines.append("- none")
+    lines.extend([
+        "",
+        "Session Notes:",
+    ])
+    session_notes = session.get("operator_notes", [])
+    if isinstance(session_notes, list) and session_notes:
+        for note in session_notes:
+            if isinstance(note, dict):
+                lines.append(f"- {note.get('timestamp', '')}: {note.get('note', '')}")
+            else:
+                lines.append(f"- {note}")
+    else:
+        lines.append("- none")
+    return "\n".join(lines)
+
+
+def scan_unassigned_candidates(root: Path) -> list[dict[str, str]]:
+    repo_root = root.parent
+    candidates: list[tuple[str, Path]] = []
+    patterns = [
+        ("discovery_execution_queue", repo_root / "discovery_lane" / "execution_queues", "*.json"),
+        ("product_development_implementation_plan", repo_root / "product_development_lane" / "implementation_plans", "*.md"),
+        ("product_development_manifest", repo_root / "product_development_lane" / "manifests", "*.json"),
+        ("product_review_artifact_manifest", repo_root / "product_development_lane" / "review_artifacts" / "manifests", "*.json"),
+        ("product_design_run_packet", repo_root / "products", "*"),
+    ]
+    for source_type, base, pattern in patterns:
+        if source_type == "product_design_run_packet":
+            if base.exists():
+                for product_dir in sorted(base.glob("*")):
+                    if not product_dir.is_dir():
+                        continue
+                    run_base = product_dir / "design_runs" / "open_design"
+                    if not run_base.exists():
+                        continue
+                    for run_dir in sorted(run_base.glob("*")):
+                        design_run = run_dir / "design_run.yaml"
+                        if design_run.is_file():
+                            candidates.append((source_type, design_run))
+            continue
+        if base.exists():
+            for path in sorted(base.glob(pattern)):
+                if path.is_file():
+                    candidates.append((source_type, path))
+
+    assigned_paths = {
+        normalize_path_for_compare(str(assignment.get("task_source_path", "")))
+        for assignment in load_assignments(root)
+        if assignment.get("task_source_path")
+    }
+    visible: list[dict[str, str]] = []
+    for source_type, candidate in candidates:
+        candidate_path = normalize_path_for_compare(str(candidate))
+        if candidate_path not in assigned_paths:
+            visible.append({"task_source_type": source_type, "task_source_path": str(candidate_path)})
+    return visible
+
+
+def render_unassigned(root: Path) -> str:
+    candidates = scan_unassigned_candidates(root)
+    lines = [
+        "Runtime Unassigned Candidate Tasks",
+        "==================================",
+        f"root: {root}",
+        f"unassigned_candidates: {len(candidates)}",
+        "",
+    ]
+    if not candidates:
+        lines.append("- none")
+        return "\n".join(lines)
+    for candidate in candidates:
+        lines.append(f"- {candidate['task_source_type']} | {candidate['task_source_path']}")
+    return "\n".join(lines)
+
+
+def render_workload(root: Path) -> str:
+    sessions = list_sessions(root)
+    assignments = list_assignments(root)
+    assignments_by_session: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for assignment in assignments:
+        assignments_by_session[str(assignment.get("session_id", ""))].append(assignment)
+    blocked_sessions = [session for session in sessions if str(session.get("status", "")) in {"WAITING_FOR_OPERATOR_APPROVAL", "BLOCKED_QUOTA", "BLOCKED_ERROR", "BLOCKED_MISSING_CONTEXT"}]
+    pending_review = [assignment for assignment in assignments if str(assignment.get("assignment_status", "")) == "COMPLETED_PENDING_REVIEW"]
+    overloaded_sessions: list[tuple[str, int]] = []
+    for session in sessions:
+        active_assignments = [assignment for assignment in assignments_by_session.get(str(session.get("session_id", "")), []) if str(assignment.get("assignment_status", "")) in ACTIVE_ASSIGNMENT_STATUSES]
+        if len(active_assignments) > 3:
+            overloaded_sessions.append((str(session.get("session_id", "")), len(active_assignments)))
+    unassigned_candidates = scan_unassigned_candidates(root)
+
+    lines = [
+        "Runtime Workload Dashboard",
+        "==========================",
+        f"root: {root}",
+        f"generated_at: {utc_now()}",
+        f"sessions: {len(sessions)}",
+        f"assignments: {len(assignments)}",
+        f"blocked_sessions: {len(blocked_sessions)}",
+        f"blocked_assignments: {len([assignment for assignment in assignments if assignment_is_blocked(assignment)])}",
+        f"completed_pending_review: {len(pending_review)}",
+        f"overloaded_sessions: {len(overloaded_sessions)}",
+        f"unassigned_candidates: {len(unassigned_candidates)}",
+        "",
+        "Sessions:",
+    ]
+    if not sessions:
+        lines.append("- none")
+    for session in sessions:
+        session_id = str(session.get("session_id", ""))
+        session_assignments = sorted(assignments_by_session.get(session_id, []), key=lambda item: (str(item.get("assignment_status", "")), str(item.get("assignment_id", ""))))
+        active_assignments = [assignment for assignment in session_assignments if str(assignment.get("assignment_status", "")) in ACTIVE_ASSIGNMENT_STATUSES]
+        blocked_assignments = [assignment for assignment in session_assignments if assignment_is_blocked(assignment)]
+        completed_pending = [assignment for assignment in session_assignments if str(assignment.get("assignment_status", "")) == "COMPLETED_PENDING_REVIEW"]
+        overloaded = len(active_assignments) > 3
+        lines.append(
+            f"- {session_id} | adapter={session.get('adapter_type', '')} | status={session.get('status', '')} | "
+            f"active={len(active_assignments)} | blocked={len(blocked_assignments)} | pending_review={len(completed_pending)} | overloaded={'yes' if overloaded else 'no'}"
+        )
+        lines.append(f"  label: {session.get('session_label', '')}")
+        lines.append(f"  task: {session.get('assigned_task', '')}")
+        lines.append(f"  quota: {session.get('quota_status', '')}")
+        lines.append(f"  auth: {session.get('auth_mode', '')}")
+        if session.get("blocked_reason"):
+            lines.append(f"  blocked_reason: {session.get('blocked_reason')}")
+        if active_assignments:
+            lines.append("  active_assignments:")
+            for assignment in active_assignments:
+                lines.append(
+                    f"  - {assignment.get('assignment_id', '')} | {assignment.get('assignment_label', '')} | {assignment.get('assignment_status', '')} | {assignment.get('task_source_path', '')}"
+                )
+        else:
+            lines.append("  active_assignments: none")
+        if blocked_assignments:
+            lines.append("  blocked_assignments:")
+            for assignment in blocked_assignments:
+                lines.append(
+                    f"  - {assignment.get('assignment_id', '')} | {assignment.get('assignment_label', '')} | {assignment.get('assignment_status', '')}"
+                )
+        else:
+            lines.append("  blocked_assignments: none")
+        if completed_pending:
+            lines.append("  completed_pending_review:")
+            for assignment in completed_pending:
+                lines.append(
+                    f"  - {assignment.get('assignment_id', '')} | {assignment.get('assignment_label', '')}"
+                )
+        else:
+            lines.append("  completed_pending_review: none")
+        if overloaded:
+            lines.append("  recommended_attention: session has more than 3 active assignments; review ownership and split work if needed.")
+        elif blocked_assignments:
+            lines.append("  recommended_attention: investigate blockers before continuing.")
+        else:
+            lines.append("  recommended_attention: none")
+    lines.extend(
+        [
+            "",
+            "Blocked Sessions:",
+        ]
+    )
+    if not blocked_sessions:
+        lines.append("- none")
+    else:
+        for session in blocked_sessions:
+            lines.append(f"- {session.get('session_id', '')} | {session.get('status', '')} | {session.get('blocked_reason', '')}")
+    lines.extend(
+        [
+            "",
+            "Completed Pending Review Assignments:",
+        ]
+    )
+    if not pending_review:
+        lines.append("- none")
+    else:
+        for assignment in pending_review:
+            lines.append(
+                f"- {assignment.get('assignment_id', '')} | session={assignment.get('session_id', '')} | {assignment.get('assignment_label', '')}"
+            )
+    lines.extend(
+        [
+            "",
+            "Unassigned Candidate Tasks:",
+        ]
+    )
+    if not unassigned_candidates:
+        lines.append("- none")
+    else:
+        for candidate in unassigned_candidates:
+            lines.append(f"- {candidate['task_source_type']} | {candidate['task_source_path']}")
+    lines.extend(
+        [
+            "",
+            "Safety Reminder:",
+            "- workload is metadata only",
+            "- workload does not execute CLIs",
+            "- workload does not start terminals",
+            "- workload does not approve prompts",
+            "- workload does not create branches",
+            "- workload does not commit, push, or merge",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_workload_report(root: Path, content: str) -> Path:
+    ensure_dirs(root)
+    path = root / "workload_reports" / "runtime_workload_report.md"
+    path.write_text(content + "\n", encoding="utf-8")
+    return path
 
 
 def register_session(
@@ -336,6 +850,12 @@ python runtime_lane/tools/runtime_session.py register --session-id <id> --adapte
 python runtime_lane/tools/runtime_session.py update-status --session-id <id> --status <status> --note "<note>"
 python runtime_lane/tools/runtime_session.py report-blocker --session-id <id> --type <blocker_type> --description "<description>"
 python runtime_lane/tools/runtime_session.py resolve-blocker --blocker-id <id> --resolution "<resolution>"
+python runtime_lane/tools/runtime_session.py assign --session-id <id> --task-source <path> --label "<label>" --type <task_source_type> [--allow-duplicate]
+python runtime_lane/tools/runtime_session.py assignment-list --root runtime_lane
+python runtime_lane/tools/runtime_session.py assignment-status --assignment-id <id>
+python runtime_lane/tools/runtime_session.py update-assignment --assignment-id <id> --status <status> --note "<note>"
+python runtime_lane/tools/runtime_session.py workload --root runtime_lane [--write-report]
+python runtime_lane/tools/runtime_session.py unassigned --root runtime_lane
 
 Safety boundary:
 - metadata only
@@ -355,6 +875,34 @@ def build_parser() -> argparse.ArgumentParser:
     adapter_list.add_argument("--root", default=str(DEFAULT_ROOT))
     status = sub.add_parser("status")
     status.add_argument("--root", default=str(DEFAULT_ROOT))
+
+    assign = sub.add_parser("assign")
+    assign.add_argument("--root", default=str(DEFAULT_ROOT))
+    assign.add_argument("--session-id", required=True)
+    assign.add_argument("--task-source", required=True)
+    assign.add_argument("--label", required=True)
+    assign.add_argument("--type", required=True)
+    assign.add_argument("--allow-duplicate", action="store_true")
+
+    assignment_list = sub.add_parser("assignment-list")
+    assignment_list.add_argument("--root", default=str(DEFAULT_ROOT))
+
+    assignment_status = sub.add_parser("assignment-status")
+    assignment_status.add_argument("--root", default=str(DEFAULT_ROOT))
+    assignment_status.add_argument("--assignment-id", required=True)
+
+    update_assignment = sub.add_parser("update-assignment")
+    update_assignment.add_argument("--root", default=str(DEFAULT_ROOT))
+    update_assignment.add_argument("--assignment-id", required=True)
+    update_assignment.add_argument("--status", required=True)
+    update_assignment.add_argument("--note", default="")
+
+    workload = sub.add_parser("workload")
+    workload.add_argument("--root", default=str(DEFAULT_ROOT))
+    workload.add_argument("--write-report", action="store_true")
+
+    unassigned = sub.add_parser("unassigned")
+    unassigned.add_argument("--root", default=str(DEFAULT_ROOT))
 
     register = sub.add_parser("register")
     register.add_argument("--root", default=str(DEFAULT_ROOT))
@@ -398,6 +946,37 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "status":
             print(render_status(root))
             return 0
+        if args.command == "assign":
+            path = create_assignment(
+                root,
+                session_id=args.session_id,
+                task_source=args.task_source,
+                label=args.label,
+                task_source_type=args.type,
+                allow_duplicate=args.allow_duplicate,
+            )
+            print(f"Registered runtime assignment: {path}")
+            return 0
+        if args.command == "assignment-list":
+            print(render_assignment_list(root))
+            return 0
+        if args.command == "assignment-status":
+            print(render_assignment_status(root, args.assignment_id))
+            return 0
+        if args.command == "update-assignment":
+            path = update_assignment(root, assignment_id=args.assignment_id, status=args.status, note=args.note)
+            print(f"Updated runtime assignment: {path}")
+            return 0
+        if args.command == "workload":
+            content = render_workload(root)
+            print(content)
+            if args.write_report:
+                path = write_workload_report(root, content)
+                print(f"Workload report written: {path}")
+            return 0
+        if args.command == "unassigned":
+            print(render_unassigned(root))
+            return 0
         if args.command == "register":
             path = register_session(
                 root,
@@ -431,4 +1010,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
