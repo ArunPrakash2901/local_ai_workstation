@@ -1,0 +1,35 @@
+{
+  "created_timestamp": "2026-05-25T04:15:15+00:00",
+  "duplicate_phase_ids": [],
+  "generated_by": "Discovery Lane research set intake v1.3",
+  "generated_files": {
+    "intake_report": "intake_reports/positive_path_example_intake_report.md",
+    "research_set_manifest": "research_set_manifests/positive_path_example_manifest.json",
+    "research_set_record": "research_sets/positive_path_example/research_set.json"
+  },
+  "missing_or_unclear_phase_ids": [],
+  "missing_phase_numbers": [],
+  "recommended_next_action": "Run `ws discovery ingest` after human review of the intake report.",
+  "report_count": 1,
+  "reports": [
+    {
+      "detected_phase_id": "positive_phase_01",
+      "detected_phase_title": "Foundation Execution Fixture",
+      "filename": "positive_phase_01_foundation_research.md",
+      "human_decision_flags": [],
+      "missing_recommended_sections": [],
+      "missing_required_sections": [],
+      "partial_heading_matches": [],
+      "phase_id_inferred": false,
+      "phase_title_inferred": false,
+      "sha256": "9dbaecac8a8ab4d6fa40b77937fa9e2a73366a1c0251b7803e4c1d0032ad5198",
+      "source_path": "examples/positive_path/positive_phase_01_foundation_research.md",
+      "validation_status": "READY_FOR_HUMAN_REVIEW"
+    }
+  ],
+  "set_id": "positive_path_example",
+  "set_status": "READY_FOR_INGEST",
+  "set_title": "Positive Path Example Research Set",
+  "source_input_path": "examples/positive_path",
+  "unclear_phase_titles": []
+}

@@ -1,0 +1,25 @@
+{
+  "approval_required": true,
+  "execution_ready": true,
+  "generated_at": "2026-05-23T13:19:13+00:00",
+  "generated_files": {
+    "manifest": "manifests/examples__phase_01_foundation_manifest.json",
+    "phase_packet": "phase_packets/examples__phase_01_foundation_packet.md",
+    "worker_prompt": "worker_prompts/examples__phase_01_foundation_worker_prompt.md"
+  },
+  "hashes": {
+    "phase_packet_sha256": "7b6907d2da972ee328925a761b8e3140e1694177c5917112baae4c7e6d5219f7",
+    "source_sha256": "441f31ef9b5aa283a789abf7fa6f09dd9d5c640d9f35a674be2c3883c2d2f6ac",
+    "worker_prompt_sha256": "b0f859ffc1d7c4c306280f95ffe3f7292b9b79e581bbadc2a3603d1ca202a75e"
+  },
+  "human_decision_flags": [],
+  "missing_recommended_sections": [],
+  "missing_required_sections": [],
+  "partial_heading_matches": [],
+  "phase_id": "phase_01",
+  "phase_title": "Foundation Intake",
+  "research_set_id": "examples",
+  "source_file": "examples/phase_01_foundation_research.md",
+  "source_research_set_manifest": "research_set_manifests/examples_manifest.json",
+  "validation_status": "READY_FOR_HUMAN_REVIEW"
+}

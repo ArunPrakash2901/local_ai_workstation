@@ -1,0 +1,25 @@
+{
+  "approval_required": true,
+  "execution_ready": true,
+  "generated_at": "2026-05-23T13:57:13+00:00",
+  "generated_files": {
+    "manifest": "manifests/positive_path_example__positive_phase_01_foundation_manifest.json",
+    "phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
+    "worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
+  },
+  "hashes": {
+    "phase_packet_sha256": "c8e98132b892b96cb4174ce499700fc86504cb5e9930f85f7f0dc4a9aefc05d5",
+    "source_sha256": "9dbaecac8a8ab4d6fa40b77937fa9e2a73366a1c0251b7803e4c1d0032ad5198",
+    "worker_prompt_sha256": "40b69b34e83d16786180f7be8da7b05b05d5c2f2eee0089e1e04116645364412"
+  },
+  "human_decision_flags": [],
+  "missing_recommended_sections": [],
+  "missing_required_sections": [],
+  "partial_heading_matches": [],
+  "phase_id": "positive_phase_01",
+  "phase_title": "Foundation Execution Fixture",
+  "research_set_id": "positive_path_example",
+  "source_file": "examples/positive_path/positive_phase_01_foundation_research.md",
+  "source_research_set_manifest": "research_set_manifests/positive_path_example_manifest.json",
+  "validation_status": "READY_FOR_HUMAN_REVIEW"
+}

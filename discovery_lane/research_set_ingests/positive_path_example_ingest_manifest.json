@@ -1,0 +1,33 @@
+{
+  "approvals_created": false,
+  "branches_created": false,
+  "checksum_verification_status": "MATCH",
+  "errors": [],
+  "generated_by": "Discovery Lane research set ingest v1.4",
+  "generated_manifests": [
+    "manifests/positive_path_example__positive_phase_01_foundation_manifest.json"
+  ],
+  "generated_phase_packets": [
+    "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md"
+  ],
+  "generated_worker_prompts": [
+    "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
+  ],
+  "handoffs_created": false,
+  "ingest_status": "INGESTED",
+  "ingest_timestamp": "2026-05-25T04:15:15+00:00",
+  "overwrite": true,
+  "report_count": 1,
+  "set_id": "positive_path_example",
+  "source_reports": [
+    {
+      "actual_sha256": "9dbaecac8a8ab4d6fa40b77937fa9e2a73366a1c0251b7803e4c1d0032ad5198",
+      "checksum_status": "MATCH",
+      "expected_sha256": "9dbaecac8a8ab4d6fa40b77937fa9e2a73366a1c0251b7803e4c1d0032ad5198",
+      "filename": "positive_phase_01_foundation_research.md",
+      "source_path": "examples/positive_path/positive_phase_01_foundation_research.md"
+    }
+  ],
+  "source_research_set_manifest": "research_set_manifests/positive_path_example_manifest.json",
+  "warnings": []
+}

@@ -1,0 +1,18 @@
+{
+  "branch_status": "PLANNED_NOT_CREATED",
+  "commit_allowed": false,
+  "conflict_risk_notes": "Potential conflict risk from shared surface terms: state.",
+  "created_by_discovery_lane": false,
+  "expected_merge_target": "main",
+  "generated_timestamp": "2026-05-23T04:49:06+00:00",
+  "merge_allowed": false,
+  "parallel_execution_notes": "Handoff folder is the immutable approved contract. The git branch is only the future mutable implementation workspace.",
+  "phase_id": "phase_01",
+  "phase_title": "Foundation Intake",
+  "proposed_branch_name": "work/discovery/phase-01-foundation",
+  "push_allowed": false,
+  "source_approval_record": "approval_records/phase_01_foundation_intake_approval_record.json",
+  "source_handoff_bundle": "execution_handoffs/phase-01-foundation-intake",
+  "source_phase_packet": "phase_packets/phase_01_foundation_packet.md",
+  "source_worker_prompt": "worker_prompts/phase_01_foundation_worker_prompt.md"
+}

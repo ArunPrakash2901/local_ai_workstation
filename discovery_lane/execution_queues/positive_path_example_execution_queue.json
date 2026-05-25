@@ -1,0 +1,39 @@
+{
+  "approvals_created": false,
+  "branches_created": false,
+  "errors": [],
+  "excluded_phase_count": 0,
+  "excluded_phases": [],
+  "generated_by": "Discovery Lane execution queue planner v1.6",
+  "generated_timestamp": "2026-05-25T04:15:15+00:00",
+  "git_actions_performed": false,
+  "handoffs_created": false,
+  "queue_status": "READY_FOR_EXECUTION_LANE",
+  "queued_phase_count": 1,
+  "queued_phases": [
+    {
+      "approval_record": "approval_records/positive_phase_01_foundation_execution_fixture_approval_record.json",
+      "branch_plan": "branch_plans/positive_phase_01_foundation_execution_fixture_branch_plan.json",
+      "branch_status": "PLANNED_NOT_CREATED",
+      "branches_created": false,
+      "commit_allowed": false,
+      "dependencies": "- Discovery Lane v1.6 queue planner exists.\n- Approval helper can create handoff bundles and branch plans.",
+      "execution_status": "NOT_STARTED",
+      "handoff_bundle": "execution_handoffs/positive-phase-01-foundation-execution-fixture",
+      "merge_allowed": false,
+      "phase_id": "positive_phase_01",
+      "phase_manifest": "manifests/positive_path_example__positive_phase_01_foundation_manifest.json",
+      "phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
+      "phase_title": "Foundation Execution Fixture",
+      "proposed_branch_name": "work/discovery/positive-phase-01-foundation-fixture",
+      "push_allowed": false,
+      "recommended_execution_order": 1,
+      "risk_notes": "- Re-running the fixture must remain idempotent and must not create duplicate approval artifacts.\n- The fixture must remain clearly separated from real production research reports.",
+      "worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
+    }
+  ],
+  "set_id": "positive_path_example",
+  "source_research_set_ingest_manifest": "research_set_ingests/positive_path_example_ingest_manifest.json",
+  "warnings": [],
+  "worker_prompts_executed": false
+}

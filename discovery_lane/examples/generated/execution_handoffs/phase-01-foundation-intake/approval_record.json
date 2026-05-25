@@ -1,0 +1,24 @@
+{
+  "approval_status": "APPROVED_FOR_EXECUTION_HANDOFF",
+  "approval_timestamp": "2026-05-23T04:49:06+00:00",
+  "branch_plan": "branch_plans/phase_01_foundation_intake_branch_plan.json",
+  "branch_status": "PLANNED_NOT_CREATED",
+  "execution_lane_status": "NOT_STARTED",
+  "execution_performed": false,
+  "git_actions_performed": false,
+  "handoff_bundle": "execution_handoffs/phase-01-foundation-intake",
+  "override_used": false,
+  "packet_validation_status": "READY_FOR_HUMAN_REVIEW",
+  "permissions": {
+    "commit": false,
+    "merge": false,
+    "push": false
+  },
+  "phase_id": "phase_01",
+  "phase_title": "Foundation Intake",
+  "proposed_branch_name": "work/discovery/phase-01-foundation",
+  "reason": "Example approval after reviewing generated Markdown files.",
+  "source_manifest": "manifests/phase_01_foundation_manifest.json",
+  "source_phase_packet": "phase_packets/phase_01_foundation_packet.md",
+  "source_worker_prompt": "worker_prompts/phase_01_foundation_worker_prompt.md"
+}

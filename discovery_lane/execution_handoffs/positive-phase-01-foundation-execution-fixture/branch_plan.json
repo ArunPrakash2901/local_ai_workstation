@@ -1,0 +1,18 @@
+{
+  "branch_status": "PLANNED_NOT_CREATED",
+  "commit_allowed": false,
+  "conflict_risk_notes": "Potential conflict risk from shared surface terms: state.",
+  "created_by_discovery_lane": false,
+  "expected_merge_target": "main",
+  "generated_timestamp": "2026-05-23T13:57:13+00:00",
+  "merge_allowed": false,
+  "parallel_execution_notes": "Handoff folder is the immutable approved contract. The git branch is only the future mutable implementation workspace.",
+  "phase_id": "positive_phase_01",
+  "phase_title": "Foundation Execution Fixture",
+  "proposed_branch_name": "work/discovery/positive-phase-01-foundation-fixture",
+  "push_allowed": false,
+  "source_approval_record": "approval_records/positive_phase_01_foundation_execution_fixture_approval_record.json",
+  "source_handoff_bundle": "execution_handoffs/positive-phase-01-foundation-execution-fixture",
+  "source_phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
+  "source_worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
+}
