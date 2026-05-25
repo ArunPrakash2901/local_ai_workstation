@@ -128,7 +128,20 @@ case "$SUBCOMMAND" in
         echo "Repo Context Lane:"
         echo "  repo-context inventory --project <path> [--dry-run]"
         echo "  repo-context graphify-plan --project <path> [--dry-run]"
+        echo "  repo-context graphify-plan-list"
+        echo "  repo-context graphify-plan-review --plan <path>"
+        echo "  repo-context graphify-plan-approve --plan <path> --confirm"
+        echo "  repo-context graphify-run --plan <path> --confirm"
+        echo "  repo-context graphify-run-status --plan <path>"
+        echo "  repo-context graphify-intake --run <path>"
         echo "  repo-context summarize --graph <path> [--dry-run]"
+        echo "  repo-context status [--project <project_id>]"
+        echo "  repo-context freeze-report"
+        echo "  repo-context packet --project <project_id> --task <task_name> [--dry-run]"
+        echo "  repo-context packet-list"
+        echo "  repo-context packet-review --packet <path>"
+        echo "  repo-context packet-approve --packet <path> --confirm"
+        echo "  repo-context handoff --packet <path> --target <codex|gemini|local> [--dry-run]"
         echo "  repo-context audit"
         echo "  repo-context help"
         echo ""
@@ -642,7 +655,7 @@ case "$SUBCOMMAND" in
         python3 "$WS_HOME/discovery_lane/tools/discovery_command.py" "$@"
         ;;
     repo-context)
-        python3 "$WS_HOME/repo_context_lane/tools/repo_context_command.py" "$@"
+        (cd "$WS_HOME" && python3 -m repo_context_lane.tools.repo_context_command "$@")
         ;;
     product-dev)
         python3 "$WS_HOME/product_development_lane/tools/product_dev_command.py" "$@"

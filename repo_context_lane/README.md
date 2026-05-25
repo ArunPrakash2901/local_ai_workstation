@@ -4,6 +4,7 @@ Bounded, dry-run-first repository intelligence layer for token minimisation usin
 
 ## v0.8 Status
 - Pipeline status reporting and next-step recommendations.
+- Optional project-scoped status with `ws repo-context status --project <project_id>`.
 - Freeze readiness reporting.
 - Consolidated project discovery across all artifact types.
 
@@ -20,7 +21,7 @@ Generate compact repo maps, Graphify run plans, summaries of existing `graph.jso
 7. `ws repo-context graphify-run-status --plan <path>`: Check execution result.
 8. `ws repo-context graphify-intake --run <path>`: Process run results into summaries.
 9. `ws repo-context summarize --graph <path>`: (Optional manual) Distill `graph.json` into a readable summary.
-10. `ws repo-context status`: Show pipeline status for all projects.
+10. `ws repo-context status [--project <project_id>]`: Show pipeline status and next safe commands.
 11. `ws repo-context freeze-report`: Generate a formal lane readiness report.
 12. `ws repo-context packet --project <id> --task <name>`: Generate context packet from inventory + summary.
 13. `ws repo-context packet-list`: List generated packets.
@@ -35,7 +36,7 @@ Generate compact repo maps, Graphify run plans, summaries of existing `graph.jso
 - `graphify_intake_reports/`: Records of run result intake and verification.
 - `graph_summaries/`: Summaries of existing `graph.json` artifacts.
 - `context_packets/`: Compact context for downstream models.
-- `handoff/`: Generated Markdown prompts for target agents.
+- `handoffs/`: Generated Markdown prompts for target agents.
 - `handoff_manifests/`: JSON manifests for generated handoffs.
 - `review_reports/`: Human review reports for context, plan, run, and intake artifacts.
 - `schemas/`: JSON schemas for lane artifacts.
@@ -50,5 +51,6 @@ Generate compact repo maps, Graphify run plans, summaries of existing `graph.jso
 - Graphify execution requires explicit plan approval (`GRAPHIFY_RUN_ONLY`).
 - Intake verifies execution results before summarization.
 - Status commands recommend the next safe human-guided step.
+- Freeze reports are local readiness reports only; they do not execute Graphify or downstream agents.
 - Approval is strictly scoped.
 - Handoff artifacts are `NOT_EXECUTED` and require manual operator action to send to a model.
