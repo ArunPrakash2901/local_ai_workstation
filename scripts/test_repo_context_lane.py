@@ -162,6 +162,30 @@ class TestRepoContextLane(unittest.TestCase):
         self.assertIn(f"Project: {pid}", output)
         self.assertIn("Inventory: EXISTS", output)
 
+    def test_status_project_filter(self):
+        # Create two projects
+        inv_dir = self.output_root / "project_inventories"
+        inv_dir.mkdir(parents=True, exist_ok=True)
+        with open(inv_dir / "p1_inventory.json", "w") as f:
+            json.dump({"project_id": "p1"}, f)
+        with open(inv_dir / "p2_inventory.json", "w") as f:
+            json.dump({"project_id": "p2"}, f)
+            
+        projects = status.discover_projects(self.output_root, target_project_id="p1")
+        self.assertIn("p1", projects)
+        self.assertNotIn("p2", projects)
+
+    def test_status_malformed_artifact(self):
+        inv_dir = self.output_root / "project_inventories"
+        inv_dir.mkdir(parents=True, exist_ok=True)
+        # Malformed JSON
+        with open(inv_dir / "bad_inventory.json", "w") as f:
+            f.write("{ invalid json")
+            
+        projects = status.discover_projects(self.output_root)
+        self.assertIn("bad", projects)
+        self.assertTrue(any("Malformed artifact" in w for w in projects["bad"]["warnings"]))
+
     def test_freeze_report(self):
         pid = "freeze_test"
         inv_dir = self.output_root / "project_inventories"
@@ -169,6 +193,10 @@ class TestRepoContextLane(unittest.TestCase):
         with open(inv_dir / f"{pid}_inventory.json", "w") as f:
             json.dump({"project_id": pid}, f)
             
+        # Ensure REQUIRED_FOLDERS exist for audit inside freeze-report
+        for folder in audit_repo_context_lane.REQUIRED_FOLDERS:
+            (self.output_root / folder).mkdir(parents=True, exist_ok=True)
+
         projects = status.discover_projects(self.output_root)
         report_path = status.generate_freeze_report(self.output_root, projects)
         self.assertTrue(Path(report_path).exists())
@@ -177,6 +205,7 @@ class TestRepoContextLane(unittest.TestCase):
             content = f.read()
             self.assertIn("# Repo Context Lane Freeze Report", content)
             self.assertIn("freeze_test", content)
+            self.assertIn("FINAL STATE", content)
 
     def test_audit_still_passes(self):
         # Ensure REQUIRED_FOLDERS exist

@@ -292,7 +292,7 @@ def command_graphify_intake(args: argparse.Namespace) -> int:
 def command_status(args: argparse.Namespace) -> int:
     try:
         output_root = Path(args.output or DEFAULT_ROOT)
-        projects = status.discover_projects(output_root)
+        projects = status.discover_projects(output_root, target_project_id=args.project)
         print(status.render_status(projects))
         return 0
     except Exception as e:
@@ -396,6 +396,7 @@ def build_parser() -> argparse.ArgumentParser:
     intake.set_defaults(func=command_graphify_intake)
 
     stat = sub.add_parser("status", help="Show Repo Context Lane pipeline status.")
+    stat.add_argument("--project", help="Optional project ID to filter status.")
     stat.add_argument("--output", help="Output root.")
     stat.set_defaults(func=command_status)
 
