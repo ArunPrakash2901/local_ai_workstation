@@ -32,6 +32,7 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
         "manifests": 0,
         "runs": 0,
         "intakes": 0,
+        "freeze_reports": 0,
         "invalid_json": 0
     }
     
@@ -147,15 +148,21 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
     if report_dir.exists():
         for path in report_dir.glob("*.md"):
             counts["reports"] += 1
-            if "freeze_report" in path.name:
-                # Basic check for freeze report
+            if path.name.startswith("freeze_report_"):
+                counts["freeze_reports"] += 1
                 try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        if "# Repo Context Lane Freeze Report" not in content:
-                            warnings.append(f"Malformed freeze report: {path.name}")
+                    content = path.read_text(encoding="utf-8", errors="replace")
                 except Exception as e:
-                    errors.append(f"Could not read freeze report: {path.name} ({e})")
+                    errors.append(f"Unreadable freeze report: {path.name} ({e})")
+                    continue
+                if "# Repo Context Lane Freeze Report" not in content:
+                    errors.append(f"Freeze report missing expected title: {path.name}")
+                if (
+                    "FREEZE_CANDIDATE" not in content
+                    and "IN_PROGRESS" not in content
+                    and "Readiness Status" not in content
+                ):
+                    warnings.append(f"Freeze report missing readiness marker: {path.name}")
 
     # Check handoffs
     handoff_dir = root / "handoffs"

@@ -4,8 +4,13 @@ import os
 import shutil
 import datetime
 import subprocess
+import sys
+import uuid
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from repo_context_lane.tools import (
     inventory, graphify_plan, summarize, context_packet, 
     packet_review, context_handoff, graphify_plan_review, 
@@ -14,7 +19,7 @@ from repo_context_lane.tools import (
 
 class TestRepoContextLane(unittest.TestCase):
     def setUp(self):
-        self.test_root = Path("test_repo_context_lane_root")
+        self.test_root = Path("scratch") / f"test_repo_context_lane_root_{uuid.uuid4().hex}"
         self.test_root.mkdir(parents=True, exist_ok=True)
         
         self.output_root = self.test_root / "lane_output"
@@ -30,6 +35,13 @@ class TestRepoContextLane(unittest.TestCase):
     def tearDown(self):
         if self.test_root.exists():
             shutil.rmtree(self.test_root)
+
+    def write_artifact(self, folder, filename, data):
+        path = self.output_root / folder / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        return path
 
     def test_inventory_basic(self):
         result = inventory.run_inventory(self.project_path, self.output_root, dry_run=False)
@@ -142,10 +154,7 @@ class TestRepoContextLane(unittest.TestCase):
     def test_status_basic(self):
         # 1. Create synthetic inventory
         pid = "status_test"
-        inv_dir = self.output_root / "project_inventories"
-        inv_dir.mkdir(parents=True, exist_ok=True)
-        with open(inv_dir / f"{pid}_inventory.json", "w") as f:
-            json.dump({"project_id": pid}, f)
+        self.write_artifact("project_inventories", f"{pid}_inventory.json", {"project_id": pid})
             
         # 2. Check status
         projects = status.discover_projects(self.output_root)
@@ -161,6 +170,123 @@ class TestRepoContextLane(unittest.TestCase):
         output = status.render_status(projects)
         self.assertIn(f"Project: {pid}", output)
         self.assertIn("Inventory: EXISTS", output)
+
+    def test_status_discovers_projects_from_synthetic_artifacts(self):
+        self.write_artifact("project_inventories", "inventory_only_inventory.json", {"project_id": "inventory_only"})
+        self.write_artifact(
+            "graphify_plans",
+            "plan_only_plan.json",
+            {"project_id": "plan_only", "approval_status": "NOT_APPROVED"},
+        )
+
+        projects = status.discover_projects(self.output_root)
+
+        self.assertIn("inventory_only", projects)
+        self.assertIn("plan_only", projects)
+        self.assertIsNotNone(projects["inventory_only"]["inventory"])
+        self.assertIsNotNone(projects["plan_only"]["plan"])
+
+    def test_status_handles_malformed_artifacts_without_crashing(self):
+        malformed_path = self.output_root / "project_inventories" / "broken_inventory.json"
+        malformed_path.parent.mkdir(parents=True, exist_ok=True)
+        malformed_path.write_text("{not valid json", encoding="utf-8")
+
+        projects = status.discover_projects(self.output_root)
+        output = status.render_status(projects)
+
+        self.assertIn("broken", projects)
+        self.assertTrue(projects["broken"]["warnings"])
+        self.assertIn("Malformed artifact", output)
+
+    def test_status_recommends_graphify_run_when_approved_plan_exists_without_run(self):
+        pid = "approved_plan"
+        self.write_artifact("project_inventories", f"{pid}_inventory.json", {"project_id": pid})
+        self.write_artifact(
+            "graphify_plans",
+            f"{pid}_plan.json",
+            {"project_id": pid, "approval_status": "APPROVED_FOR_GRAPHIFY_EXECUTION"},
+        )
+
+        projects = status.discover_projects(self.output_root)
+        rec = status.get_recommendation(pid, projects[pid])
+
+        self.assertIn("graphify-run", rec)
+        self.assertIn("--confirm", rec)
+
+    def test_status_recommends_graphify_intake_when_successful_run_exists_without_intake(self):
+        pid = "successful_run"
+        self.write_artifact("project_inventories", f"{pid}_inventory.json", {"project_id": pid})
+        self.write_artifact(
+            "graphify_plans",
+            f"{pid}_plan.json",
+            {"project_id": pid, "approval_status": "APPROVED_FOR_GRAPHIFY_EXECUTION"},
+        )
+        self.write_artifact(
+            "graphify_runs",
+            f"{pid}_20260525_120000.json",
+            {
+                "project_id": pid,
+                "execution_status": "SUCCEEDED",
+                "started_at": "2026-05-25T12:00:00",
+            },
+        )
+
+        projects = status.discover_projects(self.output_root)
+        rec = status.get_recommendation(pid, projects[pid])
+
+        self.assertIn("graphify-intake", rec)
+
+    def test_status_reports_handoff_ready_with_approved_packet_and_handoff(self):
+        pid = "handoff_ready"
+        self.write_artifact("project_inventories", f"{pid}_inventory.json", {"project_id": pid})
+        self.write_artifact(
+            "graphify_plans",
+            f"{pid}_plan.json",
+            {"project_id": pid, "approval_status": "APPROVED_FOR_GRAPHIFY_EXECUTION"},
+        )
+        self.write_artifact(
+            "graphify_runs",
+            f"{pid}_20260525_120000.json",
+            {
+                "project_id": pid,
+                "execution_status": "SUCCEEDED",
+                "started_at": "2026-05-25T12:00:00",
+            },
+        )
+        self.write_artifact(
+            "graphify_intake_reports",
+            f"{pid}_20260525_121000_intake.json",
+            {"project_id": pid, "intake_status": "SUCCESS", "intake_timestamp": "2026-05-25T12:10:00"},
+        )
+        self.write_artifact("graph_summaries", f"{pid}_summary.json", {"project_id": pid})
+        packet_path = self.write_artifact(
+            "context_packets",
+            f"{pid}_task_20260525_122000.json",
+            {
+                "project_id": pid,
+                "task_name": "task",
+                "created_at": "2026-05-25T12:20:00",
+                "human_approval_status": "APPROVED_FOR_CONTEXT_USE",
+            },
+        )
+        self.write_artifact(
+            "handoff_manifests",
+            f"{pid}_task_20260525_122000_gemini.json",
+            {
+                "project_id": pid,
+                "target_agent": "gemini",
+                "source_packet": str(packet_path),
+                "created_at": "2026-05-25T12:30:00",
+                "execution_status": "NOT_EXECUTED",
+            },
+        )
+
+        projects = status.discover_projects(self.output_root)
+        output = status.render_status(projects)
+        rec = status.get_recommendation(pid, projects[pid])
+
+        self.assertIn("HANDOFF_READY", rec)
+        self.assertIn("Handoffs: 1 (gemini: 1)", output)
 
     def test_status_project_filter(self):
         # Create two projects
