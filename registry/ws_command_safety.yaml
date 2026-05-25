@@ -2457,6 +2457,127 @@ commands:
     confidence: high
     notes: Pure-read scan of conservative candidate task sources; does not assign anything, start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
     slash_command: /sessions unassigned
+  ws exchange help:
+    safety_class: PURE_READ
+    description: Shows Exchange Lane v0.1 help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange help
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read help output only.
+  ws exchange audit:
+    safety_class: PURE_READ
+    description: Audits Exchange Lane packet metadata and contracts without dispatch/execution.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange audit
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/audit_exchange_lane.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Metadata inspection only; no dispatch, no execution, no model/terminal actions.
+    slash_command: /exchange audit
+  ws exchange status:
+    safety_class: PURE_READ
+    description: Shows Exchange Lane packet/result counts and blocked packet summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read status summary only.
+    slash_command: /exchange status
+  ws exchange packet-list:
+    safety_class: PURE_READ
+    description: Lists Exchange Lane packets and statuses.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange packet list
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_packet.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read packet listing only.
+    slash_command: /exchange packets
+  ws exchange packet-status:
+    safety_class: PURE_READ
+    description: Shows one Exchange Lane packet in detail.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange packet status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_packet.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read packet inspection only.
+  ws exchange adapter-list:
+    safety_class: PURE_READ
+    description: Lists Exchange Lane routing adapters.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange adapter list
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - runtime_lane/adapters
+    - scripts/ws
+    confidence: high
+    notes: Reads adapter metadata only; no runtime invocation.
   ws exchange-new --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -5125,13 +5246,13 @@ commands:
     confidence: high
     notes: Reads graphify_plans/ directory.
   ws repo-context graphify-plan-review --plan <path>:
-    read_only_strict: false
+    read_only_strict: true
     read_only_with_local_reports: true
     safe_dry_run: true
     tui_exposure: visible
     confirmation: none
     warning_label: ''
-    safety_class: LOCAL_REPORT_WRITE
+    safety_class: PURE_READ
     description: Reviews a Graphify run plan for safety.
     writes_local_files: false
     writes_project_files: false
@@ -5146,9 +5267,9 @@ commands:
     read_only_strict: false
     read_only_with_local_reports: false
     safe_dry_run: false
-    tui_exposure: visible
+    tui_exposure: hidden
     confirmation: required
-    warning_label: 'Modifies Graphify plan approval metadata'
+    warning_label: 'Updates Graphify plan approval status'
     safety_class: GUARDED_WRITE
     description: Approves a Graphify plan for execution.
     writes_local_files: true
@@ -5160,6 +5281,100 @@ commands:
     - repo_context_lane/tools/graphify_plan_review.py
     confidence: high
     notes: Updates approval_status to APPROVED_FOR_GRAPHIFY_EXECUTION.
+  ws repo-context graphify-run --plan <path> --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: 'Executes Graphify'
+    safety_class: GUARDED_WRITE
+    description: Executes an approved Graphify run plan.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Run Graphify
+    evidence:
+    - repo_context_lane/tools/graphify_run.py
+    confidence: high
+    notes: Executes subprocess.run with canonical graphify.exe.
+  ws repo-context graphify-run-status --plan <path>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows status of Graphify runs for a plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Run Status
+    evidence:
+    - repo_context_lane/tools/graphify_run.py
+    confidence: high
+    notes: Reads graphify_runs/ directory.
+  ws repo-context graphify-intake --run <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local intake status report and graph summaries'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Processes results of a Graphify run.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graphify Intake
+    evidence:
+    - scripts/ws
+    - repo_context_lane/tools/graphify_intake.py
+    confidence: high
+    notes: Verifies graph.json and triggers summarization.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_graphify_intake
+  ws repo-context status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Show Repo Context Lane pipeline status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Pipeline Status
+    evidence:
+    - repo_context_lane/tools/status.py
+    confidence: high
+    notes: Reads multiple artifact directories.
+  ws repo-context freeze-report:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: 'Writes freeze readiness report'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generate a lane freeze readiness report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Freeze Report
+    evidence:
+    - repo_context_lane/tools/status.py
+    confidence: high
+    notes: Writes report under review_reports/.
   ws repo-context summarize --graph <path> --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -5275,15 +5490,15 @@ commands:
     confidence: high
     notes: Reads context_packets/ directory.
   ws repo-context packet-review --packet <path>:
-    read_only_strict: false
+    read_only_strict: true
     read_only_with_local_reports: true
     safe_dry_run: true
-    tui_exposure: visible_with_label
+    tui_exposure: visible
     confirmation: none
-    warning_label: 'Writes local safety review reports to repo_context_lane/'
-    safety_class: LOCAL_REPORT_WRITE
+    warning_label: ''
+    safety_class: PURE_READ
     description: Reviews a context packet for safety.
-    writes_local_files: true
+    writes_local_files: false
     writes_project_files: false
     invokes_agent_or_model: false
     external_provider_or_cloud: false
@@ -5291,10 +5506,7 @@ commands:
     evidence:
     - repo_context_lane/tools/packet_review.py
     confidence: high
-    notes: Validates candidates and metadata; writes review report.
-    tui_dispatch_policy: preview_only
-    tui_dispatch_allowed: false
-    report_write_scope: repo_context_packet_review
+    notes: Validates candidates and metadata.
   ws repo-context packet-approve --packet <path> --confirm:
     read_only_strict: false
     read_only_with_local_reports: false
@@ -5312,12 +5524,51 @@ commands:
     evidence:
     - repo_context_lane/tools/packet_review.py
     confidence: high
-    notes: Updates human_approval_status to APPROVED_FOR_CONTEXT_USE.
-  ws repo-context help:
+    notes: Updates human_approval_status to APPROVED_FOR_CONTEXT_USE; writes review report.
+  ws repo-context handoff --project <project_id> --task <task_name> --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
     safe_dry_run: true
     tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Previews context handoff generation.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff (Dry Run)
+    evidence:
+    - repo_context_lane/tools/context_handoff.py
+    confidence: high
+    notes: Dry-run preview of handoff artifacts.
+  ws repo-context handoff --project <project_id> --task <task_name>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local context handoff status report to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates context handoff artifacts (Codex/Markdown).
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Handoff
+    evidence:
+    - repo_context_lane/tools/context_handoff.py
+    confidence: high
+    notes: Writes handoff artifacts under repo_context_lane/context_handoffs/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_handoff
+  ws repo-context help:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
     confirmation: none
     warning_label: ''
     safety_class: PURE_READ

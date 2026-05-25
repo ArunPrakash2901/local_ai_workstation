@@ -162,6 +162,14 @@ case "$SUBCOMMAND" in
         echo "  exchange-adapter-preview --exchange <id> --target codex_cli --dry-run Preview Codex adapter invocation without execution"
         echo "  exchange-import-result --exchange <id> --file <f> [--dry-run|--confirm] Import result text into exchange artifacts"
         echo ""
+        echo "Exchange Lane v0.1 (packet registry, non-executing):"
+        echo "  exchange help              Show Exchange Lane v0.1 help"
+        echo "  exchange audit             Audit exchange_lane metadata"
+        echo "  exchange status            Show packet/result counts and blocked items"
+        echo "  exchange packet-list       List exchange packets"
+        echo "  exchange packet-status --packet-id <id> Show one exchange packet"
+        echo "  exchange adapter-list      List supported routing adapters"
+        echo ""
         echo "Runtime Sessions (Phase 4 preview slice):"
         echo "  session-list       List runtime session manifests"
         echo "  session-status <id> Show one runtime session manifest status"
@@ -646,6 +654,9 @@ case "$SUBCOMMAND" in
         else
             python3 "$WS_HOME/runtime_lane/tools/runtime_session.py" "$@"
         fi
+        ;;
+    exchange)
+        python3 "$WS_HOME/exchange_lane/tools/exchange_command.py" "$@"
         ;;
     exchange-new)
         python3 "$SCRIPTS_DIR/ws_exchange_new.py" "$@"

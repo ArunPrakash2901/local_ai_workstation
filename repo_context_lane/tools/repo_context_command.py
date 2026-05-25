@@ -14,6 +14,9 @@ from . import context_packet
 from . import packet_review
 from . import context_handoff
 from . import graphify_plan_review
+from . import graphify_run
+from . import graphify_intake
+from . import status
 from . import audit_repo_context_lane
 
 DEFAULT_ROOT = Path("repo_context_lane")
@@ -232,6 +235,81 @@ def command_graphify_plan_approve(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+def command_graphify_run(args: argparse.Namespace) -> int:
+    try:
+        plan_path = Path(args.plan)
+        output_root = Path(args.output or DEFAULT_ROOT)
+        success, message, manifest = graphify_run.run_graphify(plan_path, output_root, confirm=args.confirm)
+        
+        if success:
+            print(f"SUCCESS: {message}")
+            print(f"Output: {manifest['output_path']}")
+            return 0
+        else:
+            print(f"FAILURE: {message}", file=sys.stderr)
+            return 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_graphify_run_status(args: argparse.Namespace) -> int:
+    try:
+        plan_path = Path(args.plan)
+        output_root = Path(args.output or DEFAULT_ROOT)
+        status = graphify_run.get_run_status(plan_path, output_root)
+        
+        print(f"Project: {plan_path.stem.replace('_plan', '')}")
+        print(f"Status: {status['status']}")
+        if "last_run" in status:
+            print(f"Last Run: {status['last_run']['id']}")
+            print(f"Started: {status['last_run']['started_at']}")
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_graphify_intake(args: argparse.Namespace) -> int:
+    try:
+        run_path = Path(args.run)
+        output_root = Path(args.output or DEFAULT_ROOT)
+        success, message, report = graphify_intake.run_intake(run_path, output_root, dry_run=args.dry_run)
+        
+        if success:
+            if args.dry_run:
+                print(json.dumps(report, indent=2))
+            else:
+                print(f"SUCCESS: {message}")
+                print(f"Report: {output_root}/graphify_intake_reports/")
+                print(f"Summary: {report['summary_path']}")
+            return 0
+        else:
+            print(f"FAILURE: {message}", file=sys.stderr)
+            return 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_status(args: argparse.Namespace) -> int:
+    try:
+        output_root = Path(args.output or DEFAULT_ROOT)
+        projects = status.discover_projects(output_root)
+        print(status.render_status(projects))
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_freeze_report(args: argparse.Namespace) -> int:
+    try:
+        output_root = Path(args.output or DEFAULT_ROOT)
+        projects = status.discover_projects(output_root)
+        report_path = status.generate_freeze_report(output_root, projects)
+        print(f"Freeze report generated: {report_path}")
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Repo Context Lane command dispatcher.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -299,6 +377,31 @@ def build_parser() -> argparse.ArgumentParser:
     gp_app.add_argument("--output", help="Output root.")
     gp_app.add_argument("--confirm", action="store_true", help="Required confirmation flag.")
     gp_app.set_defaults(func=command_graphify_plan_approve)
+
+    gr = sub.add_parser("graphify-run", help="Execute an approved Graphify run plan.")
+    gr.add_argument("--plan", required=True, help="Path to approved plan JSON.")
+    gr.add_argument("--output", help="Output root.")
+    gr.add_argument("--confirm", action="store_true", help="Required confirmation flag.")
+    gr.set_defaults(func=command_graphify_run)
+
+    gr_status = sub.add_parser("graphify-run-status", help="Show status of Graphify runs for a plan.")
+    gr_status.add_argument("--plan", required=True, help="Path to plan JSON.")
+    gr_status.add_argument("--output", help="Output root.")
+    gr_status.set_defaults(func=command_graphify_run_status)
+
+    intake = sub.add_parser("graphify-intake", help="Process results of a Graphify run.")
+    intake.add_argument("--run", required=True, help="Path to run manifest JSON.")
+    intake.add_argument("--output", help="Output root.")
+    intake.add_argument("--dry-run", action="store_true", help="Print result without writing files.")
+    intake.set_defaults(func=command_graphify_intake)
+
+    stat = sub.add_parser("status", help="Show Repo Context Lane pipeline status.")
+    stat.add_argument("--output", help="Output root.")
+    stat.set_defaults(func=command_status)
+
+    freeze = sub.add_parser("freeze-report", help="Generate a lane freeze readiness report.")
+    freeze.add_argument("--output", help="Output root.")
+    freeze.set_defaults(func=command_freeze_report)
 
     aud = sub.add_parser("audit", help="Audit Repo Context Lane state.")
     aud.add_argument("--root", help="Lane root.")

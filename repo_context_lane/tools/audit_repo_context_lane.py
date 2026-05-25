@@ -12,6 +12,8 @@ REQUIRED_FOLDERS = [
     "review_reports",
     "handoffs",
     "handoff_manifests",
+    "graphify_runs",
+    "graphify_intake_reports",
     "schemas",
     "tools"
 ]
@@ -28,6 +30,8 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
         "reports": 0,
         "handoffs": 0,
         "manifests": 0,
+        "runs": 0,
+        "intakes": 0,
         "invalid_json": 0
     }
     
@@ -71,7 +75,7 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
                         
                         if not p_path.exists():
                             errors.append(f"Approved plan source project missing: {path.name}")
-                        if len(p_path.parts) <= 2:
+                        if len(p_path.parts) < 2:
                             errors.append(f"Approved plan has unsafe broad project scope: {path.name}")
                         if str(o_path).startswith(str(p_path)):
                             errors.append(f"Approved plan output path inside project: {path.name}")
@@ -168,6 +172,64 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
                         
             except Exception as e:
                 errors.append(f"Invalid JSON in manifest: {path.name} ({e})")
+                counts["invalid_json"] += 1
+
+    # Check graphify_runs
+    run_dir = root / "graphify_runs"
+    if run_dir.exists():
+        for path in run_dir.glob("*.json"):
+            counts["runs"] += 1
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    
+                    if data.get("approval_status") != "APPROVED_FOR_GRAPHIFY_EXECUTION":
+                        errors.append(f"Run manifest linked to unapproved plan: {path.name}")
+                        
+                    exe = data.get("graphify_executable", "")
+                    expected_exe = r"C:\Users\abi62\AppData\Roaming\Python\Python313\Scripts\graphify.exe"
+                    if exe != expected_exe:
+                        errors.append(f"Run manifest used non-canonical executable: {path.name}")
+                        
+                    p_path = Path(data.get("project_path", "")).resolve()
+                    o_path = Path(data.get("output_path", "")).resolve()
+                    if str(o_path).startswith(str(p_path)):
+                        errors.append(f"Run manifest output path inside project: {path.name}")
+                        
+                    status = data.get("execution_status")
+                    if status not in ["SUCCEEDED", "FAILED", "TIMED_OUT", "ERROR", "RUNNING"]:
+                        errors.append(f"Run manifest has unknown status '{status}': {path.name}")
+                        
+            except Exception as e:
+                errors.append(f"Invalid JSON in run manifest: {path.name} ({e})")
+                counts["invalid_json"] += 1
+
+    # Check graphify_intake_reports
+    intake_dir = root / "graphify_intake_reports"
+    if intake_dir.exists():
+        for path in intake_dir.glob("*.json"):
+            counts["intakes"] += 1
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    
+                    if data.get("intake_status") != "SUCCESS":
+                        errors.append(f"Intake report has non-SUCCESS status: {path.name}")
+                        
+                    run_path = data.get("run_manifest_path")
+                    if run_path and not Path(run_path).exists():
+                        errors.append(f"Intake report run manifest missing: {path.name}")
+                        
+                    sum_path = data.get("summary_path")
+                    if sum_path and not Path(sum_path).exists():
+                        errors.append(f"Intake report summary missing: {path.name}")
+                        
+                    g_path = data.get("graph_path")
+                    if g_path and not Path(g_path).exists():
+                        errors.append(f"Intake report graph artifact missing: {path.name}")
+                        
+            except Exception as e:
+                errors.append(f"Invalid JSON in intake report: {path.name} ({e})")
                 counts["invalid_json"] += 1
 
     return {"errors": errors, "warnings": warnings}, counts

@@ -90,14 +90,23 @@ Planned subaction mapping:
 - `ws product-design-run-review --product <current_product> --tool open-design --confirm`
 
 Repo Context Lane Mapping:
-- `/repo inventory <path>`
-- `ws repo-context inventory --project <path> --dry-run`
-- `/repo plan <path>`
-- `ws repo-context graphify-plan --project <path> --dry-run`
-- `/repo summarize <path>`
-- `ws repo-context summarize --graph <path> --dry-run`
-- `/repo audit`
-- `ws repo-context audit`
+- `/repo inventory <path>` -> `ws repo-context inventory --project <path> --dry-run`
+- `/repo plan <path>` -> `ws repo-context graphify-plan --project <path> --dry-run`
+- `/repo summarize <path>` -> `ws repo-context summarize --graph <path> --dry-run`
+- `/repo handoff <path>` -> `ws repo-context handoff --packet <path> --target gemini --dry-run`
+- `/repo audit` -> `ws repo-context audit`
+
+- `/context list` -> `ws repo-context packet-list`
+- `/context review <path>` -> `ws repo-context packet-review --packet <path> --dry-run`
+- `/context approve <path>` -> `ws repo-context packet-approve --packet <path> --confirm`
+- `/context packet <project> <task>` -> `ws repo-context packet --project <project> --task <task> --dry-run`
+
+- `/graph list` -> `ws repo-context graphify-plan-list`
+- `/graph review <path>` -> `ws repo-context graphify-plan-review --plan <path> --dry-run`
+- `/graph approve <path>` -> `ws repo-context graphify-plan-approve --plan <path> --confirm`
+- `/graph run <path>` -> `ws repo-context graphify-run --plan <path> --confirm`
+- `/graph intake <path>` -> `ws repo-context graphify-intake --run <path> --dry-run`
+- `/graph status <path>` -> `ws repo-context graphify-run-status --plan <path>`
 
 Safety inheritance:
 - safety class: `PURE_READ`

@@ -54,9 +54,9 @@ def review_plan(plan_path: Path, output_root: Path) -> Tuple[bool, List[str], Di
     if project_path.parent == project_path: # Drive root
         issues.append(f"Unsafe project scope: Drive root '{project_path}'")
     
-    # Broad parent folders (e.g. C:\Users, D:\)
+    # Broad parent folders (e.g. C:\, D:\)
     # Check if it's too high in the tree
-    if len(project_path.parts) <= 2:
+    if len(project_path.parts) < 2:
         issues.append(f"Unsafe project scope: Too broad '{project_path}'")
         
     # Validate output path

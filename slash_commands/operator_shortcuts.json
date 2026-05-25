@@ -41,6 +41,20 @@
       "safety_class": "PURE_READ",
       "writes_local_files": false,
       "tool_execution": false
+    },
+    {
+      "command": "/exchange",
+      "status": "PLANNED_MAPPING",
+      "default_action": "Show Exchange Lane packet status",
+      "maps_to": "ws exchange status",
+      "subactions": {
+        "status": "ws exchange status",
+        "audit": "ws exchange audit",
+        "packets": "ws exchange packet-list"
+      },
+      "safety_class": "PURE_READ",
+      "writes_local_files": false,
+      "tool_execution": false
     }
   ]
 }
