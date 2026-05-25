@@ -1,0 +1,18 @@
+{
+  "adapter_id": "wsl_manual",
+  "display_name": "WSL Manual Terminal",
+  "launch_mode": "manual_terminal",
+  "auth_mode": "operator_shell",
+  "quota_model": "none",
+  "approval_behavior": "operator_controls_commands",
+  "supports_checkpointing": "manual_notes_only",
+  "supports_noninteractive_mode": "not_applicable",
+  "default_safe_use": "manual_linux_shell_inside_allowed_roots",
+  "forbidden_assumptions": [
+    "no_model_by_itself",
+    "no_automatic_terminal_control",
+    "commands_must_stay_inside_allowed_roots"
+  ],
+  "notes": "Manual WSL terminal runtime used to host commands and CLI tools. Runtime Session Lane records metadata only."
+}
+

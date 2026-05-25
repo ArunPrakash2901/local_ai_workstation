@@ -1,0 +1,19 @@
+{
+  "adapter_id": "gemini_cli",
+  "display_name": "Gemini CLI",
+  "launch_mode": "manual_terminal",
+  "auth_mode": "human_authenticated_subscription_cli",
+  "quota_model": "account_or_daily_cli_quota",
+  "approval_behavior": "may_pause_for_tool_approvals",
+  "supports_checkpointing": "supported_by_gemini_cli_docs_but_must_be_verified_locally",
+  "supports_noninteractive_mode": "unknown_or_external_cli_dependent",
+  "default_safe_use": "manual_operator_session_with_explicit_approvals",
+  "forbidden_assumptions": [
+    "not_an_api_worker",
+    "no_unlimited_quota",
+    "no_automatic_prompt_approval",
+    "no_hidden_browser_or_cloud_automation"
+  ],
+  "notes": "Can use Google-login CLI authentication. Runtime Session Lane records blocker and quota notes instead of auto-approving prompts or assuming API access."
+}
+

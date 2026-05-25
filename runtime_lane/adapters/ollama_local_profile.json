@@ -1,0 +1,18 @@
+{
+  "adapter_id": "ollama_local",
+  "display_name": "Ollama Local Model",
+  "launch_mode": "manual_terminal",
+  "auth_mode": "local_runtime",
+  "quota_model": "local_ram_vram_capacity",
+  "approval_behavior": "operator_controls_runtime_and_model_selection",
+  "supports_checkpointing": "model_and_tooling_dependent",
+  "supports_noninteractive_mode": "tooling_dependent",
+  "default_safe_use": "bounded_local_transformations_summaries_and_checks",
+  "forbidden_assumptions": [
+    "not_trusted_for_high_level_architecture_decisions",
+    "must_respect_8gb_vram_constraint",
+    "no_unbounded_generation"
+  ],
+  "notes": "Local model runtime with no external quota, limited by local RAM/VRAM. Runtime Session Lane does not start Ollama."
+}
+
