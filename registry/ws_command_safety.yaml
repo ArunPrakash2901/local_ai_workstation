@@ -5347,23 +5347,23 @@ commands:
     confirmation: none
     warning_label: ''
     safety_class: PURE_READ
-    description: Show Repo Context Lane pipeline status.
+    description: Shows Repo Context Lane status summary.
     writes_local_files: false
     writes_project_files: false
     invokes_agent_or_model: false
     external_provider_or_cloud: false
-    operator_label: Pipeline Status
+    operator_label: Repo Context Status
     evidence:
     - repo_context_lane/tools/status.py
     confidence: high
-    notes: Reads multiple artifact directories.
+    notes: Read-only status summary of lane artifacts.
   ws repo-context freeze-report:
     read_only_strict: false
     read_only_with_local_reports: true
     safe_dry_run: true
-    tui_exposure: visible
+    tui_exposure: visible_with_label
     confirmation: none
-    warning_label: 'Writes freeze readiness report'
+    warning_label: 'Writes local freeze readiness status report'
     safety_class: LOCAL_REPORT_WRITE
     description: Generate a lane freeze readiness report.
     writes_local_files: true
@@ -5375,6 +5375,9 @@ commands:
     - repo_context_lane/tools/status.py
     confidence: high
     notes: Writes report under review_reports/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_freeze_report
   ws repo-context summarize --graph <path> --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true

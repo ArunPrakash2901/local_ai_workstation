@@ -94,6 +94,8 @@ Repo Context Lane Mapping:
 - `/repo plan <path>` -> `ws repo-context graphify-plan --project <path> --dry-run`
 - `/repo summarize <path>` -> `ws repo-context summarize --graph <path> --dry-run`
 - `/repo handoff <path>` -> `ws repo-context handoff --packet <path> --target gemini --dry-run`
+- `/repo status` -> `ws repo-context status`
+- `/repo freeze` -> `ws repo-context freeze-report`
 - `/repo audit` -> `ws repo-context audit`
 
 - `/context list` -> `ws repo-context packet-list`

@@ -5,7 +5,7 @@
   "commit_performed": false,
   "discovery_artifacts_modified": false,
   "generated_by": "Product Development Lane adapter v0.1",
-  "generated_timestamp": "2026-05-25T04:54:01+00:00",
+  "generated_timestamp": "2026-05-25T05:07:17+00:00",
   "git_actions_performed": false,
   "inputs": [
     {
@@ -16,7 +16,7 @@
       "phase_id": "positive_phase_01",
       "phase_manifest": "manifests/positive_path_example__positive_phase_01_foundation_manifest.json",
       "phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
-      "phase_packet_sha256": "d1c70ef56bef02169471ba8a4d9d615de7ab71822392090c3b5574331f02d22d",
+      "phase_packet_sha256": "8045a7100037d5a4577ceb9b7946be9e259a7f8f1bc1edbbae2f8b4ee864d3b9",
       "phase_title": "Foundation Execution Fixture",
       "worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md",
       "worker_prompt_sha256": "40b69b34e83d16786180f7be8da7b05b05d5c2f2eee0089e1e04116645364412"
@@ -44,7 +44,7 @@
     "branch_plans/positive_phase_01_foundation_execution_fixture_branch_plan.json"
   ],
   "source_execution_queue": "execution_queues/positive_path_example_execution_queue.json",
-  "source_execution_queue_sha256": "4279f2f48b34dff8aa8acba3becff8092baac72dfc2c3fc93ecd792a87605606",
+  "source_execution_queue_sha256": "ea891bc72223d89a384d590acff4bd37ef79f57b9f8623182c95cf894f4817a2",
   "source_handoffs": [
     "execution_handoffs/positive-phase-01-foundation-execution-fixture"
   ],
