@@ -2138,6 +2138,178 @@ commands:
     - scripts/ws
     confidence: high
     notes: Reads a READY Discovery Lane execution queue plus referenced approved handoff artifacts and writes product packet, PRD brief, wireframe brief, UI/UX brief, feature spec, implementation plan, manifest, and report; does not modify Discovery artifacts, execute worker prompts, create branches, call models/providers, commit, push, or merge.
+  ws runtime help:
+    safety_class: PURE_READ
+    description: Shows Runtime Session Lane command help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show runtime session help
+    warning_label: ''
+    evidence:
+    - runtime_lane/README.md
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read help output only; no terminal start, CLI/model execution, prompt approval, worker execution, branch creation, commit, push, or merge.
+    slash_command: /sessions
+  ws runtime adapter-list:
+    safety_class: PURE_READ
+    description: Lists Runtime Session Lane adapter profiles.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: List runtime adapter profiles
+    warning_label: ''
+    evidence:
+    - runtime_lane/adapters
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read adapter profile listing only; Codex/Gemini are represented as human-authenticated subscription CLIs, not API workers.
+  ws runtime status:
+    safety_class: PURE_READ
+    description: Shows Runtime Session Lane session and blocker status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show runtime session status
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read status view over Runtime Session Lane metadata; no terminal start, CLI/model execution, prompt approval, branch creation, commit, push, or merge.
+    slash_command: /sessions
+  ws runtime audit:
+    safety_class: PURE_READ
+    description: Audits Runtime Session Lane metadata without executing runtimes.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Audit runtime session lane
+    warning_label: ''
+    evidence:
+    - runtime_lane/tools/audit_runtime_lane.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read metadata audit only; no terminal start, CLI/model execution, prompt approval, branch creation, commit, push, or merge.
+    slash_command: /sessions audit
+  ws runtime register:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Registers a manually operated runtime session metadata record.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Register runtime session
+    warning_label: Writes local status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_sessions
+    evidence:
+    - runtime_lane/README.md
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Writes only runtime_lane/sessions/<session_id>.json; does not start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+    slash_command: /sessions register
+  ws runtime update-status:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Updates an existing runtime session metadata status.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Update runtime session status
+    warning_label: Writes local status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_sessions
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Updates only existing Runtime Session Lane session JSON; does not start terminals, run CLIs/models, approve prompts, create branches, commit, push, or merge.
+  ws runtime report-blocker:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Records a runtime session blocker metadata record.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Record runtime blocker
+    warning_label: Writes local status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_blockers
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Writes runtime_lane/blockers/<blocker_id>.json and updates session blocker status; does not approve prompts, run CLIs/models, create branches, commit, push, or merge.
+    slash_command: /sessions blocker
+  ws runtime resolve-blocker:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Resolves a runtime session blocker metadata record.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Resolve runtime blocker
+    warning_label: Writes local status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_lane_blockers
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    - scripts/ws
+    confidence: high
+    notes: Updates Runtime Session Lane blocker/session JSON only; does not run CLIs/models, approve prompts, create branches, commit, push, or merge.
   ws exchange-new --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -4709,3 +4881,234 @@ commands:
     - scripts/ws_cleanup_apply.sh
     confidence: high
     notes: Moves files/folders into archive; refuses without --apply.
+  ws repo-context inventory --project <path> --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Previews project directory inventory metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Repo Inventory (Dry Run)
+    evidence:
+    - repo_context_lane/tools/inventory.py
+    confidence: high
+    notes: Metadata-only preview; no writes.
+  ws repo-context inventory --project <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local inventory reports to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates project directory inventory report and manifest.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Repo Inventory
+    evidence:
+    - repo_context_lane/tools/inventory.py
+    confidence: high
+    notes: Writes inventory under repo_context_lane/project_inventories/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_inventory
+  ws repo-context graphify-plan --project <path> --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Previews Graphify run plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graphify Plan (Dry Run)
+    evidence:
+    - repo_context_lane/tools/graphify_plan.py
+    confidence: high
+    notes: Dry-run preview only.
+  ws repo-context graphify-plan --project <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local Graphify plan reports to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates Graphify run plan report and manifest.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graphify Plan
+    evidence:
+    - repo_context_lane/tools/graphify_plan.py
+    confidence: high
+    notes: Writes plan under repo_context_lane/graphify_plans/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_graphify_plan
+  ws repo-context summarize --graph <path> --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Previews graph summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graph Summarize (Dry Run)
+    evidence:
+    - repo_context_lane/tools/summarize.py
+    confidence: high
+    notes: Dry-run preview of graph.json summary.
+  ws repo-context summarize --graph <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local graph summary reports to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates graph summary report and manifest.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Graph Summarize
+    evidence:
+    - repo_context_lane/tools/summarize.py
+    confidence: high
+    notes: Writes summary under repo_context_lane/graph_summaries/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_summarize
+  ws repo-context audit:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Audits Repo Context Lane state.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Repo Context Audit
+    evidence:
+    - repo_context_lane/tools/audit_repo_context_lane.py
+    confidence: high
+    notes: Read-only audit of lane artifacts.
+  ws repo-context packet --project <project_id> --task <task_name> --dry-run:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Previews context packet generation.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Context Packet (Dry Run)
+    evidence:
+    - repo_context_lane/tools/context_packet.py
+    confidence: high
+    notes: Dry-run preview of context packet from existing artifacts.
+  ws repo-context packet --project <project_id> --task <task_name>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: 'Writes local report/status context packets to repo_context_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates context packet and review report.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Context Packet
+    evidence:
+    - repo_context_lane/tools/context_packet.py
+    confidence: high
+    notes: Writes packet under repo_context_lane/context_packets/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: repo_context_packet
+  ws repo-context help:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows Repo Context Lane help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Repo Context Help
+    evidence:
+    - repo_context_lane/tools/repo_context_command.py
+    confidence: high
+    notes: Pure-read help output.
+  ws runtime audit:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Audits Runtime Lane state.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Runtime Audit
+    evidence:
+    - runtime_lane/tools/audit_runtime_lane.py
+    confidence: high
+    notes: Read-only audit of runtime artifacts.
+  ws runtime:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: 'Writes local report/status session artifacts to runtime_lane/'
+    safety_class: LOCAL_REPORT_WRITE
+    description: Manages runtime sessions.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Runtime Session
+    evidence:
+    - runtime_lane/tools/runtime_session.py
+    confidence: high
+    notes: Writes session metadata under runtime_lane/sessions/.
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: runtime_session

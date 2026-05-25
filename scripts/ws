@@ -122,13 +122,30 @@ case "$SUBCOMMAND" in
         echo "  discovery reject <id> --reason <r> Record human rejection"
         echo "  discovery handoff <id> Show approved handoff bundle"
         echo "  discovery branch-plan <id> Show planned branch metadata"
-        echo "  discovery audit        Audit Discovery Lane state without execution"
-        echo "  discovery help         Show Discovery Lane help"
+        echo "  discovery audit         Audit Discovery Lane state without execution"
+        echo "  discovery help          Show Discovery Lane help"
+        echo ""
+        echo "Repo Context Lane:"
+        echo "  repo-context inventory --project <path> [--dry-run]"
+        echo "  repo-context graphify-plan --project <path> [--dry-run]"
+        echo "  repo-context summarize --graph <path> [--dry-run]"
+        echo "  repo-context audit"
+        echo "  repo-context help"
         echo ""
         echo "Product Development Lane:"
         echo "  product-dev build-packet --queue <q> Build product-development artifacts from a READY Discovery queue"
         echo "  product-dev audit       Audit Product Development Lane artifacts"
         echo "  product-dev help        Show Product Development Lane help"
+        echo ""
+        echo "Runtime Session Lane:"
+        echo "  runtime help            Show Runtime Session Lane help"
+        echo "  runtime adapter-list    List manual runtime adapter profiles"
+        echo "  runtime status          Show registered sessions and blockers"
+        echo "  runtime register --session-id <id> --adapter <adapter> --label <label> --cwd <path> --lane <lane> --task <task>"
+        echo "  runtime update-status --session-id <id> --status <status> --note <note>"
+        echo "  runtime report-blocker --session-id <id> --type <type> --description <description>"
+        echo "  runtime resolve-blocker --blocker-id <id> --resolution <resolution>"
+        echo "  runtime audit           Audit Runtime Session Lane metadata"
         echo ""
         echo "Exchange Lane (Phase 0):"
         echo "  exchange-new --target <t> --task-type <type> --summary <s> [--dry-run|--confirm]"
@@ -610,8 +627,19 @@ case "$SUBCOMMAND" in
     discovery)
         python3 "$WS_HOME/discovery_lane/tools/discovery_command.py" "$@"
         ;;
+    repo-context)
+        python3 "$WS_HOME/repo_context_lane/tools/repo_context_command.py" "$@"
+        ;;
     product-dev)
         python3 "$WS_HOME/product_development_lane/tools/product_dev_command.py" "$@"
+        ;;
+    runtime)
+        if [ "${1:-}" = "audit" ]; then
+            shift
+            python3 "$WS_HOME/runtime_lane/tools/audit_runtime_lane.py" --root "$WS_HOME/runtime_lane" "$@"
+        else
+            python3 "$WS_HOME/runtime_lane/tools/runtime_session.py" "$@"
+        fi
         ;;
     exchange-new)
         python3 "$SCRIPTS_DIR/ws_exchange_new.py" "$@"
