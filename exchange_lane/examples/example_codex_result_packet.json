@@ -1,0 +1,29 @@
+{
+  "result_id": "example_codex_result_packet",
+  "source_packet_id": "example_product_dev_to_codex_packet",
+  "source_session_id": "example_codex_session",
+  "source_assignment_id": "example_assignment",
+  "adapter_id": "codex_cli",
+  "result_status": "DRAFT",
+  "summary": "Example result packet only. No execution occurred.",
+  "files_created": [],
+  "files_modified": [],
+  "commands_run": [],
+  "validation_run": [],
+  "output_artifacts": [],
+  "errors": [],
+  "warnings": [
+    "example only"
+  ],
+  "blockers": [],
+  "human_review_required": true,
+  "execution_occurred": false,
+  "branch_created": false,
+  "commit_performed": false,
+  "push_performed": false,
+  "merge_performed": false,
+  "imported_at": "2026-05-25T00:00:00Z",
+  "operator_notes": [
+    "example fixture; no CLI/model/session execution"
+  ]
+}

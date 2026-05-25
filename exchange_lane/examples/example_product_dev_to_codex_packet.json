@@ -1,0 +1,59 @@
+{
+  "packet_id": "example_product_dev_to_codex_packet",
+  "packet_version": "v0.1",
+  "created_at": "2026-05-25T00:00:00Z",
+  "created_by": "example_fixture",
+  "source_lane": "product_development_lane",
+  "source_artifact_type": "product_development_implementation_plan",
+  "source_artifact_path": "product_development_lane/implementation_plans/positive_path_example_implementation_plan.md",
+  "source_artifact_checksum": "",
+  "target_adapter": "codex_cli",
+  "target_session_id": "",
+  "target_assignment_id": "",
+  "task_type": "implementation_planning",
+  "objective": "Review implementation planning artifact and prepare bounded review notes.",
+  "input_artifacts": [
+    "product_development_lane/implementation_plans/positive_path_example_implementation_plan.md"
+  ],
+  "expected_outputs": [
+    "review summary",
+    "risk notes",
+    "open questions"
+  ],
+  "allowed_write_roots": [],
+  "forbidden_paths": [
+    "src/",
+    "app/",
+    "components/",
+    "package.json"
+  ],
+  "forbidden_actions": [
+    "dispatch",
+    "execute_prompts",
+    "create_branches",
+    "commit",
+    "push",
+    "merge"
+  ],
+  "human_approval_required": true,
+  "execution_allowed": false,
+  "commit_allowed": false,
+  "push_allowed": false,
+  "merge_allowed": false,
+  "safety_class": "LOCAL_REPORT_WRITE",
+  "packet_status": "DRAFT",
+  "blocker_ids": [],
+  "quota_notes": "example only",
+  "operator_notes": [
+    "example only; non-executing packet fixture"
+  ],
+  "lineage": {
+    "parent_packet_ids": [],
+    "derived_from": "positive_path_example"
+  },
+  "execution_occurred": false,
+  "branch_created": false,
+  "commit_performed": false,
+  "push_performed": false,
+  "merge_performed": false
+}
