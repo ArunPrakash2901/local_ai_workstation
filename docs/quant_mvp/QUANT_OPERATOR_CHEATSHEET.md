@@ -33,12 +33,14 @@
 - Check gates: `ws quant gates-status`
 - Confirm synthetic-only: `ws quant synthetic-status`
 
-## 3. Guarded Write Design (Q45-Q47)
+## 3. Guarded Write Design & No-Op Executor (Q45-Q53)
 
 - **Status:** DESIGNED but BLOCKED. No `ws` write command exists yet.
 - **Active Command:** `ws quant idea-intake-dry-run` remains the only intake command.
 - **Future Protocol:** Human Approval Forms (HAF) are required for any local write.
 - **Validator:** `scripts/quant/human_write_approval.py` is ready to inspect future approvals.
+- **Prep Tool (Standalone):** `python scripts/quant/write_approval_prepare_cli.py prepare-idea-intake-approval`
+- **No-Op Executor (Standalone):** `python scripts/quant/guarded_write_executor_cli.py noop-execute --approval-file <file> --write-audit`
 
 ## 4. Standalone Research CLIs (Wave 1)
 

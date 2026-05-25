@@ -1,14 +1,14 @@
 {
   "approval_required": true,
   "execution_ready": true,
-  "generated_at": "2026-05-25T04:18:23+00:00",
+  "generated_at": "2026-05-25T04:27:01+00:00",
   "generated_files": {
     "manifest": "manifests/positive_path_example__positive_phase_01_foundation_manifest.json",
     "phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
     "worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
   },
   "hashes": {
-    "phase_packet_sha256": "5d9504c0bb2d84a0a574275e11f4a75a402f8fe08cec76862ea65bd40e354942",
+    "phase_packet_sha256": "1ff5760350d719f17744b1f415602a5ba163cc1de79bba48598a3a358d745feb",
     "source_sha256": "9dbaecac8a8ab4d6fa40b77937fa9e2a73366a1c0251b7803e4c1d0032ad5198",
     "worker_prompt_sha256": "40b69b34e83d16786180f7be8da7b05b05d5c2f2eee0089e1e04116645364412"
   },

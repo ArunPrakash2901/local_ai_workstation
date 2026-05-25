@@ -22,7 +22,7 @@ def list_packets(output_root: Path) -> List[Dict[str, Any]]:
                     })
             except Exception:
                 pass
-    return sorted(packets, key=lambda x: x.get("created_at", ""), reverse=True)
+    return sorted(packets, key=lambda x: str(x.get("created_at") or ""), reverse=True)
 
 def review_packet(packet_path: Path, output_root: Path) -> Tuple[bool, List[str], Dict[str, Any]]:
     issues = []

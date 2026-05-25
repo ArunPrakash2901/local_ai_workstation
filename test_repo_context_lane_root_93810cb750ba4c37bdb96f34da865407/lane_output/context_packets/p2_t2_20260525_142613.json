@@ -1,0 +1,28 @@
+{
+  "project_id": "p2",
+  "task_name": "t2",
+  "created_at": "2026-05-25T14:26:13.090006",
+  "human_approval_status": "NOT_APPROVED",
+  "confidence": "LOW",
+  "source_artifacts": {
+    "inventory": null,
+    "graph_summary": null
+  },
+  "candidates": [],
+  "exclusions": {
+    "risky_folders": [],
+    "heavyweight_files": []
+  },
+  "uncertainty": [
+    "No graph summary found for project.",
+    "No project inventory found for project.",
+    "No candidate files could be identified from existing artifacts."
+  ],
+  "suggested_prompt_context": "Focus on t2 in project p2. ",
+  "context_budget_estimate": "Unknown (v0.2 dry-run does not count tokens)",
+  "safety_notes": [
+    "Dry-run packet generation only.",
+    "No source file contents were inspected.",
+    "Human review required before using this packet for downstream tasks."
+  ]
+}

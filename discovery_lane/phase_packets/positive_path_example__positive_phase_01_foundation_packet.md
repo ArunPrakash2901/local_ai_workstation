@@ -133,4 +133,4 @@ None. This is intentionally one phase to keep the positive-path fixture small.
 
 ## Generated Metadata
 
-- generated_at: 2026-05-25T04:18:23+00:00
+- generated_at: 2026-05-25T04:27:01+00:00

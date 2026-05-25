@@ -1,0 +1,14 @@
+{
+  "handoff_id": "test_project_test_task_20260525_142613_gemini",
+  "project_id": "test_project",
+  "task_name": "test_task",
+  "target_agent": "gemini",
+  "source_packet": "D:\\_ai_brain\\test_repo_context_lane_root_471f4807953445a3b68090513b5ad9ec\\lane_output\\context_packets\\test_project_test_task_20260525_142613.json",
+  "source_packet_approved_at": "2026-05-25T14:26:13.047670",
+  "created_at": "2026-05-25T14:26:13.068996",
+  "handoff_status": "DRAFT_NOT_EXECUTED",
+  "execution_status": "NOT_EXECUTED",
+  "approval_scope": "CONTEXT_ONLY",
+  "candidates": [],
+  "safety_verified": true
+}

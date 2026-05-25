@@ -13,6 +13,7 @@ from . import summarize
 from . import context_packet
 from . import packet_review
 from . import context_handoff
+from . import graphify_plan_review
 from . import audit_repo_context_lane
 
 DEFAULT_ROOT = Path("repo_context_lane")
@@ -172,6 +173,65 @@ def command_handoff(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+def command_graphify_plan_list(args: argparse.Namespace) -> int:
+    try:
+        output_root = Path(args.output or DEFAULT_ROOT)
+        plans = graphify_plan_review.list_plans(output_root)
+        if not plans:
+            print("No Graphify plans found.")
+            return 0
+        
+        print(f"{'PROJECT':<20} {'STATUS':<35} {'PATH'}")
+        print("-" * 100)
+        for p in plans:
+            print(f"{p['project_id']:<20} {p['approval_status']:<35} {p['path']}")
+        return 0
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_graphify_plan_review(args: argparse.Namespace) -> int:
+    try:
+        plan_path = Path(args.plan)
+        output_root = Path(args.output or DEFAULT_ROOT)
+        is_valid, issues, data = graphify_plan_review.review_plan(plan_path, output_root)
+        
+        if args.dry_run:
+            result = {
+                "plan": str(plan_path),
+                "is_valid": is_valid,
+                "issues": issues,
+                "status": data.get("approval_status")
+            }
+            print(json.dumps(result, indent=2))
+        else:
+            if is_valid:
+                print(f"Plan {plan_path.name} is VALID.")
+            else:
+                print(f"Plan {plan_path.name} has ISSUES:")
+                for issue in issues:
+                    print(f"- [!] {issue}")
+        return 0 if is_valid else 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+def command_graphify_plan_approve(args: argparse.Namespace) -> int:
+    try:
+        plan_path = Path(args.plan)
+        output_root = Path(args.output or DEFAULT_ROOT)
+        success, message, data = graphify_plan_review.approve_plan(plan_path, output_root, confirm=args.confirm)
+        
+        if success:
+            print(f"SUCCESS: {message}")
+            return 0
+        else:
+            print(f"FAILURE: {message}", file=sys.stderr)
+            return 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Repo Context Lane command dispatcher.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -223,6 +283,22 @@ def build_parser() -> argparse.ArgumentParser:
     handoff.add_argument("--output", help="Output root.")
     handoff.add_argument("--dry-run", action="store_true", help="Print result without writing files.")
     handoff.set_defaults(func=command_handoff)
+
+    gp_list = sub.add_parser("graphify-plan-list", help="List generated Graphify run plans.")
+    gp_list.add_argument("--output", help="Output root.")
+    gp_list.set_defaults(func=command_graphify_plan_list)
+
+    gp_rev = sub.add_parser("graphify-plan-review", help="Review a Graphify plan for safety.")
+    gp_rev.add_argument("--plan", required=True, help="Path to plan JSON.")
+    gp_rev.add_argument("--output", help="Output root.")
+    gp_rev.add_argument("--dry-run", action="store_true", help="Print result as JSON.")
+    gp_rev.set_defaults(func=command_graphify_plan_review)
+
+    gp_app = sub.add_parser("graphify-plan-approve", help="Approve a Graphify plan.")
+    gp_app.add_argument("--plan", required=True, help="Path to plan JSON.")
+    gp_app.add_argument("--output", help="Output root.")
+    gp_app.add_argument("--confirm", action="store_true", help="Required confirmation flag.")
+    gp_app.set_defaults(func=command_graphify_plan_approve)
 
     aud = sub.add_parser("audit", help="Audit Repo Context Lane state.")
     aud.add_argument("--root", help="Lane root.")

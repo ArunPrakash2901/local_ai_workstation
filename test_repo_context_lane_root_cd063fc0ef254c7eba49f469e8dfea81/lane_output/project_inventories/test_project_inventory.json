@@ -1,0 +1,15 @@
+{
+  "project_id": "test_project",
+  "project_path": "D:\\_ai_brain\\test_repo_context_lane_root_cd063fc0ef254c7eba49f469e8dfea81\\test_project",
+  "timestamp": "2026-05-25T14:25:46.805238",
+  "status": "SAFE_FOR_GRAPHIFY_PLAN",
+  "stats": {
+    "total_files": 3,
+    "total_dirs": 1,
+    "risky_folders_found": [],
+    "risky_extensions_found": [],
+    "heavyweight_files": [],
+    "has_graphifyignore": true
+  },
+  "inventory_sample_count": 3
+}

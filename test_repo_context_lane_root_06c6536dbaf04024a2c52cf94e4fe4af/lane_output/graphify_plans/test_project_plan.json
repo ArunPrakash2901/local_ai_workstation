@@ -1,0 +1,14 @@
+{
+  "project_id": "test_project",
+  "project_path": "D:\\_ai_brain\\test_repo_context_lane_root_06c6536dbaf04024a2c52cf94e4fe4af\\test_project",
+  "proposed_output_path": "D:\\graphify-results\\test_project\\graphify-out",
+  "graphify_exe": "C:\\Users\\abi62\\AppData\\Roaming\\Python\\Python313\\Scripts\\graphify.exe",
+  "proposed_command": "\"C:\\Users\\abi62\\AppData\\Roaming\\Python\\Python313\\Scripts\\graphify.exe\" build \"D:\\_ai_brain\\test_repo_context_lane_root_06c6536dbaf04024a2c52cf94e4fe4af\\test_project\" --output \"D:\\graphify-results\\test_project\\graphify-out\"",
+  "timestamp": "2026-05-25T14:26:13.035340",
+  "approval_status": "NOT_APPROVED",
+  "safety_checks": [
+    "Output path is outside project root",
+    "Project path exists",
+    "Command uses absolute paths"
+  ]
+}

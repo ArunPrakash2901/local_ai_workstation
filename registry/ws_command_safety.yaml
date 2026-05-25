@@ -5106,6 +5106,60 @@ commands:
     tui_dispatch_policy: preview_only
     tui_dispatch_allowed: false
     report_write_scope: repo_context_graphify_plan
+  ws repo-context graphify-plan-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists generated Graphify run plans.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: List Plans
+    evidence:
+    - repo_context_lane/tools/graphify_plan_review.py
+    confidence: high
+    notes: Reads graphify_plans/ directory.
+  ws repo-context graphify-plan-review --plan <path>:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: LOCAL_REPORT_WRITE
+    description: Reviews a Graphify run plan for safety.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Review Plan
+    evidence:
+    - repo_context_lane/tools/graphify_plan_review.py
+    confidence: high
+    notes: Validates project scope and output path.
+  ws repo-context graphify-plan-approve --plan <path> --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: visible
+    confirmation: required
+    warning_label: 'Modifies Graphify plan approval metadata'
+    safety_class: GUARDED_WRITE
+    description: Approves a Graphify plan for execution.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Approve Plan
+    evidence:
+    - repo_context_lane/tools/graphify_plan_review.py
+    confidence: high
+    notes: Updates approval_status to APPROVED_FOR_GRAPHIFY_EXECUTION.
   ws repo-context summarize --graph <path> --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
@@ -5259,27 +5313,6 @@ commands:
     - repo_context_lane/tools/packet_review.py
     confidence: high
     notes: Updates human_approval_status to APPROVED_FOR_CONTEXT_USE.
-  ws repo-context handoff --packet <path> --target <codex|gemini|local>:
-    read_only_strict: false
-    read_only_with_local_reports: true
-    safe_dry_run: true
-    tui_exposure: visible
-    confirmation: none
-    warning_label: 'Writes local handoff prompts and manifests'
-    safety_class: LOCAL_REPORT_WRITE
-    description: Generates a bounded handoff for a downstream agent.
-    writes_local_files: true
-    writes_project_files: false
-    invokes_agent_or_model: false
-    external_provider_or_cloud: false
-    operator_label: Context Handoff
-    evidence:
-    - repo_context_lane/tools/context_handoff.py
-    confidence: high
-    notes: Writes artifacts under repo_context_lane/handoffs/ and handoff_manifests/.
-    tui_dispatch_policy: preview_only
-    tui_dispatch_allowed: false
-    report_write_scope: repo_context_handoff
   ws repo-context help:
     read_only_strict: true
     read_only_with_local_reports: true

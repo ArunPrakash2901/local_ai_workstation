@@ -2,10 +2,10 @@
 
 Bounded, dry-run-first repository intelligence layer for token minimisation using Graphify artifacts.
 
-## v0.4 Status
-- Approved context handoff builder.
-- Target agent support: `codex`, `gemini`, `local`.
-- Bounded prompt generation with explicit safety constraints.
+## v0.5 Status
+- Graphify plan review and approval lifecycle.
+- Formal validation of project scopes and output paths.
+- Approval scope limited to `GRAPHIFY_RUN_ONLY`.
 
 ## Goal
 Generate compact repo maps, Graphify run plans, summaries of existing `graph.json` outputs, task-specific context packets, and bounded handoff artifacts so downstream agents have high-signal context without scanning raw project files.
@@ -13,13 +13,16 @@ Generate compact repo maps, Graphify run plans, summaries of existing `graph.jso
 ## Workflow
 1. `ws repo-context inventory --project <path>`: Shallow directory scan.
 2. `ws repo-context graphify-plan --project <path>`: Generate command to build the graph.
-3. (External) Run `graphify`: Build the actual `graph.json`.
-4. `ws repo-context summarize --graph <path>`: Distill `graph.json` into a readable summary.
-5. `ws repo-context packet --project <id> --task <name>`: Generate context packet from inventory + summary.
-6. `ws repo-context packet-list`: List generated packets.
-7. `ws repo-context packet-review --packet <path>`: Review packet for safety issues.
-8. `ws repo-context packet-approve --packet <path> --confirm`: Formally approve for context use.
-9. `ws repo-context handoff --packet <path> --target <target>`: Build a bounded handoff prompt.
+3. `ws repo-context graphify-plan-list`: List generated Graphify plans.
+4. `ws repo-context graphify-plan-review --plan <path>`: Review plan for safety issues.
+5. `ws repo-context graphify-plan-approve --plan <path> --confirm`: Formally approve for execution.
+6. (Future) Run `graphify`: Build the actual `graph.json`.
+7. `ws repo-context summarize --graph <path>`: Distill `graph.json` into a readable summary.
+8. `ws repo-context packet --project <id> --task <name>`: Generate context packet from inventory + summary.
+9. `ws repo-context packet-list`: List generated packets.
+10. `ws repo-context packet-review --packet <path>`: Review packet for safety issues.
+11. `ws repo-context packet-approve --packet <path> --confirm`: Formally approve for context use.
+12. `ws repo-context handoff --packet <path> --target <target>`: Build a bounded handoff prompt.
 
 ## Structure
 - `project_inventories/`: Shallow directory/file metadata reports.
@@ -38,6 +41,6 @@ Generate compact repo maps, Graphify run plans, summaries of existing `graph.jso
 - No uncontrolled autonomous execution.
 - Dry-run first.
 - Local report writes before mutation.
-- No Graphify execution in v0.1/v0.2/v0.3/v0.4.
-- Approval is strictly `CONTEXT_ONLY`.
+- No Graphify execution in v0.1-v0.5.
+- Approval is strictly scoped (e.g., `CONTEXT_ONLY`, `GRAPHIFY_RUN_ONLY`).
 - Handoff artifacts are `NOT_EXECUTED` and require manual operator action to send to a model.

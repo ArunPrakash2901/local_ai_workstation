@@ -57,11 +57,30 @@ def audit_lane(root: Path) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    # Safety check: ensure no execution artifact recorded
-                    if data.get("approval_status") == "APPROVED":
-                        warnings.append(f"Plan is APPROVED (but lane v0.1 does not execute): {path.name}")
-            except Exception:
-                errors.append(f"Invalid JSON in plan: {path.name}")
+                    status = data.get("approval_status")
+                    
+                    if status == "APPROVED_FOR_GRAPHIFY_EXECUTION":
+                        if not data.get("approved_at"):
+                            errors.append(f"Approved plan missing 'approved_at': {path.name}")
+                        if data.get("approval_scope") != "GRAPHIFY_RUN_ONLY":
+                            errors.append(f"Approved plan missing or invalid 'approval_scope': {path.name}")
+                            
+                        # Safety re-validation
+                        p_path = Path(data.get("project_path", "")).resolve()
+                        o_path = Path(data.get("proposed_output_path", "")).resolve()
+                        
+                        if not p_path.exists():
+                            errors.append(f"Approved plan source project missing: {path.name}")
+                        if len(p_path.parts) <= 2:
+                            errors.append(f"Approved plan has unsafe broad project scope: {path.name}")
+                        if str(o_path).startswith(str(p_path)):
+                            errors.append(f"Approved plan output path inside project: {path.name}")
+                            
+                    elif status not in ["NOT_APPROVED", "APPROVED_FOR_GRAPHIFY_EXECUTION"]:
+                        warnings.append(f"Plan has unknown status '{status}': {path.name}")
+                        
+            except Exception as e:
+                errors.append(f"Invalid JSON in plan: {path.name} ({e})")
                 counts["invalid_json"] += 1
 
     # Check graph_summaries

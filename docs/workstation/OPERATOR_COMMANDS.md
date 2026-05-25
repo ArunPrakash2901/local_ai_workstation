@@ -77,6 +77,22 @@ These commands are integrated into the unified `ws` tool and are safe, read-only
 *   **Approval Protocol:** Requires a Human Approval Form (HAF) matching `human_write_approval_schema.yaml`.
 *   **Validation:** `scripts/quant/human_write_approval.py` verifies approvals but always blocks execution in this milestone.
 
+## Standalone Approval Preparation (Q48-Q50)
+
+*   **Tool:** `python scripts/quant/write_approval_prepare_cli.py prepare-idea-intake-approval`
+*   **Behavior:** Computes hashes for inputs and generates a draft HAF and JSON evidence pack.
+*   **Output Paths:** Drafts are saved to `scratch/quant_approvals/` and evidence to `scratch/quant_approvals/evidence/`.
+*   **Safety Posture:** This tool is standalone and does NOT grant write permission. It only prepares the necessary audit trail for a future human reviewer.
+*   **ws Integration:** Not yet integrated; remains a standalone preparation helper.
+
+## Guarded Write No-Op Executor (Q51-Q53)
+
+*   **Tool:** `python scripts/quant/guarded_write_executor_cli.py noop-execute`
+*   **Behavior:** Simulates the final guarded write control flow. Evaluates approvals and safety flags.
+*   **Audit Paths:** Blocked audit logs are saved to `scratch/quant_approvals/evidence/`.
+*   **Safety Posture:** This tool ALWAYS blocks writes in the current milestone. It performs no disk mutation in `reports/quant/`.
+*   **ws Integration:** Standalone only; no write command is exposed through `ws`.
+
 ## Quant Reports
 
 *   **User-facing command:** `ws quant reports`

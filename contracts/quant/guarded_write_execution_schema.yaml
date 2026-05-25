@@ -1,0 +1,49 @@
+# Guarded Write Execution Schema (Q52)
+version: 1
+execution_type: research_idea_intake_write_noop
+required_fields:
+  - guarded_execution_id
+  - execution_type
+  - target_command
+  - approval_file
+  - approval_id
+  - approval_validation_status
+  - future_write_enabled
+  - write_attempted
+  - write_allowed
+  - write_performed
+  - intended_output_directory
+  - intended_output_filename
+  - intended_artifact_type
+  - blocking_issues
+  - audit_status
+  - created_at
+  - safety_financial_advice_generated
+  - safety_trading_signal_generated
+  - safety_bot_logic_generated
+  - safety_live_trading_logic_generated
+  - safety_backtest_run
+  - safety_broker_logic_generated
+  - safety_live_trading_authorized
+
+allowed_values:
+  execution_type:
+    - research_idea_intake_write_noop
+  audit_status:
+    - blocked_noop
+    - invalid
+    - future_ready_but_disabled
+
+safety_boundary:
+  must_be_false:
+    - safety_financial_advice_generated
+    - safety_trading_signal_generated
+    - safety_bot_logic_generated
+    - safety_live_trading_logic_generated
+    - safety_backtest_run
+    - safety_broker_logic_generated
+    - safety_live_trading_authorized
+    - future_write_enabled
+    - write_attempted
+    - write_allowed
+    - write_performed

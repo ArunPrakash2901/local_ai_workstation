@@ -1,0 +1,18 @@
+{
+  "project_id": "test_project",
+  "graph_path": "D:\\_ai_brain\\test_repo_context_lane_root_ee4b5154b37c47d6b6ca696a098b0d1a\\graphify-results\\test_project\\graphify-out\\graph.json",
+  "timestamp": "2026-05-25T14:25:46.879118",
+  "counts": {
+    "nodes": 1,
+    "edges": 0,
+    "communities": 0
+  },
+  "high_degree_nodes": [],
+  "suggested_entrypoints": [
+    "main.py"
+  ],
+  "recommendations": [
+    "Use communities for high-level context",
+    "Focus on high-degree nodes for architectural overview"
+  ]
+}
