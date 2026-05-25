@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Spec Review</title>
+    <style>
+        
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #f9f9f9;
+}
+header {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+}
+.banner {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    font-weight: bold;
+    text-align: center;
+}
+.metadata {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+.metadata dl {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    margin: 0;
+}
+.metadata dt {
+    font-weight: bold;
+    color: #666;
+}
+.metadata dd {
+    margin: 0;
+    font-family: monospace;
+    word-break: break-all;
+}
+section {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+}
+h1, h2, h3 {
+    color: #2c3e50;
+}
+h1 { border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+.content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+.checklist {
+    list-style: none;
+    padding: 0;
+}
+.checklist li {
+    margin-bottom: 0.5rem;
+}
+.checklist input {
+    margin-right: 0.5rem;
+}
+footer {
+    border-top: 1px solid #eee;
+    margin-top: 4rem;
+    padding-top: 1rem;
+    font-size: 0.85rem;
+    color: #777;
+    text-align: center;
+}
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.status-generated { background-color: #d1ecf1; color: #0c5460; }
+
+    </style>
+</head>
+<body>
+    <div class="banner">
+        Review surface only. Canonical source remains Markdown/JSON.
+    </div>
+
+    <header>
+        <h1>Feature Spec Review</h1>
+        <p>Human review surface for feature_spec.</p>
+    </header>
+
+    <div class="metadata">
+        <dl>
+            <dt>Set ID</dt><dd>positive_path_example</dd>
+            <dt>Source Path</dt><dd>feature_specs/positive_path_example_feature_spec.md</dd>
+            <dt>Source SHA-256</dt><dd>727ae145b540265793daf4869bd816804041230b97f6348c5cebf8898c369f7e</dd>
+            <dt>Generated At</dt><dd>2026-05-24T13:39:29.816028+00:00</dd>
+        </dl>
+    </div>
+
+    <section class="content">
+        <h2>Content</h2>
+        <div class="markdown-body">
+            <h1>Feature Spec: positive_path_example</h1>
+<br>
+<h2>Feature Sources</h2>
+<br>
+<ul>
+<li>`execution_handoffs/positive-phase-01-foundation-execution-fixture`</li>
+<li>`phase_packets/positive_path_example__positive_phase_01_foundation_packet.md`</li>
+<li>`worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md`</li>
+<li>`branch_plans/positive_phase_01_foundation_execution_fixture_branch_plan.json`</li>
+<li>`approval_records/positive_phase_01_foundation_execution_fixture_approval_record.json`</li>
+<li>`manifests/positive_path_example__positive_phase_01_foundation_manifest.json`</li>
+</ul>
+<br>
+<h2>Feature List</h2>
+<br>
+<h2>Functional Requirements</h2>
+<br>
+<h3>positive_phase_01 - Foundation Execution Fixture</h3>
+<br>
+<ul>
+<li>Produce exactly one valid phase packet for this fixture.</li>
+<li>Produce exactly one bounded worker prompt for this fixture.</li>
+<li>Preserve the human approval gate.</li>
+<li>Queue only approved handoffs.</li>
+</ul>
+<br>
+<h2>Feature Acceptance Criteria</h2>
+<br>
+<h2>Acceptance Criteria</h2>
+<br>
+<h3>positive_phase_01 - Foundation Execution Fixture</h3>
+<br>
+<ul>
+<li>The fixture reaches `READY_FOR_EXECUTION_LANE`.</li>
+<li>One handoff bundle exists for `positive_phase_01`.</li>
+<li>One branch plan exists and has `PLANNED_NOT_CREATED`.</li>
+<li>No worker prompt is executed.</li>
+<li>No branch is created.</li>
+<li>No commit, push, or merge is performed.</li>
+</ul>
+<br>
+<h2>Assumptions</h2>
+<br>
+<p>Any feature not explicitly listed above is out of scope unless a human updates the Discovery handoff. Inferred features must be marked `ASSUMPTION`.</p>
+<br>
+<h2>Out of Scope</h2>
+<br>
+<h2>Out of Scope</h2>
+<br>
+<h3>positive_phase_01 - Foundation Execution Fixture</h3>
+<br>
+<ul>
+<li>Do not execute worker prompts.</li>
+<li>Do not create or checkout git branches.</li>
+<li>Do not call external models, providers, APIs, or browsers.</li>
+<li>Do not generate application source code.</li>
+</ul>
+<br>
+<h2>Risks</h2>
+<br>
+<h2>Risks</h2>
+<br>
+<h3>positive_phase_01 - Foundation Execution Fixture</h3>
+<br>
+<ul>
+<li>Re-running the fixture must remain idempotent and must not create duplicate approval artifacts.</li>
+<li>The fixture must remain clearly separated from real production research reports.</li>
+</ul>
+<br>
+<h2>Boundary</h2>
+<br>
+<p>No worker prompts were executed. No branches were created. No commit, push, or merge occurred.</p>
+        </div>
+    </section>
+
+    
+        <section>
+            <h2>Detected Highlights</h2>
+            <ul>
+                <li><strong>Risks</strong>: Keywords detected in source.</li><li><strong>Acceptance Criteria</strong>: Keywords detected in source.</li><li><strong>Assumptions</strong>: Keywords detected in source.</li>
+            </ul>
+            <p>Please review the content section above for full details on these items.</p>
+        </section>
+        
+
+    <section>
+        <h2>Human Review Checklist</h2>
+        <ul class="checklist">
+            <li><input type="checkbox"> Scope matches intent</li>
+            <li><input type="checkbox"> Non-goals are clear</li>
+            <li><input type="checkbox"> UI/UX expectations are clear</li>
+            <li><input type="checkbox"> Risks are visible</li>
+            <li><input type="checkbox"> Open decisions are surfaced</li>
+            <li><input type="checkbox"> Ready for next lane</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p>This is a static projection for human review. No execution of worker prompts occurred.</p>
+        <p>No branches were created, checked out, or modified. No commit, push, or merge actions were performed.</p>
+    </footer>
+</body>
+</html>

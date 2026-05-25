@@ -1,0 +1,39 @@
+{
+  "set_id": "positive_path_example",
+  "generated_timestamp": "2026-05-24T13:39:29.816028+00:00",
+  "source_manifest": "product_development_lane\\manifests\\positive_path_example_product_development_manifest.json",
+  "artifacts": {
+    "product_packet": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_product_packet_review.html",
+      "source_path": "product_packets/positive_path_example_product_packet.md",
+      "source_hash": "81b6595c3d8a395a822bb54380085462d99d36466bb32b369b461faec27226f7"
+    },
+    "prd_brief": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_prd_brief_review.html",
+      "source_path": "prd_briefs/positive_path_example_prd_brief.md",
+      "source_hash": "793c60dfadeb6053c23d05b7e4f426ce8e761df28df33fd05da00fd2afaec39c"
+    },
+    "wireframe_brief": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_wireframe_brief_review.html",
+      "source_path": "wireframe_briefs/positive_path_example_wireframe_brief.md",
+      "source_hash": "50b22c02a8c01ef7967136090ee802b94d0280d367fbbd48d934dcac58d27343"
+    },
+    "ui_ux_brief": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_ui_ux_brief_review.html",
+      "source_path": "ui_ux_briefs/positive_path_example_ui_ux_brief.md",
+      "source_hash": "34758e66ede631a07c2e29d779749b18aa844a9f3e31f9f44b72d86520e96c81"
+    },
+    "feature_spec": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_feature_spec_review.html",
+      "source_path": "feature_specs/positive_path_example_feature_spec.md",
+      "source_hash": "727ae145b540265793daf4869bd816804041230b97f6348c5cebf8898c369f7e"
+    },
+    "implementation_plan": {
+      "html_path": "product_development_lane\\review_artifacts\\html\\positive_path_example_implementation_plan_review.html",
+      "source_path": "implementation_plans/positive_path_example_implementation_plan.md",
+      "source_hash": "1ceadfadba3c351d954055e4502d719e714783a6b9cb3ecc81b8f1c43b5a6e03"
+    }
+  },
+  "dashboard": "product_development_lane\\review_artifacts\\html\\positive_path_example_review_dashboard.html",
+  "status": "REVIEW_SURFACES_GENERATED"
+}

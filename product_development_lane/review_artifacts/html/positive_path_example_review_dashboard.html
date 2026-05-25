@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Dashboard - positive_path_example</title>
+    <style>
+        
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #f9f9f9;
+}
+header {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+}
+.banner {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    font-weight: bold;
+    text-align: center;
+}
+.metadata {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+.metadata dl {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    margin: 0;
+}
+.metadata dt {
+    font-weight: bold;
+    color: #666;
+}
+.metadata dd {
+    margin: 0;
+    font-family: monospace;
+    word-break: break-all;
+}
+section {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+}
+h1, h2, h3 {
+    color: #2c3e50;
+}
+h1 { border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+.content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+.checklist {
+    list-style: none;
+    padding: 0;
+}
+.checklist li {
+    margin-bottom: 0.5rem;
+}
+.checklist input {
+    margin-right: 0.5rem;
+}
+footer {
+    border-top: 1px solid #eee;
+    margin-top: 4rem;
+    padding-top: 1rem;
+    font-size: 0.85rem;
+    color: #777;
+    text-align: center;
+}
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.status-generated { background-color: #d1ecf1; color: #0c5460; }
+
+        .artifact-list { list-style: none; padding: 0; }
+        .artifact-list li { 
+            background: #fff; border: 1px solid #ddd; margin-bottom: 1rem; padding: 1rem; border-radius: 4px;
+        }
+        .artifact-list a { font-weight: bold; text-decoration: none; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="banner">Review Dashboard. Canonical source remains Markdown/JSON.</div>
+    <header>
+        <h1>Review Dashboard: positive_path_example</h1>
+        <p>Set ID: positive_path_example | Generated: 2026-05-24T13:39:29.816028+00:00</p>
+    </header>
+    
+    <section>
+        <h2>Generated Review Surfaces</h2>
+        <ul class="artifact-list">
+            <li><a href="positive_path_example_product_packet_review.html">Product Packet Review</a> (Source: product_packets/positive_path_example_product_packet.md)</li><li><a href="positive_path_example_prd_brief_review.html">PRD Brief Review</a> (Source: prd_briefs/positive_path_example_prd_brief.md)</li><li><a href="positive_path_example_wireframe_brief_review.html">Wireframe Brief Review</a> (Source: wireframe_briefs/positive_path_example_wireframe_brief.md)</li><li><a href="positive_path_example_ui_ux_brief_review.html">UI/UX Brief Review</a> (Source: ui_ux_briefs/positive_path_example_ui_ux_brief.md)</li><li><a href="positive_path_example_feature_spec_review.html">Feature Spec Review</a> (Source: feature_specs/positive_path_example_feature_spec.md)</li><li><a href="positive_path_example_implementation_plan_review.html">Implementation Plan Review</a> (Source: implementation_plans/positive_path_example_implementation_plan.md)</li>
+        </ul>
+    </section>
+    
+    <section>
+        <h2>Status</h2>
+        <p><span class="status-badge status-generated">REVIEW_SURFACES_GENERATED</span></p>
+        <p><strong>Next Step:</strong> Review the documents above. Decisions must be recorded back to the workstation using standard approval commands.</p>
+    </section>
+
+    <footer>
+        <p>This dashboard does not approve or execute anything.</p>
+    </footer>
+</body>
+</html>

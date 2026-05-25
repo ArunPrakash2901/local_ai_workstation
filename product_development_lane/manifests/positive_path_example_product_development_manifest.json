@@ -1,0 +1,59 @@
+{
+  "application_code_generated": false,
+  "artifact_status": "GENERATED_PRODUCT_DEVELOPMENT_PLANNING_ARTIFACTS",
+  "branches_created": false,
+  "commit_performed": false,
+  "discovery_artifacts_modified": false,
+  "generated_by": "Product Development Lane adapter v0.1",
+  "generated_timestamp": "2026-05-25T04:15:15+00:00",
+  "git_actions_performed": false,
+  "inputs": [
+    {
+      "approval_record": "approval_records/positive_phase_01_foundation_execution_fixture_approval_record.json",
+      "branch_plan": "branch_plans/positive_phase_01_foundation_execution_fixture_branch_plan.json",
+      "handoff": "execution_handoffs/positive-phase-01-foundation-execution-fixture/HANDOFF.md",
+      "handoff_bundle": "execution_handoffs/positive-phase-01-foundation-execution-fixture",
+      "phase_id": "positive_phase_01",
+      "phase_manifest": "manifests/positive_path_example__positive_phase_01_foundation_manifest.json",
+      "phase_packet": "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md",
+      "phase_packet_sha256": "3d789cd6df0df139a9b32a1dbab3e47359e9aef41c8c839e3738b4628af76184",
+      "phase_title": "Foundation Execution Fixture",
+      "worker_prompt": "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md",
+      "worker_prompt_sha256": "40b69b34e83d16786180f7be8da7b05b05d5c2f2eee0089e1e04116645364412"
+    }
+  ],
+  "merge_performed": false,
+  "models_called": false,
+  "outputs": {
+    "feature_spec": "feature_specs/positive_path_example_feature_spec.md",
+    "implementation_plan": "implementation_plans/positive_path_example_implementation_plan.md",
+    "manifest": "manifests/positive_path_example_product_development_manifest.json",
+    "prd_brief": "prd_briefs/positive_path_example_prd_brief.md",
+    "product_packet": "product_packets/positive_path_example_product_packet.md",
+    "report": "reports/positive_path_example_adapter_report.md",
+    "ui_ux_brief": "ui_ux_briefs/positive_path_example_ui_ux_brief.md",
+    "wireframe_brief": "wireframe_briefs/positive_path_example_wireframe_brief.md"
+  },
+  "push_performed": false,
+  "queued_phase_count": 1,
+  "set_id": "positive_path_example",
+  "source_approval_records": [
+    "approval_records/positive_phase_01_foundation_execution_fixture_approval_record.json"
+  ],
+  "source_branch_plans": [
+    "branch_plans/positive_phase_01_foundation_execution_fixture_branch_plan.json"
+  ],
+  "source_execution_queue": "execution_queues/positive_path_example_execution_queue.json",
+  "source_execution_queue_sha256": "384cb4670cfaf3d58a367f50c518dca524e70af9745a6f75c88b96c1d04a7dd4",
+  "source_handoffs": [
+    "execution_handoffs/positive-phase-01-foundation-execution-fixture"
+  ],
+  "source_phase_packets": [
+    "phase_packets/positive_path_example__positive_phase_01_foundation_packet.md"
+  ],
+  "source_queue_status": "READY_FOR_EXECUTION_LANE",
+  "source_worker_prompts": [
+    "worker_prompts/positive_path_example__positive_phase_01_foundation_worker_prompt.md"
+  ],
+  "worker_prompts_executed": false
+}
