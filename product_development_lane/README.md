@@ -49,6 +49,8 @@ Workstation bridge:
 
 ```bash
 ws product-dev build-packet --queue discovery_lane/execution_queues/positive_path_example_execution_queue.json
+ws product-dev review-html --manifest product_development_lane/manifests/positive_path_example_product_development_manifest.json
+ws product-dev review-audit
 ws product-dev audit
 ws product-dev help
 ```
@@ -57,13 +59,14 @@ ws product-dev help
 
 1. Discovery Lane reaches `READY_FOR_EXECUTION_LANE`.
 2. Run the product packet adapter.
-3. Review generated PRD, wireframe brief, UI/UX brief, feature spec, and implementation plan in VS Code.
-4. Use those artifacts later for Product Development Lane or UI/UX adapter work.
-5. Keep execution separate.
+3. Build review HTML surfaces for the new manifest.
+4. Review generated PRD, wireframe brief, UI/UX brief, feature spec, and implementation plan in VS Code or a browser using the generated HTML dashboard.
+5. Use those artifacts later for Product Development Lane or UI/UX adapter work.
+6. Keep execution separate.
 
-## Human Review Artifacts (v0.2)
+## Human Review Artifacts (v0.2.1)
 
-Product Development Lane v0.2 introduces static HTML review surfaces for generated artifacts.
+Product Development Lane v0.2.1 integrates static HTML review surfaces into the workstation CLI.
 
 - **Markdown/JSON** remain the canonical source of truth (Bucket 1).
 - **HTML** serves as a human review surface for inspection and judgment (Bucket 2).
@@ -78,12 +81,18 @@ Review surfaces do **not**:
 ### Commands
 
 Generate review artifacts:
-```powershell
-python product_development_lane\tools\build_review_html.py --manifest product_development_lane\manifests\<set_id>_product_development_manifest.json --output product_development_lane\review_artifacts
+```bash
+ws product-dev review-html --manifest product_development_lane/manifests/<set_id>_product_development_manifest.json
 ```
 
 Audit review artifacts:
+```bash
+ws product-dev review-audit
+```
+
+Python fallback:
 ```powershell
+python product_development_lane\tools\build_review_html.py --manifest product_development_lane\manifests\<set_id>_product_development_manifest.json --output product_development_lane\review_artifacts
 python product_development_lane\tools\audit_review_artifacts.py --root product_development_lane
 ```
 

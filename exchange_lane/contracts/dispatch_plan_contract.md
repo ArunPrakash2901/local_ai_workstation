@@ -2,15 +2,20 @@
 
 A dispatch plan is metadata that links an exchange packet to a runtime assignment/session for future execution.
 
-It is not execution approval.
+A dispatch plan is not execution approval.
 
-It does not:
+A dispatch plan does not:
 - start terminals
+- start sessions
 - run CLIs
 - run models
+- call APIs
+- automate browsers
 - approve permission prompts
 - create branches
-- commit, push, or merge
+- commit
+- push
+- merge
 
 ## Required Fields
 
@@ -57,3 +62,17 @@ It does not:
 - `commit_allowed: false`
 - `push_allowed: false`
 - `merge_allowed: false`
+
+## Safety Boundary
+
+Dispatch planning stops before execution.
+
+- A dispatch plan records intent only.
+- A dispatch plan may link a packet to a runtime session and assignment.
+- A dispatch plan may record compatibility and checksum validation results.
+- A dispatch plan does not dispatch the packet.
+- A dispatch plan does not start terminals.
+- A dispatch plan does not run CLIs.
+- A dispatch plan does not approve permission prompts.
+- A dispatch plan does not create branches.
+- A dispatch plan does not commit, push, or merge.

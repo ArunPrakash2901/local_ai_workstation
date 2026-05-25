@@ -50,7 +50,24 @@
       "subactions": {
         "status": "ws exchange status",
         "audit": "ws exchange audit",
-        "packets": "ws exchange packet-list"
+        "packets": "ws exchange packet-list",
+        "approve": "ws exchange approve-planning --packet-id <id> --note \"...\"",
+        "plan": "ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>",
+        "plans": "ws exchange dispatch-plan-list",
+        "plan-status": "ws exchange dispatch-plan-status --dispatch-plan-id <id>"
+      },
+      "safety_class": "PURE_READ",
+      "writes_local_files": false,
+      "tool_execution": false
+    },
+    {
+      "command": "/review",
+      "status": "PLANNED_MAPPING",
+      "default_action": "Audit Product Development review artifacts",
+      "maps_to": "ws product-dev review-audit",
+      "subactions": {
+        "audit": "ws product-dev review-audit",
+        "build": "ws product-dev review-html --manifest <current_product_dev_manifest>"
       },
       "safety_class": "PURE_READ",
       "writes_local_files": false,

@@ -40,6 +40,43 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/check_local_safety.py
 | `check_local_safety.py` | No | No | No | No-write validation of safety manifest and syntax |
 | `ws ready` | Yes, local readiness/status reports | Yes | No unless implementation changes | Operational readiness/status check |
 
+## Product Development Lane (v0.2.1)
+
+Product Development Lane consumes approved Discovery Lane execution queue manifests and converts them into non-executing planning artifacts.
+
+Current support:
+- Building product packets, PRDs, wireframe briefs, UI/UX briefs, feature specs, and implementation plans from READY Discovery queues.
+- Generating static HTML human-review surfaces for generated artifacts.
+- Auditing Product Development Lane structure and review artifacts.
+
+### Commands (WSL preferred)
+
+Build product packet and artifacts (LOCAL_REPORT_WRITE):
+```bash
+./scripts/ws product-dev build-packet --queue discovery_lane/execution_queues/<queue_id>.json
+```
+
+Generate HTML review surfaces (LOCAL_REPORT_WRITE):
+```bash
+./scripts/ws product-dev review-html --manifest product_development_lane/manifests/<manifest_id>.json
+```
+
+Audit review artifacts (PURE_READ):
+```bash
+./scripts/ws product-dev review-audit
+```
+
+Audit lane structure (PURE_READ):
+```bash
+./scripts/ws product-dev audit
+```
+
+### Safety Notes
+- `ws product-dev build-packet` writes multiple planning artifacts but does not modify Discovery Lane or project source code.
+- `ws product-dev review-html` writes static HTML files under `product_development_lane/review_artifacts/`. HTML surfaces are read-only and do not write decisions back to canonical source.
+- `ws product-dev review-audit` is a pure-read audit of generated review artifacts.
+- No commands in this lane execute worker prompts, create branches, or call external models/providers.
+
 ---
 
 ## Product Lane Phase 0 + Phase 1 Slice 5 + Phase 2 Slice 4 + Scope Revision Slice 2

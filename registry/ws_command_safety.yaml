@@ -2138,6 +2138,47 @@ commands:
     - scripts/ws
     confidence: high
     notes: Reads a READY Discovery Lane execution queue plus referenced approved handoff artifacts and writes product packet, PRD brief, wireframe brief, UI/UX brief, feature spec, implementation plan, manifest, and report; does not modify Discovery artifacts, execute worker prompts, create branches, call models/providers, commit, push, or merge.
+  ws product-dev review-html:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Builds static HTML review surfaces for a Product Development manifest.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Build product development review HTML
+    warning_label: Writes local Product Development static HTML review report artifacts under product_development_lane/review_artifacts/
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: product_dev_review_artifacts
+    evidence:
+    - product_development_lane/tools/build_review_html.py
+    - product_development_lane/tools/product_dev_command.py
+    confidence: high
+    notes: Generates human-review HTML surfaces only; canonical Markdown/JSON remain source of truth.
+  ws product-dev review-audit:
+    safety_class: PURE_READ
+    description: Audits Product Development review artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Audit product development review artifacts
+    warning_label: Read-only audit of Product Development review artifacts
+    evidence:
+    - product_development_lane/tools/audit_review_artifacts.py
+    - product_development_lane/tools/product_dev_command.py
+    confidence: high
+    notes: Audits Product Development review artifacts only.
   ws runtime help:
     safety_class: PURE_READ
     description: Shows Runtime Session Lane command help.
@@ -2558,6 +2599,95 @@ commands:
     - scripts/ws
     confidence: high
     notes: Pure-read packet inspection only.
+  ws exchange approve-planning:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Updates one Exchange Lane packet from READY_FOR_REVIEW to APPROVED_FOR_DISPATCH_PLANNING.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange approve planning
+    warning_label: Writes local Exchange packet report/status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_packets
+    evidence:
+    - exchange_lane/tools/exchange_packet.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Updates only packet metadata for planning approval; does not create dispatch plans, dispatch packets, start terminals, run CLIs/models/browsers, approve prompts, create branches, commit, push, or merge.
+    slash_command: /exchange approve
+  ws exchange dispatch-plan:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes a dispatch plan artifact linking a packet to a runtime session and assignment.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange dispatch plan
+    warning_label: Writes local Exchange dispatch plan report/status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_dispatch_plans
+    evidence:
+    - exchange_lane/tools/exchange_dispatch_plan.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes dispatch plan metadata only; does not dispatch packets, start terminals, run CLIs/models/browsers, approve prompts, create branches, commit, push, or merge.
+    slash_command: /exchange plan
+  ws exchange dispatch-plan-list:
+    safety_class: PURE_READ
+    description: Lists Exchange Lane dispatch plan artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange dispatch plan list
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_dispatch_plan.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read dispatch plan listing only.
+    slash_command: /exchange plans
+  ws exchange dispatch-plan-status:
+    safety_class: PURE_READ
+    description: Shows one Exchange Lane dispatch plan artifact.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange dispatch plan status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_dispatch_plan.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read dispatch plan inspection only.
   ws exchange adapter-list:
     safety_class: PURE_READ
     description: Lists Exchange Lane routing adapters.

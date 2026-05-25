@@ -110,6 +110,11 @@ Repo Context Lane Mapping:
 - `/graph intake <path>` -> `ws repo-context graphify-intake --run <path> --dry-run`
 - `/graph status <path>` -> `ws repo-context graphify-run-status --plan <path>`
 
+Product Development Lane Mapping:
+- `/review` -> `ws product-dev review-audit`
+- `/review audit` -> `ws product-dev review-audit`
+- `/review build` -> `ws product-dev review-html --manifest <current_product_dev_manifest>`
+
 Safety inheritance:
 - safety class: `PURE_READ`
 - writes: `false`

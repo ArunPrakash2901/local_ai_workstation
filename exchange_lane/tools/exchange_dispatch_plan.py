@@ -49,6 +49,14 @@ SESSION_BLOCKING_STATUSES = {
     "CLOSED",
 }
 MANUAL_ADAPTER_ALIASES = {"manual", "unknown", ""}
+PLANNED_STATUS_PRECEDENCE = (
+    "BLOCKED_NO_SESSION",
+    "BLOCKED_SESSION_NOT_READY",
+    "BLOCKED_ASSIGNMENT_MISSING",
+    "BLOCKED_ADAPTER_MISMATCH",
+    "BLOCKED_SOURCE_CHANGED",
+    "BLOCKED_OPERATOR_DECISION_REQUIRED",
+)
 
 
 class DispatchPlanError(Exception):
@@ -105,6 +113,13 @@ def same_path(left: str, right: str) -> bool:
         return left == right
 
 
+def choose_planned_status(blocked_statuses: set[str]) -> str:
+    for status in PLANNED_STATUS_PRECEDENCE:
+        if status in blocked_statuses:
+            return status
+    return "PLANNED_NOT_DISPATCHED"
+
+
 def build_dispatch_plan_id(packet_id: str, session_id: str, assignment_id: str) -> str:
     stamp = utc_now().replace(":", "").replace("-", "").replace("Z", "z")
     return require_id(f"{packet_id}__{session_id}__{assignment_id}__{stamp}", "dispatch_plan_id")
@@ -124,10 +139,13 @@ def render_report(plan: dict[str, Any]) -> str:
         "",
         "## Safety Boundary",
         "",
+        "- Dispatch plan is not execution approval.",
         "- Dispatch plan does not dispatch.",
         "- Dispatch plan does not execute.",
         "- Dispatch plan does not start terminals.",
+        "- Dispatch plan does not start sessions.",
         "- Dispatch plan does not approve permission prompts.",
+        "- Dispatch plan does not run CLIs, models, or browsers.",
         "- Dispatch plan does not create branches, commits, pushes, or merges.",
         "",
         "## Blocked Reasons",
@@ -176,54 +194,70 @@ def evaluate_plan(
     assignment = load_json(assignment_file) if assignment_file.exists() else None
 
     blocked: list[str] = []
+    blocked_statuses: set[str] = set()
     compatibility_notes: list[str] = []
-    planned_status = "PLANNED_NOT_DISPATCHED"
 
     packet_checksum = sha256_file(packet_file)
     source_artifact_path = str(packet.get("source_artifact_path", ""))
     recorded_source_checksum = str(packet.get("source_artifact_checksum", ""))
     current_source_checksum = recorded_source_checksum
-    if source_artifact_path and Path(source_artifact_path).exists() and Path(source_artifact_path).is_file():
-        current_source_checksum = sha256_file(Path(source_artifact_path))
+    source_artifact = Path(source_artifact_path).expanduser() if source_artifact_path else None
+    if source_artifact and source_artifact.exists() and source_artifact.is_file():
+        current_source_checksum = sha256_file(source_artifact)
         if recorded_source_checksum and current_source_checksum != recorded_source_checksum:
-            planned_status = "BLOCKED_SOURCE_CHANGED"
+            blocked_statuses.add("BLOCKED_SOURCE_CHANGED")
             blocked.append("source artifact checksum changed")
     elif source_artifact_path:
         compatibility_notes.append("source artifact is missing or not a file; checksum could not be recomputed")
 
     if session is None:
-        planned_status = "BLOCKED_NO_SESSION" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+        blocked_statuses.add("BLOCKED_NO_SESSION")
         blocked.append(f"runtime session missing: {session_id}")
     else:
         session_status = str(session.get("status", ""))
         if session_status in SESSION_BLOCKING_STATUSES:
-            planned_status = "BLOCKED_SESSION_NOT_READY" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+            blocked_statuses.add("BLOCKED_SESSION_NOT_READY")
             blocked.append(f"runtime session not ready: {session_status}")
 
     if assignment is None:
-        planned_status = "BLOCKED_ASSIGNMENT_MISSING" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+        blocked_statuses.add("BLOCKED_ASSIGNMENT_MISSING")
         blocked.append(f"runtime assignment missing: {assignment_id}")
     else:
         assignment_source = str(assignment.get("task_source_path", ""))
-        if assignment_source and source_artifact_path and not same_path(assignment_source, source_artifact_path):
-            planned_status = "BLOCKED_OPERATOR_DECISION_REQUIRED" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
-            blocked.append("assignment task source does not match packet source artifact")
+        assignment_checksum = str(assignment.get("task_source_checksum", ""))
+        if assignment_source and source_artifact_path:
+            if same_path(assignment_source, source_artifact_path):
+                compatibility_notes.append("assignment task source path matches packet source artifact")
+            elif assignment_checksum and current_source_checksum and assignment_checksum == current_source_checksum:
+                compatibility_notes.append("assignment checksum matches packet source artifact checksum")
+            else:
+                blocked_statuses.add("BLOCKED_OPERATOR_DECISION_REQUIRED")
+                blocked.append("assignment task source does not match packet source artifact")
+        elif assignment_checksum and current_source_checksum and assignment_checksum == current_source_checksum:
+            compatibility_notes.append("assignment checksum matches packet source artifact checksum")
+        else:
+            compatibility_notes.append("assignment source compatibility could not be fully validated")
         if assignment.get("session_id") != session_id:
-            planned_status = "BLOCKED_OPERATOR_DECISION_REQUIRED" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+            blocked_statuses.add("BLOCKED_OPERATOR_DECISION_REQUIRED")
             blocked.append("assignment is not owned by target session")
 
     packet_adapter = str(packet.get("target_adapter", ""))
     session_adapter = str(session.get("adapter_type", "")) if session else ""
     assignment_adapter = str(assignment.get("adapter_id", "")) if assignment else ""
+    if session and not session_adapter:
+        blocked_statuses.add("BLOCKED_OPERATOR_DECISION_REQUIRED")
+        blocked.append("runtime session adapter is missing")
     if session and assignment and assignment_adapter and assignment_adapter != session_adapter:
-        planned_status = "BLOCKED_ADAPTER_MISMATCH" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+        blocked_statuses.add("BLOCKED_ADAPTER_MISMATCH")
         blocked.append("runtime assignment adapter does not match runtime session adapter")
     if session and packet_adapter not in MANUAL_ADAPTER_ALIASES and packet_adapter != session_adapter:
-        planned_status = "BLOCKED_ADAPTER_MISMATCH" if planned_status == "PLANNED_NOT_DISPATCHED" else planned_status
+        blocked_statuses.add("BLOCKED_ADAPTER_MISMATCH")
         blocked.append("packet target adapter does not match runtime session adapter")
 
+    planned_status = choose_planned_status(blocked_statuses)
     plan_id = build_dispatch_plan_id(packet_id, session_id, assignment_id)
     compatibility_status = "PASS" if planned_status == "PLANNED_NOT_DISPATCHED" else "BLOCKED"
+    target_adapter = session_adapter or packet_adapter
     plan = {
         "dispatch_plan_id": plan_id,
         "packet_id": packet_id,
@@ -231,7 +265,7 @@ def evaluate_plan(
         "packet_checksum": packet_checksum,
         "source_artifact_path": source_artifact_path,
         "source_artifact_checksum": current_source_checksum,
-        "target_adapter": packet_adapter,
+        "target_adapter": target_adapter,
         "target_session_id": session_id,
         "target_assignment_id": assignment_id,
         "runtime_session_path": str(session_file.resolve()) if session_file.exists() else "",
@@ -242,7 +276,9 @@ def evaluate_plan(
         "compatibility_status": compatibility_status,
         "compatibility_notes": compatibility_notes,
         "quota_notes": str(session.get("quota_status", "")) if session else "",
-        "approval_notes": f"packet_status={packet_status}",
+        "approval_notes": (
+            f"packet_status={packet_status}; dispatch planning records intent only and is not execution approval"
+        ),
         "operator_notes": [],
         "execution_allowed": False,
         "commit_allowed": False,
@@ -255,8 +291,11 @@ def evaluate_plan(
             else "Resolve blocked reasons, then generate a new dispatch plan."
         ),
         "execution_occurred": False,
+        "session_started": False,
         "terminal_started": False,
         "cli_executed": False,
+        "model_invoked": False,
+        "browser_automated": False,
         "branch_created": False,
         "commit_performed": False,
         "push_performed": False,

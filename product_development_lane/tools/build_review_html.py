@@ -309,7 +309,7 @@ def build_review_html(manifest_path: Path, output_root: Path) -> dict[str, Any]:
         
         html_path.write_text(html_content, encoding="utf-8")
         review_artifacts[key] = {
-            "html_path": str(html_path.relative_to(lane_root.parent)),
+            "html_path": str(html_path.resolve().relative_to(lane_root.resolve().parent)),
             "source_path": rel_path,
             "source_hash": source_hash
         }
@@ -369,9 +369,9 @@ def build_review_html(manifest_path: Path, output_root: Path) -> dict[str, Any]:
     review_manifest = {
         "set_id": set_id,
         "generated_timestamp": timestamp,
-        "source_manifest": str(manifest_path.relative_to(lane_root.parent)),
+        "source_manifest": str(manifest_path.resolve().relative_to(lane_root.resolve().parent)),
         "artifacts": review_artifacts,
-        "dashboard": str(dashboard_path.relative_to(lane_root.parent)),
+        "dashboard": str(dashboard_path.resolve().relative_to(lane_root.resolve().parent)),
         "status": "REVIEW_SURFACES_GENERATED"
     }
     

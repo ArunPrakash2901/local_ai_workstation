@@ -199,18 +199,44 @@ def get_packet(root: Path, packet_id: str) -> dict[str, Any]:
     return load_json(packet_path(root, packet_id))
 
 
-def update_packet_status(root: Path, packet_id: str, status: str, note: str) -> Path:
-    data = get_packet(root, packet_id)
-    if status not in PACKET_STATUSES:
-        raise ExchangePacketError(f"invalid packet status: {status}")
-    data["packet_status"] = status
+def append_operator_note(data: dict[str, Any], note: str, *, timestamp: str | None = None) -> str:
+    stamp = timestamp or utc_now()
     notes = data.setdefault("operator_notes", [])
     if not isinstance(notes, list):
         notes = []
         data["operator_notes"] = notes
     if note.strip():
-        notes.append({"timestamp": utc_now(), "note": note})
-    data["updated_at"] = utc_now()
+        notes.append({"timestamp": stamp, "note": note})
+    return stamp
+
+
+def update_packet_status(root: Path, packet_id: str, status: str, note: str) -> Path:
+    data = get_packet(root, packet_id)
+    if status not in PACKET_STATUSES:
+        raise ExchangePacketError(f"invalid packet status: {status}")
+    data["packet_status"] = status
+    stamp = append_operator_note(data, note)
+    data["updated_at"] = stamp
+    out = packet_path(root, packet_id)
+    write_json(out, data)
+    return out
+
+
+def approve_planning(root: Path, packet_id: str, note: str) -> Path:
+    if not note.strip():
+        raise ExchangePacketError("approve-planning requires a non-empty --note")
+    data = get_packet(root, packet_id)
+    current_status = str(data.get("packet_status", ""))
+    if current_status == "DRAFT":
+        raise ExchangePacketError("approve-planning refuses DRAFT packets; run mark-ready first")
+    if current_status != "READY_FOR_REVIEW":
+        raise ExchangePacketError(
+            "approve-planning only supports READY_FOR_REVIEW -> APPROVED_FOR_DISPATCH_PLANNING"
+        )
+    stamp = append_operator_note(data, note)
+    data["packet_status"] = "APPROVED_FOR_DISPATCH_PLANNING"
+    data["planning_approved_at"] = stamp
+    data["updated_at"] = stamp
     out = packet_path(root, packet_id)
     write_json(out, data)
     return out
@@ -218,7 +244,7 @@ def update_packet_status(root: Path, packet_id: str, status: str, note: str) -> 
 
 def cmd_create(args: argparse.Namespace) -> int:
     out = create_packet(
-        Path(args.root).resolve(),
+        Path(args.root),
         source_artifact=args.source_artifact,
         source_lane=args.source_lane,
         target_adapter=args.target_adapter,
@@ -230,7 +256,7 @@ def cmd_create(args: argparse.Namespace) -> int:
 
 
 def cmd_packet_list(args: argparse.Namespace) -> int:
-    packets = list_packets(Path(args.root).resolve())
+    packets = list_packets(Path(args.root))
     if not packets:
         print("no exchange packets")
         return 0
@@ -245,13 +271,13 @@ def cmd_packet_list(args: argparse.Namespace) -> int:
 
 
 def cmd_packet_status(args: argparse.Namespace) -> int:
-    packet = get_packet(Path(args.root).resolve(), args.packet_id)
+    packet = get_packet(Path(args.root), args.packet_id)
     print(json.dumps(packet, indent=2, sort_keys=True))
     return 0
 
 
 def cmd_mark_ready(args: argparse.Namespace) -> int:
-    root = Path(args.root).resolve()
+    root = Path(args.root)
     packet = get_packet(root, args.packet_id)
     if packet.get("packet_status") != "DRAFT":
         raise ExchangePacketError("mark-ready only supports DRAFT -> READY_FOR_REVIEW")
@@ -260,8 +286,14 @@ def cmd_mark_ready(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_approve_planning(args: argparse.Namespace) -> int:
+    out = approve_planning(Path(args.root), args.packet_id, args.note)
+    print(f"planning approved: {out}")
+    return 0
+
+
 def cmd_block(args: argparse.Namespace) -> int:
-    out = update_packet_status(Path(args.root).resolve(), args.packet_id, "BLOCKED", args.reason or "")
+    out = update_packet_status(Path(args.root), args.packet_id, "BLOCKED", args.reason or "")
     print(f"blocked packet: {out}")
     return 0
 
@@ -296,6 +328,15 @@ def build_parser() -> argparse.ArgumentParser:
     ready.add_argument("--packet-id", required=True)
     ready.add_argument("--note", default="")
     ready.set_defaults(func=cmd_mark_ready)
+
+    approve = sub.add_parser(
+        "approve-planning",
+        help="Move packet from READY_FOR_REVIEW to APPROVED_FOR_DISPATCH_PLANNING.",
+    )
+    approve.add_argument("--root", default=str(DEFAULT_ROOT))
+    approve.add_argument("--packet-id", required=True)
+    approve.add_argument("--note", required=True)
+    approve.set_defaults(func=cmd_approve_planning)
 
     block = sub.add_parser("block", help="Block a packet.")
     block.add_argument("--root", default=str(DEFAULT_ROOT))

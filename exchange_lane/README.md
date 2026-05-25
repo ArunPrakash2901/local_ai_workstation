@@ -1,8 +1,8 @@
-# Exchange Lane v0.1
+# Exchange Lane v0.2
 
 Exchange Lane is the structured packet layer between existing workstation artifacts and runtime sessions.
 
-It is metadata-only in v0.1:
+It is metadata-only in v0.2:
 - No dispatch
 - No execution
 - No terminal control
@@ -29,16 +29,17 @@ It is metadata-only in v0.1:
 - Runtime Lane: tracks sessions, assignments, blockers, and workload.
 - Execution Lane: future consumer for dispatch/execution decisions.
 
-## Packet Lifecycle (v0.1)
+## Packet Lifecycle (v0.2)
 
-`DRAFT` -> `READY_FOR_REVIEW` -> future `APPROVED_FOR_DISPATCH_PLANNING` -> future `DISPATCH_PLANNED` -> future `RESULT_IMPORTED`
+`DRAFT` -> `READY_FOR_REVIEW` -> `APPROVED_FOR_DISPATCH_PLANNING` -> future `DISPATCH_PLANNED` -> future `RESULT_IMPORTED`
 
-v0.1 stops before dispatch.
+v0.2 stops before execution.
 
 ## Command Surface
 
 Canonical Python:
 - `python exchange_lane/tools/exchange_packet.py help`
+- `python exchange_lane/tools/exchange_dispatch_plan.py help`
 - `python exchange_lane/tools/exchange_command.py help`
 - `python exchange_lane/tools/audit_exchange_lane.py --root exchange_lane`
 
@@ -48,13 +49,38 @@ Canonical ws:
 - `ws exchange audit`
 - `ws exchange packet-list`
 - `ws exchange packet-status --packet-id <id>`
+- `ws exchange approve-planning --packet-id <id> --note "..."`
+- `ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>`
+- `ws exchange dispatch-plan-list`
+- `ws exchange dispatch-plan-status --dispatch-plan-id <id>`
 - `ws exchange adapter-list`
+
+## Dispatch Planning
+
+1. Create or identify exchange packet.
+2. Mark packet `READY_FOR_REVIEW`.
+3. Human approves packet for dispatch planning:
+   `ws exchange approve-planning --packet-id <id> --note "..."`
+4. Register or identify the target runtime session and assignment.
+5. Create dispatch plan:
+   `ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>`
+6. Review dispatch plan.
+7. Future execution lane may consume dispatch plan later.
+
+Dispatch planning does not dispatch.
+Dispatch planning does not execute.
+Dispatch planning does not start terminals.
+Dispatch planning does not approve prompts.
+Dispatch planning does not grant commit, push, or merge.
 
 ## Slash Planning (Documentation Only)
 
 - `/exchange status` -> `ws exchange status`
 - `/exchange audit` -> `ws exchange audit`
 - `/exchange packets` -> `ws exchange packet-list`
+- `/exchange approve` -> `ws exchange approve-planning --packet-id <id> --note "..."`
+- `/exchange plan` -> `ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>`
+- `/exchange plans` -> `ws exchange dispatch-plan-list`
 
 No slash dispatcher is implemented in this lane.
 
@@ -68,6 +94,5 @@ No slash dispatcher is implemented in this lane.
 
 ## Future Work
 
-- Dispatch planning workflows.
 - Guarded dispatch execution contracts.
 - Result import command integration.
