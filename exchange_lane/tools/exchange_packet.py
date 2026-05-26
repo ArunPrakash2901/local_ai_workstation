@@ -227,6 +227,8 @@ def approve_planning(root: Path, packet_id: str, note: str) -> Path:
         raise ExchangePacketError("approve-planning requires a non-empty --note")
     data = get_packet(root, packet_id)
     current_status = str(data.get("packet_status", ""))
+    if current_status == "APPROVED_FOR_DISPATCH_PLANNING":
+        raise ExchangePacketError("packet is already approved for dispatch planning")
     if current_status == "DRAFT":
         raise ExchangePacketError("approve-planning refuses DRAFT packets; run mark-ready first")
     if current_status != "READY_FOR_REVIEW":

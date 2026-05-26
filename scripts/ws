@@ -22,6 +22,17 @@ fi
 WS_HOME=${WS_HOME:-"/mnt/d/_ai_brain"}
 SCRIPTS_DIR="$WS_HOME/scripts"
 RUNS_DIR="$WS_HOME/runs"
+
+# Determine Python executable
+PYTHON_EXEC="${PYTHON_EXEC:-python3}"
+if [ -d "$WS_HOME/runtimes/workstation_venv" ]; then
+    if [ -f "$WS_HOME/runtimes/workstation_venv/bin/python3" ]; then
+        PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/bin/python3"
+    elif [ -f "$WS_HOME/runtimes/workstation_venv/Scripts/python.exe" ]; then
+        PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/Scripts/python.exe"
+    fi
+fi
+
 SUBCOMMAND=$1
 shift
 
@@ -48,54 +59,28 @@ case "$SUBCOMMAND" in
         echo "  model               Show active model configuration"
         echo "  models              List available model profiles"
         echo "  use <profile>       Switch active model profile"
-        echo "  warm [profile]      Warm model safely"
-        echo "  unload              Unload models from VRAM"
-        echo "  kv                  List KV cache profiles"
-        echo "  kvuse <profile>     Switch active KV cache profile"
-        echo "  daily               Restore safe daily profile"
-        echo "  moe                 List MoE/big-model lab profiles"
-        echo "  ready               Run daily readiness check and save report"
         echo ""
-        echo "Frontier Escalation:"
-        echo "  frontier            Show status of frontier providers"
-        echo "  packet <key> <q>    Create escalation packet (local first)"
-        echo "  redact <packet>     Safety scan a packet before manual escalation"
-        echo "  escalate <prov> <p> Send SAFE packet explicitly to gemini/codex"
-        echo ""
-        echo "Tasks:"
-        echo "  task-new            Create canonical task in tasks/inbox"
-        echo "  task-split <prd>    Split structured PRDs into generated tasks"
-        echo "  task-status         Show task lifecycle counts and recent tasks"
-        echo "  task-next [project] Print next task source and path"
-        echo "  task-review <f> --with codex  Create review packet for a task"
-        echo "  task-complete <f> [n] Mark task completed"
-        echo "  task-block <f> <r>  Mark task blocked with reason"
-        echo ""
-        echo "Product Lane:"
-        echo "  product-new --title <t> --type <type> [--id <id>] Create product registry record"
-        echo "  product-list        List product registry records"
-        echo "  product-status <id> Show one product registry record"
-        echo "  product-help        Show Product Lane Phase 0 quick help"
-        echo "  product-questions --type <type> --dry-run  Preview static intake questions"
-        echo "  product-intake --type <type> --dry-run     Preview intake flow (no writes)"
-        echo "  product-intake --product <id> --confirm    Start intake (writes templates)"
-        echo "  product-answer-import --product <id> --file <answers_file> --confirm  Import intake answers and classify readiness"
-        echo "  product-scope --product <id> --dry-run     Preview deterministic scope draft (no writes)"
-        echo "  product-scope-change --product <id> --file <change_file> --dry-run Preview deterministic scope change impact"
-        echo "  product-scope-change --product <id> --file <change_file> --confirm Record scope change decision and stale metadata"
-        echo "  product-scope-revision --product <id> --dry-run Preview revised scope from confirmed change decisions"
-        echo "  product-scope-revision --product <id> --confirm Write versioned revised scope lock and active scope metadata"
-        echo "  product-lock-scope --product <id> --confirm Lock immutable scope artifact"
-        echo "  product-prd --product <id> --dry-run       Preview deterministic PRD from locked scope"
-        echo "  product-prd --product <id> --confirm       Write deterministic PRD draft from locked scope"
-        echo "  product-prd-revision --product <id> --dry-run Preview deterministic PRD revision from active scope"
-        echo "  product-prd-review --product <id> --dry-run Preview deterministic PRD review report"
-        echo "  product-prd-approve --product <id> --confirm Approve PRD metadata after PASS review"
-        echo "  product-prd-status --product <id>          Show pure-read PRD artifact status"
-        echo "  product-wireframe --product <id> --dry-run Preview deterministic text/ASCII wireframes"
-        echo "  product-wireframe-review --product <id> --dry-run Preview deterministic wireframe review"
-        echo "  product-tech-plan --product <id> --dry-run Preview deterministic technical plan gated by PRD/wireframe"
-        echo "  product-tech-plan --product <id> --confirm Write deterministic technical plan artifact and metadata"
+        echo "Planning & Design (non-executing):"
+        echo "  product-design-adapter-spec  Show design adapter specification"
+        echo "  product-design-adapter-plan  Propose design adapter scope"
+        echo "  product-design-adapter-review Review proposed design adapter scope"
+        echo "  product-design-adapter-approve Approve proposed design adapter scope"
+        echo "  product-design-render-confirm Preview design render planning metadata"
+        echo "  product-design-run-schema Preview design run schema metadata"
+        echo "  product-design-smoke-test-plan Preview first real smoke test plan"
+        echo "  product-design-smoke-test-result Preview first real smoke test results"
+        echo "  product-design-intake-question-bank Preview product design intake question bank"
+        echo "  product-lane-decision-record Preview product lane decision record"
+        echo "  product-phase-0-implementation-plan Preview product phase 0 implementation plan"
+        echo "  product-phase-1-closeout-report Preview product phase 1 closeout report"
+        echo "  product-phase-1-intake-scope-plan Preview product phase 1 intake scope plan"
+        echo "  product-phase-2-prd-plan Preview product phase 2 PRD plan"
+        echo "  product-phase-2-prd-review-plan Preview product phase 2 PRD review plan"
+        echo "  product-prd-revision-after-scope-change-plan Preview PRD revision after scope change plan"
+        echo "  product-prd-warn-triage-portfolio-website Preview PRD warn triage for portfolio website"
+        echo "  product-scope-lock-spec Preview product scope lock specification"
+        echo "  product-scope-revision-plan Preview product scope revision plan"
+        echo "  product-design-intake-import --product <id> --dry-run Import product design intake metadata"
         echo "  product-tech-plan-review --product <id> --dry-run Review active technical plan deterministically"
         echo "  product-implementation-plan --product <id> --dry-run Preview implementation planning readiness gate"
         echo "  product-implementation-plan-review --product <id> --dry-run Review implementation plan deterministically"
@@ -152,171 +137,102 @@ case "$SUBCOMMAND" in
         echo "  product-dev audit       Audit Product Development Lane artifacts"
         echo "  product-dev help        Show Product Development Lane help"
         echo ""
-        echo "Runtime Session Lane:"
-        echo "  runtime help            Show Runtime Session Lane help"
-        echo "  runtime adapter-list    List manual runtime adapter profiles"
-        echo "  runtime status          Show registered sessions and blockers"
-        echo "  runtime register --session-id <id> --adapter <adapter> --label <label> --cwd <path> --lane <lane> --task <task>"
-        echo "  runtime update-status --session-id <id> --status <status> --note <note>"
-        echo "  runtime report-blocker --session-id <id> --type <type> --description <description>"
-        echo "  runtime resolve-blocker --blocker-id <id> --resolution <resolution>"
-        echo "  runtime assign --session-id <id> --task-source <path> --label <label> --type <task_source_type> [--allow-duplicate]"
-        echo "  runtime assignment-list  List runtime assignments"
-        echo "  runtime assignment-status --assignment-id <id>"
-        echo "  runtime update-assignment --assignment-id <id> --status <status> --note <note>"
-        echo "  runtime workload [--write-report]  Show workload dashboard and optionally write a report"
-        echo "  runtime unassigned      List conservative unassigned candidate task sources"
-        echo "  runtime audit           Audit Runtime Session Lane metadata"
-        echo ""
-        echo "Exchange Lane (Phase 0):"
-        echo "  exchange-new --target <t> --task-type <type> --summary <s> [--dry-run|--confirm]"
-        echo "  exchange-list       List exchange packet directories and status"
-        echo "  exchange-status <id> Show one exchange packet status from exchange.yaml"
-        echo "  exchange-dispatch --exchange <id> --dry-run Preview dispatch readiness without execution"
-        echo "  exchange-dispatch --exchange <id> --target codex_cli --confirm Run guarded REVIEW_ONLY Codex adapter dispatch"
-        echo "  exchange-adapter-preview --exchange <id> --target codex_cli --dry-run Preview Codex adapter invocation without execution"
-        echo "  exchange-import-result --exchange <id> --file <f> [--dry-run|--confirm] Import result text into exchange artifacts"
+        echo "Runtime Lane:"
+        echo "  runtime session-list    List active and closed sessions"
+        echo "  runtime session-status <id> Show one session status"
+        echo "  runtime audit           Audit Runtime Lane sessions and assignments"
+        echo "  runtime help            Show Runtime Lane help"
         echo ""
         echo "Exchange Lane v0.2 (packet registry + dispatch planning metadata, non-executing):"
-        echo "  exchange help              Show Exchange Lane v0.2 help"
-        echo "  exchange audit             Audit exchange_lane metadata"
-        echo "  exchange status            Show packet/result counts and blocked items"
-        echo "  exchange packet-list       List exchange packets"
-        echo "  exchange packet-status --packet-id <id> Show one exchange packet"
-        echo "  exchange approve-planning --packet-id <id> --note <note> Approve packet for dispatch planning only"
-        echo "  exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id> Write dispatch-planning metadata only"
-        echo "  exchange dispatch-plan-list List dispatch plan artifacts"
-        echo "  exchange dispatch-plan-status --dispatch-plan-id <id> Show one dispatch plan artifact"
-        echo "  exchange adapter-list      List supported routing adapters"
+        echo "  exchange audit          Audit Exchange Lane metadata"
+        echo "  exchange status         Show Exchange Lane status"
+        echo "  exchange packet-list    List exchange packets"
+        echo "  exchange packet-status --packet-id <id> Show one packet"
+        echo "  exchange adapter-list   List routing adapters"
+        echo "  exchange approve-planning --packet-id <id> --note <n> Approve packet for dispatch planning"
+        echo "  exchange dispatch-plan --packet-id <id> --session-id <sid> --assignment-id <aid> [--write-report] Create dispatch plan"
+        echo "  exchange dispatch-plan-list List dispatch plans"
+        echo "  exchange dispatch-plan-status --dispatch-plan-id <id> Show one dispatch plan"
+        echo "  exchange fake-dispatch --dispatch-plan-id <id> --confirm Write fake result capture artifacts"
+        echo "  exchange real-dispatch --dispatch-plan-id <id> --dry-run Preview guarded real CLI dispatch"
+        echo "  exchange real-dispatch --dispatch-plan-id <id> --confirm Run explicitly enabled guarded CLI dispatch"
+        echo "  exchange import-result --capture-manifest <path> --confirm Import result capture as untrusted packet"
+        echo "  exchange result-list   List imported result packets"
+        echo "  exchange result-status --result-id <id> Show one result packet"
+        echo "  exchange validate-result --result-id <id> Validate imported result metadata"
+        echo "  exchange validation-status --validation-id <id> Show one validation record"
+        echo "  exchange decide-loop --validation-id <id> Write loop decision metadata"
+        echo "  exchange loop-status   Summarize validations and loop decisions"
+        echo "  exchange repair-plan --loop-decision-id <id> Write bounded repair metadata when allowed"
+        echo "  exchange help           Show Exchange Lane help"
         echo ""
-        echo "Runtime Sessions (Phase 4 preview slice):"
-        echo "  session-list       List runtime session manifests"
-        echo "  session-status <id> Show one runtime session manifest status"
-        echo "  session-plan --session <id> --runtime <type> --adapter <adapter> --dry-run  Preview managed runtime session plan"
-        echo "  session-plan --session <id> --runtime <type> --adapter <adapter> --confirm  Create planned runtime session metadata"
-        echo "  session-start --session <id> --dry-run  Preview runtime session start without starting a process"
-        echo "  session-cleanup --dry-run  Preview cleanup candidates without deleting files"
+        echo "Execution Lane MVP Slice 1 (non-executing preparation):"
+        echo "  execution help          Show Execution Lane help"
+        echo "  execution status        Show execution run/task/preview summary"
+        echo "  execution plan --queue <queue_manifest> --dry-run Validate queue and show plan summary"
+        echo "  execution prepare --queue <queue_manifest> --confirm Create run/task metadata only"
+        echo "  execution run-status --run <run_id> Show one execution run status"
+        echo "  execution handoff-preview --run <run_id> --target <codex_cli|gemini_cli|ollama_local> --dry-run Preview Exchange handoff payloads"
+        echo "  execution audit         Audit Execution Lane artifacts"
         echo ""
-        echo "Feature Strongholds:"
-        echo "  feature-new <k>     Create a local-only feature stronghold"
-        echo "  feature-plan <id>   Build/update a local-only feature plan"
-        echo "  feature-validate <id> Validate local-only feature readiness"
-        echo "  feature-handoff <id> Create a feature-aware local handoff packet"
-        echo "  feature-report <id> Generate a local feature summary report"
-        echo "  feature-status      List recent feature strongholds"
-        echo "  feature-local-review <id> --model <m> Run local Ollama reasoning gate"
-        echo "  feature-architect-handoff <id> --target <t> Create senior architect handoff"
-        echo "  feature-run <id> --dry-run Preview future supervised run eligibility"
+        echo "Stronghold (Isolated Repository Snapshots):"
+        echo "  stronghold-new --id <id> --path <path> Register a new stronghold"
+        echo "  stronghold-list         List registered strongholds"
+        echo "  stronghold-status <id>  Show stronghold status and checkpoints"
+        echo "  stronghold-plan-import --id <id> --target <path> --dry-run Preview stronghold import"
+        echo "  stronghold-intake --id <id> --target <path> --confirm Perform stronghold intake"
+        echo "  stronghold-intake-import --id <id> --target <path> --confirm Register intake artifacts"
+        echo "  stronghold-decision --id <id> --decision <d> --reason <r> Record stronghold decision"
+        echo "  stronghold-architect-handoff --id <id> --target <t> --dry-run Preview architect handoff"
         echo ""
-        echo "Generic Strongholds (Phase 5):"
-        echo "  stronghold-new --type <t> --title <t> Create generic stronghold"
-        echo "  stronghold-status    List recent generic strongholds"
-        echo "  stronghold-intake <id> Generate domain-specific intake questions"
-        echo "  stronghold-intake-import <id> --from-file <f> Import intake answers"
-        echo "  stronghold-architect-handoff <id> --target <t> Create senior architect handoff"
-        echo "  stronghold-plan-import <id> --from-handoff <h> Import architect plan"
-        echo "  stronghold-local-checklist <id> --model <m> Generate operational checklist"
-        echo "  stronghold-report <id> Generate summary report"
-        echo "  stronghold-decision <id> Classify next safe state/action"
+        echo "Quantum/Task Bridge:"
+        echo "  quant summary [--id <id>] Show quantum task summary"
+        echo "  quant idea-intake <path> [--dry-run] Ingest idea/task from markdown"
+        echo "  task-new --title <t> --objective <o> [--lane <l>] Create new task"
+        echo "  task-block <id> --reason <r> Block a task"
+        echo "  task-complete <id> --note <n> Complete a task"
+        echo "  task-split <id> --titles <t1,t2> Split a task"
         echo ""
-        echo "Domain Specific Runners (Phase 6):"
-        echo "  knowledge-inventory --target <t> --dry-run  Preview knowledge raw-data inventory"
-        echo "  learning-run <id> --session --dry-run Plan learning session"
-        echo "  learning-import-answers <id> --from-file <f> Import completed answers"
-        echo "  learning-assess <id> --model <m> Assess imported answers"
-        echo "  learning-decision <id> Classify next learning action"
-        echo "  learning-review-session <id> --dry-run Plan review session"
-        echo "  learning-advance <id> Advance to next learning task"
-        echo "  learning-action-pack <id> --dry-run Generate dry-run action pack v1"
-        echo "  learning-confirm <id> --action-id <id> [--dry-run | --confirm] Confirm dry-run action"
-        echo "  learning-ledger-repair <id> [--dry-run | --repair-ledger] Repair legacy confirmation ledger"
-        echo "  learning-pointer-plan <id> --dry-run Generate next task pointer update plan v1"
-        echo "  learning-advancement-plan <id> --dry-run Generate advancement readiness plan v1"
-        echo "  learning-advancement-review <id> [--dry-run | --create-packet] Generate human review packet v1"
-        echo "  learning-state-sync-plan <id> --dry-run Generate state sync plan v1"
-        echo "  learning-state-sync-apply <id> [--dry-run | --confirm-sync] Apply state sync plan v1"
-        echo "  learning-review-checklist <id> --packet-id <p> [--dry-run-init | --init-checklist | --show] Manage human review checklist v1"
-
-
-
+        echo "Global:"
+        echo "  help                Show this help"
+        echo "  audit               Run all workstation-wide audits"
+        echo "  version             Show workstation version"
+        echo "  safety-matrix       Show safety classification matrix"
         echo ""
-        echo "Research Runner (Phase 7):"
-        echo "  research-run <id> --review-paper --dry-run Plan paper review"
-        echo "  research-decision <id> Classify next research action"
-        echo "  research-add-source <id> --source-text <f> --label <l> Register new source"
-        echo ""
-        echo "Quant Trading Lane (Phase 6+):"
-        echo "  quant dashboard            Show read-only research dashboard"
-        echo "  quant idea-intake-dry-run  [--title <t>] [--idea-file <f>] Dry-run idea intake"
-        echo "  quant reports              List completed research milestone reports"
-        echo "  quant artifacts            Summarize Quant artifact counts"
-        echo "  quant lineage <id>         Lookup lineage for a specific artifact ID"
-        echo "  quant cheatsheet           Show Quant operator cheatsheet"
-        echo "  quant status               Show high-level research status"
-        echo "  quant list-tools           List standalone research CLIs"
-        echo "  quant synthetic-status     Show synthetic execution status"
-        echo "  quant gates-status         Show pre-backtest gate statuses"
-        echo "  quant data-contract-check  [--dry-run] Validate YAML contracts"
-        echo "  quant data-schema-check    [--dry-run] Validate sample OHLCV schema"
-        echo ""
-        echo "  SAFETY NOTICE: Real backtests, approvals, and data downloads are BLOCKED"
-        echo "  in 'ws quant' and remain restricted to standalone standalone research CLIs."
-        echo "  quant data-freshness-check --latest <ts> [--dry-run] Check data freshness"
-        echo "  quant data-ingest-fixture  --symbol SPY --start <iso> --end <iso> [--format <f>] [--write-fixture]"
-        echo "  quant dataset-catalog      [--dry-run] Scan Quant dataset catalog"
-        echo "  quant dataset-profile      --path <p> [--dry-run] Profile a Quant dataset"
-        echo "  quant feature-contract-check [--dry-run] Validate feature building contract"
-        echo "  quant feature-build        --input <p> --features <f> [--format <fmt>] [--write-features]"
-        echo "  quant persistence-capabilities [--dry-run] Detect local persistence libraries"
-        echo "  quant analytics-capabilities   [--dry-run] Detect local analytics libraries"
-        echo "  quant paths-check          [--dry-run] Verify approved quant paths"
-        echo ""
-        echo "Agent & Loops:"
-        echo "  apply-ready <k> <t> Check if task is ready for agent-run"
-        echo "  agent-run <k> <t> [flags] Run bounded Windows-native agent task"
-        echo "  agent-status        Show Windows agent orchestrator status"
-        echo "  agent-canary        Run Windows-native Codex canary"
-        echo "  agent-import <run>  Inspect an agent run folder"
-        echo "  agent-validate      Run workstation agent contract validation"
-        echo "  agent-hygiene       Audit agent branches and run folders"
-        echo "  agent-mark-stale-reviewed <run> Mark stuck run as historical"
-        echo "  loop-plan <k> <t>   Check local-loop eligibility without starting it"
-        echo "  worktree-plan <k> <t> Preview future isolated worktree without creating it"
-        echo "  worktree-create <k> <t> Preview or apply supervised isolated worktree creation"
-        echo "  worktree-review <path> Review an existing worktree without modifying it"
-        echo "  worktree-sync <path> --dry-run Preview what is needed to sync a worktree"
-        echo "  worktree-status     Summarize read-only worktree state and recent plans"
-        echo "  loop-status         Show latest local-loop status"
-        echo "  loop-start <k> <t>  Start supervised local-only planning loop"
-        echo "  handoff-new <k> <t> Create local-only handoff packet artifacts"
-        echo "  handoff-copy <id>   Copy a local handoff prompt to Windows clipboard"
-        echo "  handoff-import <id> Import clipboard text into a local handoff packet"
-        echo "  handoff-review <id> Run deterministic local review on an imported response"
-        echo "  handoff-status      List recent local handoff packets"
-        echo ""
-        echo "System:"
-        echo "  status              High-level health/status check"
-        echo "  tui                 Launch read-only operator dashboard"
-        echo "  runs                List recent run folders"
-        echo "  open-run <id>       Show paths for a specific run"
-        echo "  aliases             Show legacy aliases"
-        echo "  paths               Show path abstraction and migration status"
-        echo "  audit-workstation   Read-only audit of workstation infrastructure"
-        echo "  cleanup-plan        Generate read-only cleanup plan"
-        echo "  cleanup-apply       Archive approved cleanup candidates; requires --apply"
-        echo "  cleanup-status      Show latest cleanup reports and unresolved issues"
-        echo "  build-status        Show latest build loop status"
-        echo "  build-runs          List recent build run folders"
-        echo "  open-build <id>     Show artifacts for a build run"
-        echo ""
-        echo "Global Flags (passed to scripts):"
-        echo "  --profile <p>, --model <m>, --kv <k>, --context <c>"
+        echo "Configuration:"
+        echo "  config              Show workstation configuration"
+        echo "  env                 Show workstation environment"
         ;;
-    projects)
-        bash "$SCRIPTS_DIR/ai_list_projects.sh" "$@"
+    safety-matrix)
+        cat "$WS_HOME/WS_COMMAND_SAFETY_MATRIX.md"
+        ;;
+    safety-registry)
+        cat "$WS_HOME/registry/ws_command_safety.yaml"
+        ;;
+    safety-policy)
+        cat "$WS_HOME/SLASH_COMMAND_INTEGRATION_POLICY.md"
+        ;;
+    audit)
+        bash "$SCRIPTS_DIR/ai_audit.sh" "$@"
+        ;;
+    audit-workstation)
+        bash "$SCRIPTS_DIR/ws_audit_workstation.sh" "$@"
+        ;;
+    aliases)
+        echo "alias ws='$SCRIPTS_DIR/ws'"
+        echo "alias ailist='ws projects'"
+        echo "alias aiproj='ws project'"
+        echo "alias aiask='ws ask'"
+        echo "alias aiglobal='ws global'"
         ;;
     project)
-        bash "$SCRIPTS_DIR/ai_project.sh" "$@"
+        python3 "$SCRIPTS_DIR/ws_project_status.py" "$@"
+        ;;
+    projects)
+        python3 "$SCRIPTS_DIR/ws_project_list.py" "$@"
+        ;;
+    graph)
+        bash "$SCRIPTS_DIR/ai_graph.sh" "$@"
         ;;
     ask)
         bash "$SCRIPTS_DIR/ai_ask.sh" "$@"
@@ -324,96 +240,27 @@ case "$SUBCOMMAND" in
     global)
         bash "$SCRIPTS_DIR/ai_global_ask.sh" "$@"
         ;;
-    graph)
-        bash "$SCRIPTS_DIR/ai_graph.sh" "$@"
-        ;;
-    audit)
-        bash "$SCRIPTS_DIR/ai_audit.sh" "$@"
-        ;;
     debug)
         bash "$SCRIPTS_DIR/ai_debug.sh" "$@"
         ;;
     task)
-        bash "$SCRIPTS_DIR/ai_run_task.sh" "$@"
+        bash "$SCRIPTS_DIR/ai_task_loop.sh" "$@"
         ;;
     build)
-        bash "$SCRIPTS_DIR/ws_build.sh" "$@"
-        ;;
-    agent-status)
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_status.ps1")" "$@"
-        ;;
-    agent-canary)
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_canary.ps1")" "$@"
-        ;;
-    apply-ready)
-        bash "$SCRIPTS_DIR/ws_apply_ready.sh" "$@"
-        ;;
-    agent-run)
-        if [ $# -lt 2 ]; then
-            echo "Usage: ws agent-run <project_key> <task_file> [flags]"
-            exit 1
-        fi
-        AGENT_PROJECT="$1"
-        AGENT_TASK="$2"
-        shift 2
-        case "$AGENT_TASK" in
-            [A-Za-z]:[!\\/]*)
-                echo "Error: task file looks like an unquoted Windows path that Bash mangled."
-                echo "Use /mnt/d/... from WSL, or quote the Windows path."
-                exit 2
-                ;;
-        esac
-        to_win_path() {
-            case "$1" in
-                /mnt/*) wslpath -w "$1" ;;
-                *) printf '%s' "$1" ;;
-            esac
-        }
-        AGENT_TASK_WIN="$(to_win_path "$AGENT_TASK")"
-        AGENT_ARGS=( -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_run.ps1")" -Command Run -ProjectKey "$AGENT_PROJECT" -TaskFile "$AGENT_TASK_WIN" )
-        while [ $# -gt 0 ]; do
-            case "$1" in
-                --mode) AGENT_ARGS+=( -Mode "$2" ); shift 2 ;;
-                --branch) AGENT_ARGS+=( -Branch ); shift ;;
-                --max-files) AGENT_ARGS+=( -MaxFiles "$2" ); shift 2 ;;
-                --max-minutes) AGENT_ARGS+=( -MaxMinutes "$2" ); shift 2 ;;
-                --stop-on-fail) AGENT_ARGS+=( -StopOnFail ); shift ;;
-                --dry-run) AGENT_ARGS+=( -DryRun ); shift ;;
-                --tests) AGENT_ARGS+=( -Tests "$2" ); shift 2 ;;
-                *) AGENT_ARGS+=( "$1" ); shift ;;
-            esac
-        done
-        powershell.exe "${AGENT_ARGS[@]}"
-        ;;
-    agent-run-worktree)
-        bash "$SCRIPTS_DIR/ws_agent_run_worktree.sh" "$@"
-        ;;
-    agent-import)
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPTS_DIR/ws_agent_import.ps1")" "$@"
-        ;;
-    agent-validate)
-        bash "$SCRIPTS_DIR/ws_agent_validate.sh" "$@"
-        ;;
-    agent-hygiene)
-        bash "$SCRIPTS_DIR/ws_agent_hygiene.sh" "$@"
-        ;;
-    agent-mark-stale-reviewed)
-        bash "$SCRIPTS_DIR/ws_agent_mark_stale_reviewed.sh" "$@"
+        bash "$SCRIPTS_DIR/ai_build_loop.sh" "$@"
         ;;
     model)
-        bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
+        python3 "$SCRIPTS_DIR/ai_model_status.py" "$@"
         ;;
     models)
-        bash "$SCRIPTS_DIR/ai_models.sh" "$@"
+        python3 "$SCRIPTS_DIR/ai_model_list.py" "$@"
         ;;
-    use)
-        bash "$SCRIPTS_DIR/ai_model_use.sh" "$@"
-        ;;
-    warm)
-        bash "$SCRIPTS_DIR/ai_model_warm.sh" "$@"
-        ;;
-    unload)
-        bash "$SCRIPTS_DIR/ai_model_unload.sh" "$@"
+    moe)
+        if [ -f "$SCRIPTS_DIR/ai_moe_list.sh" ]; then
+            bash "$SCRIPTS_DIR/ai_moe_list.sh" "$@"
+        else
+            bash "$SCRIPTS_DIR/ai_models.sh" "$@" | grep -Ei "moe|mixtral|mixture|router" || true
+        fi
         ;;
     kv)
         bash "$SCRIPTS_DIR/ai_kv_profiles.sh" "$@"
@@ -421,148 +268,226 @@ case "$SUBCOMMAND" in
     kvuse)
         bash "$SCRIPTS_DIR/ai_kv_use.sh" "$@"
         ;;
-    daily)
-        bash "$SCRIPTS_DIR/ai_daily_restore.sh" "$@"
+    use)
+        bash "$SCRIPTS_DIR/ai_apply_model_profile.sh" "$@"
+        ;;
+    paths)
+        bash "$SCRIPTS_DIR/ws_path_status.sh" "$@"
+        ;;
+    status)
+        if [ -f "$SCRIPTS_DIR/check_health.ps1" ]; then
+            pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/check_health.ps1" "$@" || true
+        fi
+        bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
         ;;
     ready)
         bash "$SCRIPTS_DIR/ws_readiness.sh" "$@"
         ;;
-    moe)
-        # Assuming ai_moe_list.sh was supposed to be implemented or we use ai_models with filte
-        # For now, map to ai_models.sh if ai_moe_list doesn't exist
-        if [ -f "$SCRIPTS_DIR/ai_moe_list.sh" ]; then
-            bash "$SCRIPTS_DIR/ai_moe_list.sh" "$@"
+    runs)
+        if [ -d "$RUNS_DIR" ]; then
+            ls -1 "$RUNS_DIR"
         else
-            bash "$SCRIPTS_DIR/ai_models.sh" | grep -E "YES.*YES|Lab|Profile"
+            echo "No runs directory found: $RUNS_DIR"
         fi
         ;;
-    status)
-        # Combine health check and current model
-        powershell.exe -File "D:/_ai_brain/scripts/check_health.ps1"
-        bash "$SCRIPTS_DIR/ai_model_current.sh"
+    open-run)
+        if [ -z "${1:-}" ]; then
+            echo "Usage: ws open-run <run_id>"
+            exit 1
+        fi
+        RUN_PATH="$RUNS_DIR/$1"
+        if [ -d "$RUN_PATH" ]; then
+            ls -la "$RUN_PATH"
+        elif [ -f "$RUN_PATH" ]; then
+            cat "$RUN_PATH"
+        else
+            echo "Run artifact not found: $RUN_PATH"
+            exit 1
+        fi
+        ;;
+    build-status)
+        BUILD_RUNS_DIR="$WS_HOME/build_runs"
+        if [ -d "$BUILD_RUNS_DIR" ]; then
+            ls -1 "$BUILD_RUNS_DIR" | tail -n 10
+        else
+            echo "No build_runs directory found: $BUILD_RUNS_DIR"
+        fi
+        ;;
+    build-runs)
+        BUILD_RUNS_DIR="$WS_HOME/build_runs"
+        if [ -d "$BUILD_RUNS_DIR" ]; then
+            ls -1 "$BUILD_RUNS_DIR"
+        else
+            echo "No build_runs directory found: $BUILD_RUNS_DIR"
+        fi
+        ;;
+    open-build)
+        if [ -z "${1:-}" ]; then
+            echo "Usage: ws open-build <build_id>"
+            exit 1
+        fi
+        BUILD_PATH="$WS_HOME/build_runs/$1"
+        if [ -d "$BUILD_PATH" ]; then
+            ls -la "$BUILD_PATH"
+        elif [ -f "$BUILD_PATH" ]; then
+            cat "$BUILD_PATH"
+        else
+            echo "Build artifact not found: $BUILD_PATH"
+            exit 1
+        fi
+        ;;
+    daily)
+        bash "$SCRIPTS_DIR/ai_daily_restore.sh" "$@"
+        ;;
+    warm)
+        bash "$SCRIPTS_DIR/ai_model_warm.sh" "$@"
+        ;;
+    unload)
+        bash "$SCRIPTS_DIR/ai_model_unload.sh" "$@"
         ;;
     tui)
         bash "$SCRIPTS_DIR/ws_tui.sh" "$@"
         ;;
-    runs)
-        if compgen -G "$RUNS_DIR/*" > /dev/null; then
-            ls -dt "$RUNS_DIR"/* | head -n 10
-        else
-            echo "No run folders found under $RUNS_DIR"
-        fi
-        ;;
-    open-run)
-        RUN_ID=$1
-        if [ -z "$RUN_ID" ]; then echo "Usage: ws open-run <id_or_latest>"; exit 1; fi
-        if [ "$RUN_ID" == "latest" ]; then
-            TARGET=$(ls -dt "$RUNS_DIR"/* 2>/dev/null | head -n 1)
-        else
-            TARGET=$(ls -d "$RUNS_DIR"/*"$RUN_ID"* 2>/dev/null | head -n 1)
-        fi
-        if [ -d "$TARGET" ]; then
-            echo "Run Folder: $TARGET"
-            echo "Context:    $TARGET/context_pack.md"
-            echo "Graph:      $TARGET/graph_context.md"
-            echo "Prompt:     $TARGET/prompt.md"
-            echo "User Prompt:$TARGET/user_prompt.md"
-            echo "Answer:     $TARGET/answer.md"
-            echo "Summary:    $TARGET/run_summary.yaml"
-        else
-            echo "Error: Run $RUN_ID not found."
-            exit 1
-        fi
-        ;;
-    aliases)
-        echo "Legacy aliases (supported but ws preferred):"
-        echo "ailist, aiproj, aiask, aiglobal, aigraph, aiaudit, aidebug, aitask"
-        echo "aimodels, aimodel, aiuse, aikv, aidaily"
-        ;;
-    paths)
-        bash "$SCRIPTS_DIR/ws_path_status.sh"
-        ;;
-    audit-workstation)
-        bash "$SCRIPTS_DIR/ws_audit_workstation.sh" "$@"
+    apply-ready)
+        bash "$SCRIPTS_DIR/ws_apply_ready.sh" "$@"
         ;;
     cleanup-plan)
         bash "$SCRIPTS_DIR/ws_cleanup_plan.sh" "$@"
         ;;
-    cleanup-apply)
-        bash "$SCRIPTS_DIR/ws_cleanup_apply.sh" "$@"
-        ;;
     cleanup-status)
         bash "$SCRIPTS_DIR/ws_cleanup_status.sh" "$@"
         ;;
-    build-status)
-        LATEST=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
-        if [ -z "$LATEST" ]; then
-            echo "No build runs found."
-        else
-            echo "Latest build run: $LATEST"
-            echo -n "Status: "
-            cat "$LATEST/status.txt" 2>/dev/null || echo "unknown"
-            [ -f "$LATEST/build_report.md" ] && echo "Report: $LATEST/build_report.md"
-        fi
+    cleanup-apply)
+        bash "$SCRIPTS_DIR/ws_cleanup_apply.sh" "$@"
         ;;
-    build-runs)
-        if find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
-            find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -n 20 | cut -d' ' -f2-
-        else
-            echo "No build runs found."
-        fi
+    agent-canary)
+        pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/ws_agent_canary.ps1" "$@"
         ;;
-    open-build)
-        RUN_ID=${1:-}
-        if [ -z "$RUN_ID" ]; then echo "Usage: ws open-build <latest|run_id>"; exit 1; fi
-        if [ "$RUN_ID" = "latest" ]; then
-            TARGET=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)
-        else
-            TARGET=$(find "$WS_HOME/build_runs" -mindepth 1 -maxdepth 1 -type d -name "*$RUN_ID*" -print 2>/dev/null | head -n 1)
-        fi
-        if [ -z "$TARGET" ] || [ ! -d "$TARGET" ]; then
-            echo "Build run not found: $RUN_ID"
-            exit 1
-        fi
-        echo "-----------------------------------------"
-        echo " Build Run Summary: $(basename "$TARGET")"
-        echo "-----------------------------------------"
-        if [ -f "$TARGET/build_report.md" ]; then
-            # Print Summary section (exclude the header itself and stop at Artifacts)
-            sed -n '/## Summary/,/## Artifacts/p' "$TARGET/build_report.md" | grep -v "##" | sed '/^[[:space:]]*$/d'
-            echo ""
-            # Print Final Status
-            echo -n "Final Status: "
-            cat "$TARGET/status.txt" 2>/dev/null || echo "unknown"
-            echo ""
-            # Print Recommendation
-            echo "Recommendation:"
-            sed -n '/## Task Lifecycle Recommendation/,$p' "$TARGET/build_report.md" | grep -v "##" | sed '/^[[:space:]]*$/d'
-        else
-            echo "Status: $(cat "$TARGET/status.txt" 2>/dev/null || echo "unknown")"
-            echo "Report missing: $TARGET/build_report.md"
-        fi
-        echo "-----------------------------------------"
-        echo "All artifacts in: $TARGET"
+    agent-import)
+        pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/ws_agent_import.ps1" "$@"
         ;;
-    task-new)
-        bash "$SCRIPTS_DIR/ws_task_new.sh" "$@"
+    agent-status)
+        pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/ws_agent_status.ps1" "$@"
         ;;
-    task-split)
-        bash "$SCRIPTS_DIR/ws_task_split.sh" "$@"
+    agent-run)
+        pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/ws_agent_run.ps1" "$@"
         ;;
-    task-status)
-        bash "$SCRIPTS_DIR/ws_task_status.sh" "$@"
+    agent-hygiene)
+        bash "$SCRIPTS_DIR/ws_agent_hygiene.sh" "$@"
         ;;
-    task-next)
-        bash "$SCRIPTS_DIR/ws_task_next.sh" "$@"
+    agent-validate)
+        bash "$SCRIPTS_DIR/ws_agent_validate.sh" "$@"
         ;;
-    task-review)
-        bash "$SCRIPTS_DIR/ws_task_review_packet.sh" "$@"
+    agent-run-worktree)
+        bash "$SCRIPTS_DIR/ws_agent_run_worktree.sh" "$@"
         ;;
-    task-complete)
-        bash "$SCRIPTS_DIR/ws_task_complete.sh" "$@"
+    agent-mark-stale-reviewed)
+        bash "$SCRIPTS_DIR/ws_agent_mark_stale_reviewed.sh" "$@"
         ;;
-    task-block)
-        bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
+    config)
+        python3 "$SCRIPTS_DIR/ws_config.py" "$@"
+        ;;
+    env)
+        env | grep "WS_" | sort
+        ;;
+    version)
+        echo "Local AI Workstation v0.8 (Stable Core)"
+        ;;
+    product-design-adapter-spec)
+        cat "$WS_HOME/product_design_adapter_spec.md"
+        ;;
+    product-design-adapter-plan)
+        python3 "$WS_HOME/product_design_adapter_phase_0_plan.py" "$@"
+        ;;
+    product-design-adapter-review)
+        python3 "$WS_HOME/product_design_adapter_phase_0_plan_review.py" "$@"
+        ;;
+    product-design-adapter-approve)
+        python3 "$WS_HOME/product_design_adapter_phase_0_plan_approve.py" "$@"
+        ;;
+    product-design-render-confirm)
+        cat "$WS_HOME/product_design_render_confirm_plan.md"
+        ;;
+    product-design-run-schema)
+        cat "$WS_HOME/product_design_run_schema.md"
+        ;;
+    product-design-smoke-test-plan)
+        cat "$WS_HOME/product_first_real_smoke_test_plan.md"
+        ;;
+    product-design-smoke-test-result)
+        cat "$WS_HOME/product_first_real_smoke_test_result.md"
+        ;;
+    product-design-intake-question-bank)
+        cat "$WS_HOME/product_intake_question_bank.md"
+        ;;
+    product-lane-decision-record)
+        cat "$WS_HOME/product_lane_decision_record.md"
+        ;;
+    product-phase-0-implementation-plan)
+        cat "$WS_HOME/product_phase_0_implementation_plan.md"
+        ;;
+    product-phase-1-closeout-report)
+        cat "$WS_HOME/product_phase_1_closeout_report.md"
+        ;;
+    product-phase-1-intake-scope-plan)
+        cat "$WS_HOME/product_phase_1_intake_scope_plan.md"
+        ;;
+    product-phase-2-prd-plan)
+        cat "$WS_HOME/product_phase_2_PRD_plan.md"
+        ;;
+    product-phase-2-prd-review-plan)
+        cat "$WS_HOME/product_phase_2_PRD_review_plan.md"
+        ;;
+    product-prd-revision-after-scope-change-plan)
+        cat "$WS_HOME/product_PRD_revision_after_scope_change_plan.md"
+        ;;
+    product-prd-warn-triage-portfolio-website)
+        cat "$WS_HOME/product_PRD_warn_triage_portfolio_website.md"
+        ;;
+    product-scope-lock-spec)
+        cat "$WS_HOME/product_scope_lock_spec.md"
+        ;;
+    product-scope-revision-plan)
+        cat "$WS_HOME/product_scope_revision_plan.md"
+        ;;
+    product-design-intake-import)
+        python3 "$SCRIPTS_DIR/ws_product_design_intake_import.py" "$@"
+        ;;
+    product-tech-plan-review)
+        python3 "$SCRIPTS_DIR/ws_product_tech_plan_review.py" "$@"
+        ;;
+    product-implementation-plan)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_plan.py" "$@"
+        ;;
+    product-implementation-plan-review)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_plan_review.py" "$@"
+        ;;
+    product-implementation-exchange-preview)
+        python3 "$SCRIPTS_DIR/ws_product_implementation_exchange_preview.py" "$@"
+        ;;
+    product-design-adapter-preview)
+        python3 "$SCRIPTS_DIR/ws_product_design_adapter_preview.py" "$@"
+        ;;
+    product-design-render)
+        python3 "$SCRIPTS_DIR/ws_product_design_render.py" "$@"
+        ;;
+    product-design-run-prepare)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_prepare.py" "$@"
+        ;;
+    product-design-run-status)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_status.py" "$@"
+        ;;
+    product-design-run-review)
+        python3 "$SCRIPTS_DIR/ws_product_design_run_review.py" "$@"
+        ;;
+    product-design-runtime-probe)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_probe.py" "$@"
+        ;;
+    product-design-install-checklist)
+        python3 "$SCRIPTS_DIR/ws_product_design_install_checklist.py" "$@"
+        ;;
+    product-design-runtime-report)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_report.py" "$@"
         ;;
     product-new)
         python3 "$SCRIPTS_DIR/ws_product_new.py" "$@"
@@ -621,41 +546,35 @@ case "$SUBCOMMAND" in
     product-tech-plan)
         python3 "$SCRIPTS_DIR/ws_product_tech_plan.py" "$@"
         ;;
-    product-tech-plan-review)
-        python3 "$SCRIPTS_DIR/ws_product_tech_plan_review.py" "$@"
+    knowledge-inventory)
+        python3 "$SCRIPTS_DIR/ws_knowledge_inventory.py" "$@"
         ;;
-    product-implementation-plan)
-        python3 "$SCRIPTS_DIR/ws_product_implementation_plan.py" "$@"
+    feature-new)
+        bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
         ;;
-    product-implementation-plan-review)
-        python3 "$SCRIPTS_DIR/ws_product_implementation_plan_review.py" "$@"
+    feature-status)
+        bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
         ;;
-    product-implementation-exchange-preview)
-        python3 "$SCRIPTS_DIR/ws_product_implementation_exchange_preview.py" "$@"
+    feature-plan)
+        bash "$SCRIPTS_DIR/ws_feature_plan.sh" "$@"
         ;;
-    product-design-adapter-preview)
-        python3 "$SCRIPTS_DIR/ws_product_design_adapter_preview.py" "$@"
+    feature-run)
+        bash "$SCRIPTS_DIR/ws_feature_run.sh" "$@"
         ;;
-    product-design-render)
-        python3 "$SCRIPTS_DIR/ws_product_design_render.py" "$@"
+    feature-validate)
+        bash "$SCRIPTS_DIR/ws_feature_validate.sh" "$@"
         ;;
-    product-design-run-prepare)
-        python3 "$SCRIPTS_DIR/ws_product_design_run_prepare.py" "$@"
+    feature-handoff)
+        bash "$SCRIPTS_DIR/ws_feature_handoff.sh" "$@"
         ;;
-    product-design-run-status)
-        python3 "$SCRIPTS_DIR/ws_product_design_run_status.py" "$@"
+    feature-architect-handoff)
+        bash "$SCRIPTS_DIR/ws_feature_architect_handoff.sh" "$@"
         ;;
-    product-design-run-review)
-        python3 "$SCRIPTS_DIR/ws_product_design_run_review.py" "$@"
+    feature-local-review)
+        bash "$SCRIPTS_DIR/ws_feature_local_review.sh" "$@"
         ;;
-    product-design-runtime-probe)
-        python3 "$SCRIPTS_DIR/ws_product_design_runtime_probe.py" "$@"
-        ;;
-    product-design-install-checklist)
-        python3 "$SCRIPTS_DIR/ws_product_design_install_checklist.py" "$@"
-        ;;
-    product-design-runtime-report)
-        python3 "$SCRIPTS_DIR/ws_product_design_runtime_report.py" "$@"
+    feature-report)
+        bash "$SCRIPTS_DIR/ws_feature_report.sh" "$@"
         ;;
     discovery)
         python3 "$WS_HOME/discovery_lane/tools/discovery_command.py" "$@"
@@ -675,7 +594,10 @@ case "$SUBCOMMAND" in
         fi
         ;;
     exchange)
-        python3 "$WS_HOME/exchange_lane/tools/exchange_command.py" "$@"
+        "$PYTHON_EXEC" "$WS_HOME/exchange_lane/tools/exchange_command.py" "$@"
+        ;;
+    execution)
+        "$PYTHON_EXEC" "$WS_HOME/execution_lane/tools/execution_command.py" "$@"
         ;;
     exchange-new)
         python3 "$SCRIPTS_DIR/ws_exchange_new.py" "$@"
@@ -695,12 +617,6 @@ case "$SUBCOMMAND" in
     exchange-import-result)
         python3 "$SCRIPTS_DIR/ws_exchange_import_result.py" "$@"
         ;;
-    session-list)
-        python3 "$SCRIPTS_DIR/ws_session_list.py" "$@"
-        ;;
-    session-status)
-        python3 "$SCRIPTS_DIR/ws_session_status.py" "$@"
-        ;;
     session-plan)
         python3 "$SCRIPTS_DIR/ws_session_plan.py" "$@"
         ;;
@@ -710,50 +626,20 @@ case "$SUBCOMMAND" in
     session-cleanup)
         python3 "$SCRIPTS_DIR/ws_session_cleanup.py" "$@"
         ;;
-    feature-new)
-        bash "$SCRIPTS_DIR/ws_feature_new.sh" "$@"
+    session-list)
+        python3 "$SCRIPTS_DIR/ws_session_list.py" "$@"
         ;;
-    feature-plan)
-        bash "$SCRIPTS_DIR/ws_feature_plan.sh" "$@"
-        ;;
-    feature-validate)
-        bash "$SCRIPTS_DIR/ws_feature_validate.sh" "$@"
-        ;;
-    feature-handoff)
-        bash "$SCRIPTS_DIR/ws_feature_handoff.sh" "$@"
-        ;;
-    feature-report)
-        bash "$SCRIPTS_DIR/ws_feature_report.sh" "$@"
-        ;;
-    feature-status)
-        bash "$SCRIPTS_DIR/ws_feature_status.sh" "$@"
-        ;;
-    feature-local-review)
-        bash "$SCRIPTS_DIR/ws_feature_local_review.sh" "$@"
-        ;;
-    feature-architect-handoff)
-        bash "$SCRIPTS_DIR/ws_feature_architect_handoff.sh" "$@"
-        ;;
-    feature-run)
-        bash "$SCRIPTS_DIR/ws_feature_run.sh" "$@"
+    session-status)
+        python3 "$SCRIPTS_DIR/ws_session_status.py" "$@"
         ;;
     stronghold-new)
-        bash "$SCRIPTS_DIR/ws_stronghold_new.sh" "$@"
+        python3 "$SCRIPTS_DIR/ws_stronghold_new.py" "$@"
+        ;;
+    stronghold-list)
+        python3 "$SCRIPTS_DIR/ws_stronghold_list.py" "$@"
         ;;
     stronghold-status)
-        bash "$SCRIPTS_DIR/ws_stronghold_status.sh" "$@"
-        ;;
-    stronghold-intake)
-        bash "$SCRIPTS_DIR/ws_stronghold_intake.sh" "$@"
-        ;;
-    stronghold-intake-import)
-        bash "$SCRIPTS_DIR/ws_stronghold_intake_import.sh" "$@"
-        ;;
-    stronghold-architect-handoff)
-        bash "$SCRIPTS_DIR/ws_stronghold_architect_handoff.sh" "$@"
-        ;;
-    stronghold-plan-import)
-        bash "$SCRIPTS_DIR/ws_stronghold_plan_import.sh" "$@"
+        python3 "$SCRIPTS_DIR/ws_stronghold_status.py" "$@"
         ;;
     stronghold-local-checklist)
         bash "$SCRIPTS_DIR/ws_stronghold_local_checklist.sh" "$@"
@@ -761,97 +647,89 @@ case "$SUBCOMMAND" in
     stronghold-report)
         bash "$SCRIPTS_DIR/ws_stronghold_report.sh" "$@"
         ;;
+    stronghold-plan-import)
+        python3 "$SCRIPTS_DIR/ws_stronghold_plan_import.py" "$@"
+        ;;
+    stronghold-intake)
+        python3 "$SCRIPTS_DIR/ws_stronghold_intake.py" "$@"
+        ;;
+    stronghold-intake-import)
+        python3 "$SCRIPTS_DIR/ws_stronghold_intake_import.py" "$@"
+        ;;
     stronghold-decision)
-        bash "$SCRIPTS_DIR/ws_stronghold_decision.sh" "$@"
+        python3 "$SCRIPTS_DIR/ws_stronghold_decision.py" "$@"
         ;;
-    knowledge-inventory)
-        python3 "$SCRIPTS_DIR/ws_knowledge_inventory.py" "$@"
-        ;;
-    learning-run)
-        bash "$SCRIPTS_DIR/ws_learning_run.sh" "$@"
-        ;;
-    learning-import-answers)
-        bash "$SCRIPTS_DIR/ws_learning_import_answers.sh" "$@"
-        ;;
-    learning-assess)
-        bash "$SCRIPTS_DIR/ws_learning_assess.sh" "$@"
-        ;;
-    learning-decision)
-        bash "$SCRIPTS_DIR/ws_learning_decision.sh" "$@"
-        ;;
-    learning-review-session)
-        bash "$SCRIPTS_DIR/ws_learning_review_session.sh" "$@"
-        ;;
-    learning-advance)
-        "$SCRIPTS_DIR/ws_learning_advance.sh" "$@"
-        ;;
-    learning-action-pack)
-        "$SCRIPTS_DIR/ws_learning_action_pack.sh" "$@"
-        ;;
-    learning-confirm)
-        "$SCRIPTS_DIR/ws_learning_confirm.sh" "$@"
-        ;;
-    learning-ledger-repair)
-        "$SCRIPTS_DIR/ws_learning_ledger_repair.sh" "$@"
-        ;;
-    learning-pointer-plan)
-        "$SCRIPTS_DIR/ws_learning_pointer_plan.sh" "$@"
-        ;;
-    learning-advancement-plan)
-        "$SCRIPTS_DIR/ws_learning_advancement_plan.sh" "$@"
-        ;;
-    learning-advancement-review)
-        "$SCRIPTS_DIR/ws_learning_advancement_review.sh" "$@"
-        ;;
-    learning-state-sync-plan)
-        "$SCRIPTS_DIR/ws_learning_state_sync_plan.sh" "$@"
-        ;;
-    learning-state-sync-apply)
-        "$SCRIPTS_DIR/ws_learning_state_sync_apply.sh" "$@"
-        ;;
-    learning-review-checklist)
-        "$SCRIPTS_DIR/ws_learning_review_checklist.sh" "$@"
-        ;;
-    research-run)
-
-        bash "$SCRIPTS_DIR/ws_research_run.sh" "$@"
-        ;;
-    research-decision)
-        bash "$SCRIPTS_DIR/ws_research_decision.sh" "$@"
-        ;;
-    research-add-source)
-        bash "$SCRIPTS_DIR/ws_research_add_source.sh" "$@"
+    stronghold-architect-handoff)
+        python3 "$SCRIPTS_DIR/ws_stronghold_architect_handoff.py" "$@"
         ;;
     quant)
-        # Quant foundation CLI (Wave 1)
-        PYTHON_EXEC="${PYTHON_EXEC:-python3}"
-        # Ensure we use the workstation venv if available
-        if [ -x "$WS_HOME/runtimes/workstation_venv/bin/python3" ]; then
-            PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/bin/python3"
-        elif [ -x "$WS_HOME/runtimes/workstation_venv/Scripts/python.exe" ]; then
-             PYTHON_EXEC="$WS_HOME/runtimes/workstation_venv/Scripts/python.exe"
-        fi
-        
-        case "$1" in
-            status|list-tools|synthetic-status|gates-status|dashboard|reports|artifacts|lineage|cheatsheet)
+        SUB=$1
+        shift
+        case "$SUB" in
+            summary)
                 PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" "$WS_HOME/scripts/quant/ws_quant_summary.py" "$@"
                 ;;
-            idea-intake-dry-run)
-                # Check for forbidden --write flag
-                for arg in "$@"; do
-                    if [[ "$arg" == "--write" ]]; then
-                        echo "[SAFETY BLOCK] --write is strictly forbidden in 'ws quant' in this milestone."
-                        exit 1
-                    fi
-                done
-                # Force --dry-run and call the standalone CLI
-                shift
-                PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" "$WS_HOME/scripts/quant/idea_cli.py" idea-intake "$@" --dry-run
+            idea-intake)
+                PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" "$WS_HOME/scripts/quant/idea_cli.py" idea-intake "$@"
                 ;;
             *)
                 PYTHONPATH="$WS_HOME/scripts" "$PYTHON_EXEC" -m quant.cli "$@"
                 ;;
         esac
+        ;;
+    research-add-source)
+        bash "$SCRIPTS_DIR/ws_research_add_source.sh" "$@"
+        ;;
+    research-decision)
+        bash "$SCRIPTS_DIR/ws_research_decision.sh" "$@"
+        ;;
+    research-run)
+        bash "$SCRIPTS_DIR/ws_research_run.sh" "$@"
+        ;;
+    learning-action-pack)
+        bash "$SCRIPTS_DIR/ws_learning_action_pack.sh" "$@"
+        ;;
+    learning-run)
+        bash "$SCRIPTS_DIR/ws_learning_run.sh" "$@"
+        ;;
+    learning-assess)
+        bash "$SCRIPTS_DIR/ws_learning_assess.sh" "$@"
+        ;;
+    learning-review-session)
+        bash "$SCRIPTS_DIR/ws_learning_review_session.sh" "$@"
+        ;;
+    learning-review-checklist)
+        bash "$SCRIPTS_DIR/ws_learning_review_checklist.sh" "$@"
+        ;;
+    learning-advance)
+        bash "$SCRIPTS_DIR/ws_learning_advance.sh" "$@"
+        ;;
+    learning-confirm)
+        bash "$SCRIPTS_DIR/ws_learning_confirm.sh" "$@"
+        ;;
+    learning-import-answers)
+        bash "$SCRIPTS_DIR/ws_learning_import_answers.sh" "$@"
+        ;;
+    learning-decision)
+        bash "$SCRIPTS_DIR/ws_learning_decision.sh" "$@"
+        ;;
+    learning-advancement-plan)
+        bash "$SCRIPTS_DIR/ws_learning_advancement_plan.sh" "$@"
+        ;;
+    learning-advancement-review)
+        bash "$SCRIPTS_DIR/ws_learning_advancement_review.sh" "$@"
+        ;;
+    learning-pointer-plan)
+        bash "$SCRIPTS_DIR/ws_learning_pointer_plan.sh" "$@"
+        ;;
+    learning-state-sync-plan)
+        bash "$SCRIPTS_DIR/ws_learning_state_sync_plan.sh" "$@"
+        ;;
+    learning-state-sync-apply)
+        bash "$SCRIPTS_DIR/ws_learning_state_sync_apply.sh" "$@"
+        ;;
+    learning-ledger-repair)
+        bash "$SCRIPTS_DIR/ws_learning_ledger_repair.sh" "$@"
         ;;
     loop-plan)
         bash "$SCRIPTS_DIR/ws_loop_plan.sh" "$@"
@@ -897,6 +775,27 @@ case "$SUBCOMMAND" in
         ;;
     packet)
         bash "$SCRIPTS_DIR/ws_make_packet.sh" "$@"
+        ;;
+    task-new)
+        bash "$SCRIPTS_DIR/ws_task_new.sh" "$@"
+        ;;
+    task-next)
+        bash "$SCRIPTS_DIR/ws_task_next.sh" "$@"
+        ;;
+    task-status)
+        bash "$SCRIPTS_DIR/ws_task_status.sh" "$@"
+        ;;
+    task-block)
+        bash "$SCRIPTS_DIR/ws_task_block.sh" "$@"
+        ;;
+    task-complete)
+        bash "$SCRIPTS_DIR/ws_task_complete.sh" "$@"
+        ;;
+    task-split)
+        bash "$SCRIPTS_DIR/ws_task_split.sh" "$@"
+        ;;
+    task-review)
+        bash "$SCRIPTS_DIR/ws_task_review_packet.sh" "$@"
         ;;
     redact)
         bash "$SCRIPTS_DIR/ws_redact_packet.sh" "$@"

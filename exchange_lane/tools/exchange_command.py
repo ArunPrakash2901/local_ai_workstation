@@ -19,7 +19,12 @@ if str(TOOL_DIR) not in sys.path:
 
 import audit_exchange_lane  # noqa: E402
 import exchange_dispatch_plan  # noqa: E402
+import exchange_fake_dispatch  # noqa: E402
+import exchange_import_result  # noqa: E402
+import exchange_loop_decision  # noqa: E402
 import exchange_packet  # noqa: E402
+import exchange_real_dispatch  # noqa: E402
+import exchange_validate_result  # noqa: E402
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +115,106 @@ def cmd_dispatch_plan_status(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_fake_dispatch(args: argparse.Namespace) -> int:
+    argv = ["fake-dispatch", "--root", args.root, "--dispatch-plan-id", args.dispatch_plan_id]
+    if args.confirm:
+        argv.append("--confirm")
+    return exchange_fake_dispatch.main(argv)
+
+
+def cmd_real_dispatch(args: argparse.Namespace) -> int:
+    argv = [
+        "dispatch",
+        "--root",
+        args.root,
+        "--runtime-root",
+        str(REPO_ROOT / "runtime_lane"),
+        "--dispatch-plan-id",
+        args.dispatch_plan_id,
+    ]
+    if args.dry_run:
+        argv.append("--dry-run")
+    if args.confirm:
+        argv.append("--confirm")
+    return exchange_real_dispatch.main(argv)
+
+
+def cmd_import_result(args: argparse.Namespace) -> int:
+    argv = ["import-result", "--root", args.root, "--capture-manifest", args.capture_manifest]
+    if args.confirm:
+        argv.append("--confirm")
+    return exchange_import_result.main(argv)
+
+
+def result_packets(root: Path) -> list[dict[str, object]]:
+    packets: list[dict[str, object]] = []
+    for path in sorted((root / "result_packets").glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            data["_path"] = str(path)
+            packets.append(data)
+    return packets
+
+
+def cmd_result_list(args: argparse.Namespace) -> int:
+    results = result_packets(Path(args.root))
+    if not results:
+        print("no result packets")
+        return 0
+    print("result packets:")
+    for result in results:
+        print(
+            f"- {result.get('result_id', '')} | packet={result.get('source_packet_id', '')} | "
+            f"dispatch_plan={result.get('source_dispatch_plan_id', '')} | status={result.get('result_status', '')} | "
+            f"trusted={result.get('trusted', '')}"
+        )
+    return 0
+
+
+def cmd_result_status(args: argparse.Namespace) -> int:
+    try:
+        result_id = exchange_import_result.require_id(args.result_id, "result_id")
+    except exchange_import_result.ImportResultError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    path = exchange_import_result.result_packet_path(Path(args.root), result_id)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        print(f"error: result packet not found: {result_id}", file=sys.stderr)
+        return 1
+    print(json.dumps(data, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_validate_result(args: argparse.Namespace) -> int:
+    return exchange_validate_result.main(
+        ["validate-result", "--root", args.root, "--result-id", args.result_id]
+    )
+
+
+def cmd_validation_status(args: argparse.Namespace) -> int:
+    return exchange_validate_result.main(
+        ["validation-status", "--root", args.root, "--validation-id", args.validation_id]
+    )
+
+
+def cmd_decide_loop(args: argparse.Namespace) -> int:
+    return exchange_loop_decision.main(
+        ["decide", "--root", args.root, "--validation-id", args.validation_id]
+    )
+
+
+def cmd_loop_status(args: argparse.Namespace) -> int:
+    return exchange_loop_decision.main(["loop-status", "--root", args.root])
+
+
+def cmd_repair_plan(args: argparse.Namespace) -> int:
+    return exchange_loop_decision.main(
+        ["repair-plan", "--root", args.root, "--loop-decision-id", args.loop_decision_id]
+    )
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     root = Path(args.root)
     packets = exchange_packet.list_packets(root)
@@ -161,6 +266,28 @@ def build_parser() -> argparse.ArgumentParser:
     dispatch_plan_list = sub.add_parser("dispatch-plan-list", help="List dispatch plan artifacts.")
     dispatch_plan_status = sub.add_parser("dispatch-plan-status", help="Show one dispatch plan artifact.")
     dispatch_plan_status.add_argument("--dispatch-plan-id", required=True)
+    fake_dispatch = sub.add_parser("fake-dispatch", help="Write fake dispatch result capture artifacts.")
+    fake_dispatch.add_argument("--dispatch-plan-id", required=True)
+    fake_dispatch.add_argument("--confirm", action="store_true")
+    real_dispatch = sub.add_parser("real-dispatch", help="Dry-run or execute guarded CLI dispatch.")
+    real_dispatch.add_argument("--dispatch-plan-id", required=True)
+    real_dispatch.add_argument("--dry-run", action="store_true")
+    real_dispatch.add_argument("--confirm", action="store_true")
+    import_result = sub.add_parser("import-result", help="Import a result capture as an untrusted result packet.")
+    import_result.add_argument("--capture-manifest", required=True)
+    import_result.add_argument("--confirm", action="store_true")
+    sub.add_parser("result-list", help="List result packets.")
+    result_status = sub.add_parser("result-status", help="Show one result packet.")
+    result_status.add_argument("--result-id", required=True)
+    validate_result = sub.add_parser("validate-result", help="Validate an imported result packet.")
+    validate_result.add_argument("--result-id", required=True)
+    validation_status = sub.add_parser("validation-status", help="Show one result validation record.")
+    validation_status.add_argument("--validation-id", required=True)
+    decide_loop = sub.add_parser("decide-loop", help="Create a loop decision from a validation record.")
+    decide_loop.add_argument("--validation-id", required=True)
+    sub.add_parser("loop-status", help="Summarize validations and loop decisions.")
+    repair_plan = sub.add_parser("repair-plan", help="Create metadata-only repair packet when repair is allowed.")
+    repair_plan.add_argument("--loop-decision-id", required=True)
     sub.add_parser("adapter-list", help="List routing adapters.")
     return parser
 
@@ -187,6 +314,26 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_dispatch_plan_list(args)
     if command == "dispatch-plan-status":
         return cmd_dispatch_plan_status(args)
+    if command == "fake-dispatch":
+        return cmd_fake_dispatch(args)
+    if command == "real-dispatch":
+        return cmd_real_dispatch(args)
+    if command == "import-result":
+        return cmd_import_result(args)
+    if command == "result-list":
+        return cmd_result_list(args)
+    if command == "result-status":
+        return cmd_result_status(args)
+    if command == "validate-result":
+        return cmd_validate_result(args)
+    if command == "validation-status":
+        return cmd_validation_status(args)
+    if command == "decide-loop":
+        return cmd_decide_loop(args)
+    if command == "loop-status":
+        return cmd_loop_status(args)
+    if command == "repair-plan":
+        return cmd_repair_plan(args)
     if command == "adapter-list":
         return cmd_adapter_list(args)
     print(parser.format_help())
