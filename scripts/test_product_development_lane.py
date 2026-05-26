@@ -7,7 +7,12 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
+import shutil
+import stat
 import sys
+import tempfile
+import uuid
 from pathlib import Path
 
 
@@ -32,59 +37,84 @@ def assert_true(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def remove_tree(path: Path) -> None:
+    def reset_permissions(function, target, _exc_info):
+        os.chmod(target, stat.S_IWRITE | stat.S_IREAD)
+        function(target)
+
+    shutil.rmtree(path, onexc=reset_permissions)
+
+
 def main() -> int:
-    build_tool = load_module("build_product_packet", LANE_ROOT / "tools" / "build_product_packet.py")
-    audit_tool = load_module("audit_product_development_lane", LANE_ROOT / "tools" / "audit_product_development_lane.py")
-    command_tool = load_module("product_dev_command", LANE_ROOT / "tools" / "product_dev_command.py")
+    codex_temp = Path.home() / ".codex" / "memories"
+    temp_parent = codex_temp if codex_temp.is_dir() else Path(tempfile.gettempdir())
+    tmp_root = temp_parent / f"product_dev_lane_test_{uuid.uuid4().hex}"
+    try:
+        tmp_root.mkdir()
+        repo_root = tmp_root / "repo"
+        lane_root = repo_root / "product_development_lane"
+        discovery_root = repo_root / "discovery_lane"
+        shutil.copytree(LANE_ROOT, lane_root)
+        shutil.copytree(ROOT / "discovery_lane", discovery_root)
 
-    assert_true("--queue" in build_tool.build_parser().format_help(), "build parser should expose --queue")
-    assert_true("--root" in audit_tool.build_parser().format_help(), "audit parser should expose --root")
-    assert_true("build-packet" in command_tool.build_parser().format_help(), "command bridge should expose build-packet")
-    assert_true(DISCOVERY_QUEUE.exists(), "positive Discovery queue should exist")
+        discovery_queue = discovery_root / "execution_queues" / "positive_path_example_execution_queue.json"
+        examples_queue = discovery_root / "execution_queues" / "examples_execution_queue.json"
 
-    if EXAMPLES_QUEUE.exists():
-        example_queue = json.loads(EXAMPLES_QUEUE.read_text(encoding="utf-8"))
-        if example_queue.get("queue_status") != "READY_FOR_EXECUTION_LANE":
-            try:
-                build_tool.build_product_packet(EXAMPLES_QUEUE, LANE_ROOT)
-            except build_tool.ProductDevelopmentError as exc:
-                assert_true("READY_FOR_EXECUTION_LANE" in str(exc), "non-ready queue should be refused")
-            else:
-                raise AssertionError("non-ready queue was not refused")
+        build_tool = load_module("build_product_packet", lane_root / "tools" / "build_product_packet.py")
+        audit_tool = load_module("audit_product_development_lane", lane_root / "tools" / "audit_product_development_lane.py")
+        command_tool = load_module("product_dev_command", lane_root / "tools" / "product_dev_command.py")
 
-    manifest, paths = build_tool.build_product_packet(DISCOVERY_QUEUE, LANE_ROOT)
-    assert_true(manifest["set_id"] == "positive_path_example", "set_id should come from queue")
-    assert_true(manifest["source_queue_status"] == "READY_FOR_EXECUTION_LANE", "source queue status should be ready")
-    assert_true(manifest["worker_prompts_executed"] is False, "worker prompts must not execute")
-    assert_true(manifest["branches_created"] is False, "branches must not be created")
-    assert_true(manifest["git_actions_performed"] is False, "git actions must not happen")
-    assert_true(manifest["models_called"] is False, "models must not be called")
-    for key in (
-        "product_packet",
-        "prd_brief",
-        "wireframe_brief",
-        "ui_ux_brief",
-        "feature_spec",
-        "implementation_plan",
-        "manifest",
-        "report",
-    ):
-        assert_true(paths[key].exists(), f"expected output missing: {key}")
-    assert_true("No worker prompts were executed" in paths["product_packet"].read_text(encoding="utf-8"), "product packet should preserve non-execution boundary")
-    assert_true("NOT_SPECIFIED_IN_DISCOVERY_HANDOFF" in paths["wireframe_brief"].read_text(encoding="utf-8"), "wireframe brief should mark unspecified UI details")
+        assert_true("--queue" in build_tool.build_parser().format_help(), "build parser should expose --queue")
+        assert_true("--root" in audit_tool.build_parser().format_help(), "audit parser should expose --root")
+        assert_true("build-packet" in command_tool.build_parser().format_help(), "command bridge should expose build-packet")
+        assert_true(discovery_queue.exists(), "positive Discovery queue should exist")
 
-    with contextlib.redirect_stdout(io.StringIO()):
-        rc = command_tool.main(["build-packet", "--queue", str(DISCOVERY_QUEUE), "--output", str(LANE_ROOT)])
-    assert_true(rc == 0, "product-dev command build-packet should succeed")
+        if examples_queue.exists():
+            example_queue = json.loads(examples_queue.read_text(encoding="utf-8"))
+            if example_queue.get("queue_status") != "READY_FOR_EXECUTION_LANE":
+                try:
+                    build_tool.build_product_packet(examples_queue, lane_root)
+                except build_tool.ProductDevelopmentError as exc:
+                    assert_true("READY_FOR_EXECUTION_LANE" in str(exc), "non-ready queue should be refused")
+                else:
+                    raise AssertionError("non-ready queue was not refused")
 
-    lane_audit = audit_tool.audit_product_development_lane(LANE_ROOT)
-    assert_true(not lane_audit.errors, "Product Development Lane audit should pass: " + "; ".join(lane_audit.errors))
-    with contextlib.redirect_stdout(io.StringIO()):
-        rc = command_tool.main(["help"])
-    assert_true(rc == 0, "product-dev help should succeed")
-    with contextlib.redirect_stdout(io.StringIO()):
-        rc = command_tool.main(["audit"])
-    assert_true(rc == 0, "product-dev audit should succeed")
+        manifest, paths = build_tool.build_product_packet(discovery_queue, lane_root)
+        assert_true(manifest["set_id"] == "positive_path_example", "set_id should come from queue")
+        assert_true(manifest["source_queue_status"] == "READY_FOR_EXECUTION_LANE", "source queue status should be ready")
+        assert_true(manifest["worker_prompts_executed"] is False, "worker prompts must not execute")
+        assert_true(manifest["branches_created"] is False, "branches must not be created")
+        assert_true(manifest["git_actions_performed"] is False, "git actions must not happen")
+        assert_true(manifest["models_called"] is False, "models must not be called")
+        for key in (
+            "product_packet",
+            "prd_brief",
+            "wireframe_brief",
+            "ui_ux_brief",
+            "feature_spec",
+            "implementation_plan",
+            "manifest",
+            "report",
+        ):
+            assert_true(paths[key].exists(), f"expected output missing: {key}")
+        assert_true("No worker prompts were executed" in paths["product_packet"].read_text(encoding="utf-8"), "product packet should preserve non-execution boundary")
+        assert_true("NOT_SPECIFIED_IN_DISCOVERY_HANDOFF" in paths["wireframe_brief"].read_text(encoding="utf-8"), "wireframe brief should mark unspecified UI details")
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = command_tool.main(["build-packet", "--queue", str(discovery_queue), "--output", str(lane_root)])
+        assert_true(rc == 0, "product-dev command build-packet should succeed")
+
+        lane_audit = audit_tool.audit_product_development_lane(lane_root)
+        assert_true(not lane_audit.errors, "Product Development Lane audit should pass: " + "; ".join(lane_audit.errors))
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = command_tool.main(["help"])
+        assert_true(rc == 0, "product-dev help should succeed")
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = command_tool.main(["audit"])
+        assert_true(rc == 0, "product-dev audit should succeed")
+    finally:
+        if tmp_root.exists():
+            remove_tree(tmp_root)
 
     print("Product Development Lane validation: PASS")
     return 0

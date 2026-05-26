@@ -20,6 +20,8 @@ safety_classes:
     description: Simulates or plans an action without applying project/provider changes.
   GUARDED_WRITE:
     description: Can mutate local files/state only through explicit gates.
+  GUARDED_EXECUTION:
+    description: Can launch a bounded local process only through explicit gates and configured command templates.
   AGENT_RUN:
     description: Can invoke local model or agent process.
   PROVIDER_CALL:
@@ -33,6 +35,7 @@ allowed_values:
   - AGENT_RUN
   - DESTRUCTIVE
   - DRY_RUN_ONLY
+  - GUARDED_EXECUTION
   - GUARDED_WRITE
   - LOCAL_REPORT_WRITE
   - PROVIDER_CALL
@@ -2688,6 +2691,251 @@ commands:
     - scripts/ws
     confidence: high
     notes: Pure-read dispatch plan inspection only.
+  ws exchange fake-dispatch:
+    safety_class: GUARDED_WRITE
+    description: Writes fake Exchange result capture artifacts from a planned dispatch plan without real execution.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Exchange fake dispatch
+    warning_label: Writes fake result capture artifacts under exchange_lane/outbox
+    tui_dispatch_policy: guarded_write
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_outbox
+    evidence:
+    - exchange_lane/tools/exchange_fake_dispatch.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Fake dispatch writes local capture metadata only; it does not run Codex, Gemini, Ollama, browsers, terminals, worker prompts, providers, branch creation, commits, pushes, or merges.
+    slash_command: /dispatch fake
+  ws exchange real-dispatch --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Validates guarded real CLI dispatch preconditions without launching any adapter.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange real dispatch dry-run
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_real_dispatch.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Dry-run validates dispatch plan, runtime linkage, source checksum, and adapter command config without subprocess execution, provider call, terminal start, browser automation, source write, branch, commit, push, or merge.
+    slash_command: /dispatch dry-run
+  ws exchange real-dispatch --confirm:
+    safety_class: GUARDED_EXECUTION
+    description: Runs an explicitly enabled configured Codex/Gemini CLI command and captures output.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Exchange guarded real dispatch
+    warning_label: May launch configured local Codex/Gemini CLI and writes capture artifacts
+    tui_dispatch_policy: guarded_execution
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_outbox
+    evidence:
+    - exchange_lane/tools/exchange_real_dispatch.py
+    - exchange_lane/adapter_commands
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Requires --confirm and enabled adapter command config; uses argv only with shell=False; captures stdout/stderr under exchange_lane/outbox; does not automate browsers, auto-approve prompts, create branches, commit, push, merge, import results, validate results, or decide loops.
+    slash_command: /dispatch real
+  ws exchange import-result:
+    safety_class: GUARDED_WRITE
+    description: Imports a result capture manifest into an untrusted Exchange result packet.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Exchange import result
+    warning_label: Writes untrusted result packet metadata under exchange_lane/result_packets
+    tui_dispatch_policy: guarded_write
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_result_packets
+    evidence:
+    - exchange_lane/tools/exchange_import_result.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Imports capture metadata only; imported output remains untrusted, is not applied, and no CLI/model/provider/browser/git action occurs.
+    slash_command: /import
+  ws exchange result-list:
+    safety_class: PURE_READ
+    description: Lists Exchange Lane result packets.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange result list
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read result packet listing only.
+    slash_command: /exchange results
+  ws exchange result-status:
+    safety_class: PURE_READ
+    description: Shows one Exchange Lane result packet.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange result status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read result packet inspection only.
+  ws exchange validate-result:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Validates an imported Exchange result and writes validation metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange validate result
+    warning_label: Writes local result validation report metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_result_validations
+    evidence:
+    - exchange_lane/tools/exchange_validate_result.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes automated validation metadata only; does not trust output, apply code, dispatch packets, run CLIs/models/browsers, start terminals, create branches, commit, push, or merge.
+    slash_command: /exchange validate
+  ws exchange validation-status:
+    safety_class: PURE_READ
+    description: Shows one Exchange result validation record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange validation status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_validate_result.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read validation record inspection only.
+  ws exchange decide-loop:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes loop decision metadata from a result validation record.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange decide loop
+    warning_label: Writes local loop decision status metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_loop_decisions
+    evidence:
+    - exchange_lane/tools/exchange_loop_decision.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes control-plane next-step metadata only; does not auto-dispatch, run providers, apply code, create branches, commit, push, or merge.
+  ws exchange loop-status:
+    safety_class: PURE_READ
+    description: Summarizes Exchange result validations and loop decisions.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange loop status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_loop_decision.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read loop status summary only.
+    slash_command: /exchange loop
+  ws exchange repair-plan:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Writes bounded repair packet metadata when a loop decision allows repair.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange repair plan
+    warning_label: Writes local repair packet report metadata only
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_repair_packets
+    evidence:
+    - exchange_lane/tools/exchange_loop_decision.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Writes bounded repair metadata only; execution_allowed and dispatch_allowed remain false, with no provider call, branch action, commit, push, or merge.
+    slash_command: /exchange repair
   ws exchange adapter-list:
     safety_class: PURE_READ
     description: Lists Exchange Lane routing adapters.
@@ -5754,3 +6002,622 @@ commands:
     tui_dispatch_policy: preview_only
     tui_dispatch_allowed: false
     report_write_scope: runtime_session
+  ws execution help:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows Execution Lane help.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Help
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Pure-read help output.
+  ws execution status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows Execution Lane run and artifact status summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Status
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Reads execution lane metadata only.
+  ws execution run-status --run <run_id>:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows one execution run manifest status.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Run Status
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Read-only run status output.
+  ws execution audit:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Audits execution lane artifacts.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Audit
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/audit_execution_lane.py
+    confidence: high
+    notes: Metadata-only audit.
+  ws execution plan --queue <queue_manifest> --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Validates a ready discovery execution queue and prints dry-run plan summary.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Plan Dry Run
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Dry-run only and writes no files.
+  ws execution handoff-preview --run <run_id> --target <adapter> --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews Exchange handoff artifacts for a prepared run without writing them.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Handoff Preview
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Preview only; no dispatch and no model call.
+  ws execution prepare --queue <queue_manifest> --confirm:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: 'Writes local execution run/task/report metadata under execution_lane/'
+    safety_class: GUARDED_WRITE
+    description: Creates execution run manifests and worker task packets from a validated queue.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Execution Prepare
+    evidence:
+    - scripts/ws
+    - execution_lane/tools/execution_command.py
+    confidence: high
+    notes: Writes only execution lane metadata; does not execute prompts or dispatch.
+  ws safety-matrix:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows the ws command safety matrix.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Safety Matrix
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Pure-read documentation output.
+  ws safety-registry:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows the ws safety registry manifest.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Safety Registry
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Pure-read manifest display.
+  ws safety-policy:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows slash command integration safety policy.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Safety Policy
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Pure-read policy display.
+  ws config:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows workstation configuration.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Config
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Read-only config inspection.
+  ws env:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows WS_* environment variables.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Environment
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Environment read-only display.
+  ws version:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows workstation wrapper version string.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Version
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Pure-read inline version output.
+  ws stronghold-list:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Lists registered strongholds.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Stronghold List
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Read-only listing of stronghold metadata.
+  ws product-design-adapter-spec:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product design adapter specification.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Adapter Spec
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static spec display.
+  ws product-design-adapter-plan:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews design adapter planning metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Adapter Plan
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Planning preview only.
+  ws product-design-adapter-review:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews review metadata for design adapter planning.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Adapter Review
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Review preview only.
+  ws product-design-adapter-approve:
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: required
+    warning_label: 'May update local planning approval metadata'
+    safety_class: GUARDED_WRITE
+    description: Approves design adapter planning metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Adapter Approve
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Conservative guarded-write classification.
+  ws product-design-render-confirm:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product design render confirm planning metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Render Confirm
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static planning artifact display.
+  ws product-design-run-schema:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product design run schema metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Run Schema
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static schema display.
+  ws product-design-smoke-test-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows first design smoke test plan metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Smoke Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static plan display.
+  ws product-design-smoke-test-result:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows first design smoke test result metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Smoke Result
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static result display.
+  ws product-design-intake-question-bank:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows design intake question bank.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Question Bank
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static question bank display.
+  ws product-lane-decision-record:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product lane decision record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product Decision Record
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static decision record display.
+  ws product-phase-0-implementation-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product phase 0 implementation plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product Phase 0 Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static plan display.
+  ws product-phase-1-closeout-report:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product phase 1 closeout report.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product Phase 1 Closeout
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static closeout display.
+  ws product-phase-1-intake-scope-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product phase 1 intake scope plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product Intake Scope Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static planning display.
+  ws product-phase-2-prd-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product phase 2 PRD plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product PRD Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static PRD planning display.
+  ws product-phase-2-prd-review-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product phase 2 PRD review plan.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Product PRD Review Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static PRD review planning display.
+  ws product-prd-revision-after-scope-change-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows PRD revision plan after scope change.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: PRD Revision Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static PRD revision planning display.
+  ws product-prd-warn-triage-portfolio-website:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows PRD warning triage for portfolio website.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: PRD Warn Triage
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static warning triage display.
+  ws product-scope-lock-spec:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product scope lock specification.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scope Lock Spec
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static scope lock specification display.
+  ws product-scope-revision-plan:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows product scope revision planning metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Scope Revision Plan
+    evidence:
+    - scripts/ws
+    confidence: high
+    notes: Static scope revision planning display.
+  ws product-design-intake-import --product <id> --dry-run:
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: visible_with_label
+    confirmation: none
+    warning_label: ''
+    safety_class: DRY_RUN_ONLY
+    description: Previews product design intake import metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Design Intake Import
+    evidence:
+    - scripts/ws
+    confidence: medium
+    notes: Dry-run import preview only.

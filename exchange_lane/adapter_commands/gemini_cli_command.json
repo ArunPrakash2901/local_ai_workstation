@@ -1,0 +1,31 @@
+{
+  "adapter_id": "gemini_cli",
+  "enabled": false,
+  "executable": "",
+  "base_args": [],
+  "input_mode": "stdin",
+  "prompt_argument_strategy": "stdin",
+  "cwd_policy": "exchange_root",
+  "timeout_seconds": 900,
+  "requires_human_cli_auth": true,
+  "uses_subscription_quota": true,
+  "notes": [
+    "Disabled by default. Configure deliberately after verifying the local Gemini CLI non-interactive command syntax.",
+    "The dispatch prompt instructs the CLI to produce text output only and not modify files.",
+    "Do not add bypass, auto-approval, branch, commit, push, or merge flags."
+  ],
+  "forbidden_args": [
+    "--approval-mode=never",
+    "--no-sandbox",
+    "--auto-approve",
+    "--yolo",
+    "--force"
+  ],
+  "allowed_environment_keys": [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA"
+  ]
+}

@@ -5,6 +5,7 @@ import shutil
 import datetime
 import subprocess
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -19,8 +20,15 @@ from repo_context_lane.tools import (
 
 class TestRepoContextLane(unittest.TestCase):
     def setUp(self):
-        self.test_root = Path("scratch") / f"test_repo_context_lane_root_{uuid.uuid4().hex}"
-        self.test_root.mkdir(parents=True, exist_ok=True)
+        # Use the system temp area; repo-local and scratch temp roots can be read-only on this Windows host.
+        base_tmp = Path(tempfile.gettempdir()) / "_ai_brain_repo_context_tests"
+        base_tmp.mkdir(parents=True, exist_ok=True)
+        self.test_root = Path(
+            tempfile.mkdtemp(
+                prefix=f"test_repo_context_lane_root_{uuid.uuid4().hex}_",
+                dir=str(base_tmp),
+            )
+        )
         
         self.output_root = self.test_root / "lane_output"
         self.output_root.mkdir(parents=True, exist_ok=True)
@@ -34,7 +42,7 @@ class TestRepoContextLane(unittest.TestCase):
 
     def tearDown(self):
         if self.test_root.exists():
-            shutil.rmtree(self.test_root)
+            shutil.rmtree(self.test_root, ignore_errors=True)
 
     def write_artifact(self, folder, filename, data):
         path = self.output_root / folder / filename

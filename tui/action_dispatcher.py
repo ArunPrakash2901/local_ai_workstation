@@ -117,7 +117,7 @@ def dispatch_next_safe_action(
         )
 
     # Check Blocked classes
-    blocked_classes = {"UNKNOWN", "PROVIDER_CALL", "DESTRUCTIVE", "GUARDED_WRITE", "AGENT_RUN"}
+    blocked_classes = {"UNKNOWN", "PROVIDER_CALL", "DESTRUCTIVE", "GUARDED_WRITE", "GUARDED_EXECUTION", "AGENT_RUN"}
     if cmd_safety.safety_class in blocked_classes:
         # Note: If there was a GUARDED_WRITE that was marked as DRY_RUN_ONLY we'd let it pass if safe,
         # but safety_class is the primary axis.

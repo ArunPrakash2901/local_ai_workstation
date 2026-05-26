@@ -6,10 +6,12 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import shutil
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,15 +56,37 @@ def main() -> int:
         print(f"Skipping real build test: {MANIFEST_PATH} not found")
         return 0
 
-    test_tmp = LANE_ROOT / "review_artifacts" / ".test_tmp"
-    test_tmp.mkdir(parents=True, exist_ok=True)
+    base_tmp = Path(tempfile.gettempdir()) / "_ai_brain_product_review_artifact_tests"
+    base_tmp.mkdir(parents=True, exist_ok=True)
+    test_tmp = Path(
+        tempfile.mkdtemp(
+            prefix=f"test_product_review_artifacts_{uuid.uuid4().hex}_",
+            dir=str(base_tmp),
+        )
+    )
     
     try:
-        tmp_output = test_tmp
+        temp_lane_root = test_tmp / "product_development_lane"
+        temp_manifest = temp_lane_root / "manifests" / MANIFEST_PATH.name
+        temp_manifest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(MANIFEST_PATH, temp_manifest)
+
+        manifest_data = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        for rel_path in manifest_data.get("outputs", {}).values():
+            if not isinstance(rel_path, str):
+                continue
+            source = LANE_ROOT / rel_path
+            if not source.exists() or source == MANIFEST_PATH:
+                continue
+            target = temp_lane_root / rel_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+        tmp_output = temp_lane_root / "review_artifacts"
         
         # 1. Test review-html command
         with contextlib.redirect_stdout(io.StringIO()):
-            rc = command_tool.main(["review-html", "--manifest", str(MANIFEST_PATH), "--output", str(tmp_output)])
+            rc = command_tool.main(["review-html", "--manifest", str(temp_manifest), "--output", str(tmp_output)])
         
         if rc != 0:
             # Re-run to see error in logs if needed, but for now just fail with clear message
@@ -92,7 +116,7 @@ def main() -> int:
         assert_true(rc == 1, "review-html should reject non-existent manifest")
     finally:
         if test_tmp.exists():
-            shutil.rmtree(test_tmp)
+            shutil.rmtree(test_tmp, ignore_errors=True)
 
     print("Product Development review artifacts validation: PASS")
     return 0

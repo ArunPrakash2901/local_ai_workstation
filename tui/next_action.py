@@ -172,7 +172,7 @@ def compute_next_safe_action(state: DashboardData, manifest: CommandSafetyManife
         is_safe = False
 
     # 5. unsafe commands
-    if cmd_safety.safety_class in {"PROVIDER_CALL", "DESTRUCTIVE", "UNKNOWN", "GUARDED_WRITE"}:
+    if cmd_safety.safety_class in {"PROVIDER_CALL", "DESTRUCTIVE", "UNKNOWN", "GUARDED_WRITE", "GUARDED_EXECUTION"}:
         return NextSafeAction(
             action_id="learning.action.unsafe",
             label=learning_action.label,

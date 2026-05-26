@@ -1,63 +1,60 @@
 # Execution Run Contract
 
-This contract describes future Execution Lane run records. It is documentation only; no execution run writer exists yet.
-
-## Purpose
-
-An execution run record will capture what happened when a future guarded execution lane consumes one approved phase handoff from a `READY_FOR_EXECUTION_LANE` queue.
+Execution Lane MVP Slice 1 run manifests are preparation-only artifacts derived
+from a Discovery queue manifest in `READY_FOR_EXECUTION_LANE`.
 
 ## Required Fields
 
 - `run_id`
+- `source_queue_manifest`
+- `source_queue_checksum`
 - `set_id`
-- `phase_id`
-- `queue_manifest`
-- `handoff_bundle`
-- `branch_name`
-- `worker_prompt`
-- `started_at`
-- `completed_at`
-- `execution_status`
-- `files_changed`
-- `commands_run`
-- `tests_run`
-- `validation_result`
-- `blockers`
-- `risks`
+- `queue_status`
+- `created_at`
+- `created_by`
+- `run_status`
+- `queued_phase_count`
+- `prepared_task_count`
+- `source_discovery_handoffs`
+- `source_phase_packets`
+- `source_worker_prompts`
+- `source_branch_plans`
+- `linked_product_development_manifest`
+- `linked_product_development_artifacts`
+- `branch_creation_allowed`
+- `execution_allowed`
+- `commit_allowed`
+- `push_allowed`
+- `merge_allowed`
+- `worker_task_packets`
+- `exchange_handoff_previews`
+- `validation_summary`
 - `human_review_required`
-- `commit_created`
-- `push_performed`
-- `merge_performed`
+- `safety_notes`
 
-## Conservative Defaults
+## Allowed `run_status` Values
 
-- `commit_created: false`
-- `push_performed: false`
-- `merge_performed: false`
+- `PLANNED_DRY_RUN`
+- `PREPARED_NOT_EXECUTED`
+- `BLOCKED_QUEUE_NOT_READY`
+- `BLOCKED_INVALID_QUEUE`
+- `BLOCKED_MISSING_ARTIFACTS`
+- `BLOCKED_PRODUCT_DEV_VALIDATION`
+- `CLOSED`
+
+## Required Conservative Values
+
+- `branch_creation_allowed: false`
+- `execution_allowed: false`
+- `commit_allowed: false`
+- `push_allowed: false`
+- `merge_allowed: false`
 - `human_review_required: true`
 
-## Planned Execution Status Values
+## Safety Boundary
 
-Future slices may define exact transitions. Initial expected values:
-
-- `NOT_STARTED`
-- `RUNNING`
-- `COMPLETED_PENDING_REVIEW`
-- `BLOCKED`
-- `FAILED`
-
-## Required Safety Properties
-
-- Worker output must be treated as untrusted until reviewed.
-- Commands run must be recorded explicitly.
-- File changes must be listed.
-- Validation must be recorded.
-- Human review must remain required before commit, push, or merge unless explicitly allowed by a later guarded policy.
-
-## Not Implemented
-
-No command currently creates execution run records.
-
-No command currently runs worker prompts.
-
-No command currently modifies branches, commits, pushes, or merges.
+- Run manifests are preparation metadata only.
+- Run manifests are not execution approval.
+- Run manifests do not execute worker prompts.
+- Run manifests do not start terminals or model providers.
+- Run manifests do not create branches, commits, pushes, or merges.

@@ -1,0 +1,66 @@
+{
+  "allowed_write_roots": [],
+  "blocker_ids": [],
+  "branch_created": false,
+  "commit_allowed": false,
+  "commit_performed": false,
+  "created_at": "2026-05-25T06:13:51Z",
+  "created_by": "exchange_packet.py",
+  "execution_allowed": false,
+  "execution_occurred": false,
+  "expected_outputs": [],
+  "forbidden_actions": [
+    "run_models",
+    "dispatch_packets",
+    "execute_prompts",
+    "create_branches",
+    "commit",
+    "push",
+    "merge"
+  ],
+  "forbidden_paths": [
+    "src/",
+    "app/",
+    "components/",
+    "package.json"
+  ],
+  "human_approval_required": true,
+  "input_artifacts": [
+    "D:\\_ai_brain\\WORKSTATION_MANUAL.md"
+  ],
+  "lineage": {
+    "derived_from": "WORKSTATION_MANUAL.md",
+    "parent_packet_ids": []
+  },
+  "merge_allowed": false,
+  "merge_performed": false,
+  "objective": "repro",
+  "operator_notes": [
+    "target_adapter_known=True",
+    {
+      "note": "ready",
+      "timestamp": "2026-05-25T06:13:51Z"
+    },
+    {
+      "note": "approve 1",
+      "timestamp": "2026-05-25T06:13:51Z"
+    }
+  ],
+  "packet_id": "discovery__codex_cli__implementation_planning__WORKSTATION_MANUAL__20260525T061351z",
+  "packet_status": "APPROVED_FOR_DISPATCH_PLANNING",
+  "packet_version": "v0.1",
+  "planning_approved_at": "2026-05-25T06:13:51Z",
+  "push_allowed": false,
+  "push_performed": false,
+  "quota_notes": "",
+  "safety_class": "LOCAL_REPORT_WRITE",
+  "source_artifact_checksum": "33ace97f9aa10e1cedc9bb34aaa14af2425c5387e738ac6d4dc774f0feb0af83",
+  "source_artifact_path": "D:\\_ai_brain\\WORKSTATION_MANUAL.md",
+  "source_artifact_type": "md",
+  "source_lane": "discovery",
+  "target_adapter": "codex_cli",
+  "target_assignment_id": "",
+  "target_session_id": "",
+  "task_type": "implementation_planning",
+  "updated_at": "2026-05-25T06:13:51Z"
+}

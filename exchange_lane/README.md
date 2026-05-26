@@ -53,6 +53,17 @@ Canonical ws:
 - `ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>`
 - `ws exchange dispatch-plan-list`
 - `ws exchange dispatch-plan-status --dispatch-plan-id <id>`
+- `ws exchange fake-dispatch --dispatch-plan-id <id> --confirm`
+- `ws exchange real-dispatch --dispatch-plan-id <id> --dry-run`
+- `ws exchange real-dispatch --dispatch-plan-id <id> --confirm`
+- `ws exchange import-result --capture-manifest <path> --confirm`
+- `ws exchange result-list`
+- `ws exchange result-status --result-id <id>`
+- `ws exchange validate-result --result-id <id>`
+- `ws exchange validation-status --validation-id <id>`
+- `ws exchange decide-loop --validation-id <id>`
+- `ws exchange loop-status`
+- `ws exchange repair-plan --loop-decision-id <id>`
 - `ws exchange adapter-list`
 
 ## Dispatch Planning
@@ -73,6 +84,82 @@ Dispatch planning does not start terminals.
 Dispatch planning does not approve prompts.
 Dispatch planning does not grant commit, push, or merge.
 
+## Fake Dispatch and Result Import
+
+1. Packet is approved for dispatch planning.
+2. Dispatch plan is created.
+3. Fake dispatch simulates adapter output:
+   `ws exchange fake-dispatch --dispatch-plan-id <id> --confirm`
+4. Result capture is written under `exchange_lane/outbox/<packet_id>/<dispatch_plan_id>/`.
+5. Import result:
+   `ws exchange import-result --capture-manifest <path> --confirm`
+6. Result packet becomes `IMPORTED_PENDING_REVIEW`.
+7. Automated validation and loop decision metadata decide the next safe control-plane step.
+
+Fake dispatch does not run a CLI, model, provider, browser, worker prompt, or terminal.
+Fake dispatch does not create branches, commits, pushes, or merges.
+Imported output is untrusted.
+Import does not apply code.
+Import does not approve the result.
+Import does not grant commit, push, or merge.
+
+## Automated Result Validation and Loop Decisions
+
+1. Fake or future real dispatch produces a result capture.
+2. Import result:
+   `ws exchange import-result --capture-manifest <path> --confirm`
+3. Validate automatically:
+   `ws exchange validate-result --result-id <id>`
+4. Decide loop:
+   `ws exchange decide-loop --validation-id <id>`
+5. Check loop status:
+   `ws exchange loop-status`
+
+Validation is automated metadata inspection. Arun does not manually accept or
+reject every result. Human escalation is required only for permission prompts,
+quota/auth blockers, forbidden file/path changes, failed validation beyond retry
+budget, ambiguous or contradictory output, branch/commit/push/merge requests,
+and final daily/final merge gates.
+
+For the MVP fake-dispatch flow, a conservative fake result validates as
+`VALIDATION_PASSED` and usually produces `COMPLETED_PENDING_DAILY_REVIEW`.
+Auto-continue and auto-repair are future real-dispatch capabilities and must stay
+bounded by retry budget. Validation still does not trust output, apply code,
+dispatch packets, start terminals, call providers, or grant commit/push/merge.
+
+## Guarded Real CLI Dispatch
+
+Real CLI dispatch is disabled by default. Adapter command templates live under
+`exchange_lane/adapter_commands/` and both `codex_cli` and `gemini_cli` ship with
+`enabled: false`. The operator must deliberately configure and enable an adapter
+command before `--confirm` can launch anything.
+
+Only `codex_cli` and `gemini_cli` are supported initially. The dispatcher builds
+argv from adapter command JSON only, uses `shell=False`, sends the packet prompt
+through stdin, captures stdout/stderr, and writes capture artifacts only. It does
+not start interactive terminals, automate browsers, accept arbitrary shell
+commands, auto-approve permission prompts, create branches, commit, push, or
+merge.
+
+Flow:
+
+1. Ensure a `PLANNED_NOT_DISPATCHED` dispatch plan exists.
+2. Run dry-run:
+   `ws exchange real-dispatch --dispatch-plan-id <id> --dry-run`
+3. Enable adapter command config deliberately after verifying the local CLI
+   syntax and auth/quota behavior.
+4. Run guarded dispatch:
+   `ws exchange real-dispatch --dispatch-plan-id <id> --confirm`
+5. Import result:
+   `ws exchange import-result --capture-manifest <path> --confirm`
+6. Validate:
+   `ws exchange validate-result --result-id <id>`
+7. Decide loop:
+   `ws exchange decide-loop --validation-id <id>`
+
+CLI output is captured only and remains untrusted. Quota/auth/permission prompt
+signals are treated as blockers; the operator owns CLI auth and quota recovery.
+
 ## Slash Planning (Documentation Only)
 
 - `/exchange status` -> `ws exchange status`
@@ -81,6 +168,14 @@ Dispatch planning does not grant commit, push, or merge.
 - `/exchange approve` -> `ws exchange approve-planning --packet-id <id> --note "..."`
 - `/exchange plan` -> `ws exchange dispatch-plan --packet-id <id> --session-id <id> --assignment-id <id>`
 - `/exchange plans` -> `ws exchange dispatch-plan-list`
+- `/exchange results` -> `ws exchange result-list`
+- `/exchange validate` -> `ws exchange validate-result --result-id <id>`
+- `/exchange loop` -> `ws exchange loop-status`
+- `/exchange repair` -> `ws exchange repair-plan --loop-decision-id <id>`
+- `/dispatch fake` -> `ws exchange fake-dispatch --dispatch-plan-id <id> --confirm`
+- `/dispatch dry-run` -> `ws exchange real-dispatch --dispatch-plan-id <id> --dry-run`
+- `/dispatch real` -> `ws exchange real-dispatch --dispatch-plan-id <id> --confirm`
+- `/import` -> `ws exchange import-result --capture-manifest <path> --confirm`
 
 No slash dispatcher is implemented in this lane.
 
@@ -90,7 +185,8 @@ No slash dispatcher is implemented in this lane.
 - No packet execution.
 - No dispatch.
 - No branch/commit/push/merge.
-- Human approval remains the gate.
+- Automated validation determines safe next metadata steps.
+- Human escalation remains the gate for blockers, risk, and final review.
 
 ## Future Work
 

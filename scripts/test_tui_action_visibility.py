@@ -116,6 +116,11 @@ def validate_class_rules(commands: dict[str, Any], app: Any, report: VisibilityR
             expect(exposure in NON_VISIBLE_EXPOSURES, report, f"{command}: GUARDED_WRITE should be hidden/disabled/admin_only")
             expect(not visible_default, report, f"{command}: GUARDED_WRITE is visible by default")
 
+        if safety_class == "GUARDED_EXECUTION":
+            expect(exposure in NON_VISIBLE_EXPOSURES, report, f"{command}: GUARDED_EXECUTION should be hidden/disabled/admin_only")
+            expect(not visible_default, report, f"{command}: GUARDED_EXECUTION is visible by default")
+            expect(not visible_read_only, report, f"{command}: GUARDED_EXECUTION visible in READ_ONLY_WITH_LOCAL_REPORTS")
+
         if safety_class == "AGENT_RUN":
             if exposure in VISIBLE_EXPOSURES:
                 expect(entry.get("safe_dry_run") is True, report, f"{command}: visible AGENT_RUN must be explicitly safe_dry_run")

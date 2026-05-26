@@ -5,6 +5,13 @@ This is your central control plane for local AI development across all projects.
 ## Overview
 The workstation uses **Graphify** for codebase intelligence and **Ollama (Hermes 3 8B)** for local inference. Strategic planning is human-gated via high-reasoning browser models (ChatGPT/Gemini). Execution is performed by bounded agents (Codex/Gemini CLI) targeting isolated Git worktrees.
 
+## Command Invocation
+On Windows PowerShell, `ws` may not be globally on `PATH`.
+Use repo-local invocation from `D:\_ai_brain`:
+
+- `.\scripts\ws ...` (if shell association is configured)
+- `wsl bash -lc "cd /mnt/d/_ai_brain && ./scripts/ws ..."` (portable fallback)
+
 ## Daily Workflow
 1. `ws ready`: Verify system health (Ollama, GPU, WSL, Registry).
 2. `ws agent-hygiene`: Audit and cleanup transient agent artifacts.
