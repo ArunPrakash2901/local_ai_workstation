@@ -39,6 +39,14 @@ REVIEW_SCOPES = {
     "test-run": "VALIDATED_FOR_TEST_RUN",
 }
 
+HANDLED_RESULT_STATUSES = {
+    "VALIDATED_FOR_SUMMARY",
+    "VALIDATED_FOR_REPAIR_LOOP",
+    "VALIDATED_FOR_PATCH_PROPOSAL",
+    "VALIDATED_FOR_TEST_RUN",
+    "REJECTED_BY_POLICY",
+}
+
 
 class ExchangeReviewError(Exception):
     """Operator-facing exchange review error."""
@@ -83,41 +91,77 @@ def iter_json(root: Path, folder: str) -> list[dict[str, Any]]:
     return records
 
 
-def review_list(root: Path) -> list[dict[str, Any]]:
+def is_handled_result_status(status: Any) -> bool:
+    status_value = str(status or "")
+    if status_value.startswith("ACCEPTED_FOR_"):
+        return True
+    return status_value in HANDLED_RESULT_STATUSES
+
+
+def review_list(root: Path, *, include_handled: bool = False) -> list[dict[str, Any]]:
     root = root.resolve()
     results = iter_json(root, "result_packets")
-    validations = {v.get("result_id"): v for v in iter_json(root, "result_validations")}
-    decisions = {d.get("result_id"): d for d in iter_json(root, "loop_decisions")}
+    validation_records = iter_json(root, "result_validations")
+    validations = {str(v.get("result_id")): v for v in validation_records if v.get("result_id")}
+    validations_by_id = {str(v.get("validation_id")): v for v in validation_records if v.get("validation_id")}
+
+    decisions: dict[str, dict[str, Any]] = {}
+    for decision in iter_json(root, "loop_decisions"):
+        result_id = str(decision.get("result_id") or "")
+        if not result_id:
+            validation_id = str(decision.get("validation_id") or "")
+            result_id = str((validations_by_id.get(validation_id) or {}).get("result_id") or "")
+        if result_id:
+            decisions[result_id] = decision
 
     review_items = []
     for res in results:
-        rid = res.get("result_id")
-        status = res.get("result_status")
+        rid = str(res.get("result_id") or "")
+        status = str(res.get("result_status") or "")
         val = validations.get(rid, {})
-        v_status = val.get("validation_status", "PENDING")
+        v_status = str(val.get("validation_status", "PENDING"))
         dec = decisions.get(rid, {})
-        d_val = dec.get("decision", "PENDING")
+        d_val = str(dec.get("decision", "PENDING"))
+        handled = is_handled_result_status(status)
 
         needs_attention = False
         action = "none"
+        queue_state = "none"
+        active_blocker = False
 
-        if status == "IMPORTED_PENDING_REVIEW":
-            needs_attention = True
-            action = "validate or review result"
-        elif v_status == "VALIDATION_BLOCKED":
-            needs_attention = True
-            action = "inspect validation block"
-        elif d_val == "BLOCKED_NEEDS_OPERATOR":
-            needs_attention = True
-            action = "manual decision required"
-        elif d_val == "COMPLETED_PENDING_DAILY_REVIEW":
-            needs_attention = True
-            action = "daily review/checkpoint"
-        elif status == "READY_FOR_OPERATOR_REVIEW":
-            needs_attention = True
-            action = "review promoted result"
+        if handled:
+            queue_state = "handled"
+            if d_val == "BLOCKED_NEEDS_OPERATOR":
+                queue_state = "handled_blocked"
+                action = "historical blocker handled by operator review"
+            elif d_val == "COMPLETED_PENDING_DAILY_REVIEW":
+                queue_state = "handled_daily_review"
+                action = "daily review/checkpoint (handled)"
+        else:
+            if d_val == "BLOCKED_NEEDS_OPERATOR":
+                needs_attention = True
+                queue_state = "active_blocker"
+                action = "manual decision required"
+                active_blocker = True
+            elif v_status == "VALIDATION_BLOCKED":
+                needs_attention = True
+                queue_state = "active_blocker"
+                action = "inspect validation block"
+                active_blocker = True
+            elif status == "IMPORTED_PENDING_REVIEW":
+                needs_attention = True
+                queue_state = "pending_review"
+                action = "validate or review result"
+            elif status == "READY_FOR_OPERATOR_REVIEW":
+                needs_attention = True
+                queue_state = "pending_review"
+                action = "review promoted result"
+            elif d_val == "COMPLETED_PENDING_DAILY_REVIEW":
+                needs_attention = True
+                queue_state = "pending_daily_review"
+                action = "daily review/checkpoint"
 
-        if needs_attention:
+        if needs_attention or include_handled:
             item = {
                 "result_id": rid,
                 "result_status": status,
@@ -130,6 +174,9 @@ def review_list(root: Path) -> list[dict[str, Any]]:
                 "dispatch_plan_id": res.get("source_dispatch_plan_id"),
                 "created_at": res.get("imported_at"),
                 "recommended_action": action,
+                "queue_state": queue_state,
+                "active_blocker": active_blocker,
+                "handled": handled,
             }
             review_items.append(item)
 
@@ -281,14 +328,14 @@ def review_checkpoint(root: Path) -> Path:
 
 
 def cmd_review_list(args: argparse.Namespace) -> int:
-    items = review_list(Path(args.root))
+    items = review_list(Path(args.root), include_handled=bool(getattr(args, "all", False)))
     if not items:
         print("review queue empty")
         return 0
     print("exchange review queue:")
     for item in items:
         print(
-            f"- {item['result_id']} | status={item['result_status']} | decision={item['loop_decision']} | action={item['recommended_action']}"
+            f"- {item['result_id']} | state={item['queue_state']} | status={item['result_status']} | decision={item['loop_decision']} | action={item['recommended_action']}"
         )
     return 0
 
@@ -330,6 +377,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_cmd = sub.add_parser("review-list", help="List items needing operator attention.")
     list_cmd.add_argument("--root", default=str(DEFAULT_ROOT))
+    list_cmd.add_argument("--all", action="store_true", help="Include handled historical items in the listing.")
     list_cmd.set_defaults(func=cmd_review_list)
 
     res_cmd = sub.add_parser("review-result", help="concise operator review view for one result.")

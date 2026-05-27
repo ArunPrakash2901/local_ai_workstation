@@ -52,6 +52,13 @@ BLOCKED_ASSIGNMENT_STATUSES = {
     "CLOSED",
     "ABANDONED",
 }
+HANDLED_RESULT_STATUSES = {
+    "VALIDATED_FOR_SUMMARY",
+    "VALIDATED_FOR_REPAIR_LOOP",
+    "VALIDATED_FOR_PATCH_PROPOSAL",
+    "VALIDATED_FOR_TEST_RUN",
+    "REJECTED_BY_POLICY",
+}
 
 
 def load_json(path: Path, warnings: list[str]) -> dict[str, Any] | None:
@@ -213,6 +220,23 @@ def report_status(root: Path) -> tuple[str, dict[str, bool]]:
     return "UNKNOWN", present
 
 
+def is_handled_result_status(status: Any) -> bool:
+    status_value = str(status or "")
+    if status_value.startswith("ACCEPTED_FOR_"):
+        return True
+    return status_value in HANDLED_RESULT_STATUSES
+
+
+def result_id_for_decision(decision: dict[str, Any], validations_by_id: dict[str, dict[str, Any]]) -> str:
+    result_id = str(decision.get("result_id") or "")
+    if result_id:
+        return result_id
+    validation_id = str(decision.get("validation_id") or "")
+    if not validation_id:
+        return ""
+    return str((validations_by_id.get(validation_id) or {}).get("result_id") or "")
+
+
 def latest_id(records: list[dict[str, Any]], id_field: str) -> str:
     if not records:
         return ""
@@ -230,6 +254,7 @@ def choose_next_action(
     loop_decisions: list[dict[str, Any]],
     dispatch_plans: list[dict[str, Any]],
     warnings: list[str],
+    active_blocked_decisions: int,
 ) -> tuple[str, str, bool]:
     if any(status.startswith("enabled") for status in adapters.values()):
         return "Inspect adapter configs and restore disabled state.", "A real adapter is enabled.", False
@@ -254,8 +279,7 @@ def choose_next_action(
         validation_id = str(pending_decision[0].get("validation_id") or "<validation_id>")
         return f"ws exchange decide-loop --validation-id {validation_id}", "Validation record is awaiting loop decision.", False
 
-    blocked = [item for item in loop_decisions if str(item.get("decision") or "").startswith("BLOCKED")]
-    if blocked:
+    if active_blocked_decisions > 0:
         return "ws exchange loop-status", "Blocked loop decisions require operator review before more dispatch.", False
 
     ready_plans = [item for item in dispatch_plans if item.get("planned_status") == "PLANNED_NOT_DISPATCHED"]
@@ -289,11 +313,39 @@ def build_status(root: Path) -> str:
     validations = json_records(root, "exchange_lane/result_validations", warnings)
     loop_decisions = json_records(root, "exchange_lane/loop_decisions", warnings)
 
-    untrusted = [item for item in results if item.get("trusted") is False]
-    accepted = [item for item in results if str(item.get("result_status") or "").startswith("ACCEPTED_FOR")]
+    results_by_id = {str(item.get("result_id") or ""): item for item in results if item.get("result_id")}
+    handled_result_ids = {
+        result_id
+        for result_id, item in results_by_id.items()
+        if is_handled_result_status(item.get("result_status"))
+    }
+    imported_pending = [
+        item for item in results if str(item.get("result_status") or "") == "IMPORTED_PENDING_REVIEW"
+    ]
+    accepted = [item for item in results if is_handled_result_status(item.get("result_status")) and str(item.get("result_status") or "").startswith("ACCEPTED_FOR")]
     rejected = [item for item in results if item.get("result_status") == "REJECTED_BY_POLICY"]
-    blocked_validations = [item for item in validations if str(item.get("validation_status") or "").startswith("VALIDATION_BLOCKED")]
-    blocked_loops = [item for item in loop_decisions if str(item.get("decision") or "").startswith("BLOCKED")]
+    validations_by_id = {str(item.get("validation_id") or ""): item for item in validations if item.get("validation_id")}
+    blocked_validations = []
+    for item in validations:
+        if str(item.get("validation_status") or "") != "VALIDATION_BLOCKED":
+            continue
+        result_id = str(item.get("result_id") or "")
+        if result_id and result_id in handled_result_ids:
+            continue
+        blocked_validations.append(item)
+
+    blocked_loop_decisions = [
+        item for item in loop_decisions if str(item.get("decision") or "") == "BLOCKED_NEEDS_OPERATOR"
+    ]
+    active_blocked_decisions = []
+    handled_blocked_decisions = []
+    for decision in blocked_loop_decisions:
+        result_id = result_id_for_decision(decision, validations_by_id)
+        if result_id and result_id in handled_result_ids:
+            handled_blocked_decisions.append(decision)
+        else:
+            active_blocked_decisions.append(decision)
+
     daily_review = [item for item in loop_decisions if item.get("decision") == "COMPLETED_PENDING_DAILY_REVIEW"]
     ready_for_review = [item for item in loop_decisions if item.get("decision") == "READY_FOR_OPERATOR_REVIEW"]
     blocked_sessions = [item for item in sessions if str(item.get("status") or "") in BLOCKED_SESSION_STATUSES]
@@ -304,7 +356,15 @@ def build_status(root: Path) -> str:
         item for item in validations if str(item.get("validation_id") or "") not in validation_ids_with_decisions
     ]
     generated_count, untracked_generated = generated_artifact_summary(root)
-    next_action, next_reason, dispatch_safe = choose_next_action(adapters, results, validations, loop_decisions, dispatch_plans, warnings)
+    next_action, next_reason, dispatch_safe = choose_next_action(
+        adapters,
+        results,
+        validations,
+        loop_decisions,
+        dispatch_plans,
+        warnings,
+        len(active_blocked_decisions),
+    )
     report_summary = ", ".join(f"{name}={'present' if exists else 'missing'}" for name, exists in reports.items())
 
     generated_line = f"generated artifact files: {generated_count}"
@@ -355,12 +415,14 @@ def build_status(root: Path) -> str:
         f"- loop decisions by status: {render_counter(count_by(loop_decisions, 'decision'))}",
         "",
         "## Review Queue",
-        f"- raw imported results: {len(untrusted)}",
+        f"- imported pending review: {len(imported_pending)}",
         f"- blocked validations: {len(blocked_validations)}",
+        f"- active blocked decisions: {len(active_blocked_decisions)}",
+        f"- handled blocked decisions: {len(handled_blocked_decisions)}",
         f"- ready-for-operator-review summaries: {len(ready_for_review)}",
-        f"- BLOCKED_NEEDS_OPERATOR decisions: {sum(1 for item in loop_decisions if item.get('decision') == 'BLOCKED_NEEDS_OPERATOR')}",
+        f"- BLOCKED_NEEDS_OPERATOR decisions (total historical): {len(blocked_loop_decisions)}",
         f"- results validated but awaiting decision: {len(validations_awaiting_decision)}",
-        f"- accepted (promoted): {len(accepted)}",
+        f"- accepted promoted results: {len(accepted)}",
         f"- rejected: {len(rejected)}",
         f"- daily review candidates: {len(daily_review)}",
         f"- latest result: {latest_id(results, 'result_id') or 'none'}",

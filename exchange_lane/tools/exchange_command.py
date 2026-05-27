@@ -273,7 +273,10 @@ def cmd_repair_plan(args: argparse.Namespace) -> int:
 
 
 def cmd_review_list(args: argparse.Namespace) -> int:
-    return exchange_review.main(["review-list", "--root", args.root])
+    argv = ["review-list", "--root", args.root]
+    if args.all:
+        argv.append("--all")
+    return exchange_review.main(argv)
 
 
 def cmd_review_result(args: argparse.Namespace) -> int:
@@ -375,7 +378,8 @@ def build_parser() -> argparse.ArgumentParser:
     adapter_status = sub.add_parser("adapter-status", help="Show one routing adapter status.")
     adapter_status.add_argument("--adapter-id", required=True)
 
-    sub.add_parser("review-list", help="List Exchange items needing operator attention.")
+    review_list_cmd = sub.add_parser("review-list", help="List Exchange items needing operator attention.")
+    review_list_cmd.add_argument("--all", action="store_true", help="Include handled historical items.")
 
     review_result_cmd = sub.add_parser("review-result", help="Show concise operator review view for one result.")
     review_result_cmd.add_argument("--result-id", required=True)

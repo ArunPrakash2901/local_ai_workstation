@@ -113,10 +113,31 @@ def test_review_queue_detection(module) -> None:
     output = run_with_fixtures(module)
     assert_true("autonomy mode: MANUAL_REVIEW_ONLY" in output, "autonomy mode should be reported")
     assert_true("ollama_local: disabled" in output, "ollama_local should be reported as disabled when config exists")
-    assert_true("raw imported results: 1" in output, "raw imported result count should be detected")
+    assert_true("imported pending review: 1" in output, "imported pending review count should be detected")
     assert_true("blocked validations: 1" in output, "blocked validation count should be detected")
+    assert_true("active blocked decisions: 1" in output, "active blocked decisions should be detected")
+    assert_true("handled blocked decisions: 0" in output, "handled blocked decisions should be detected")
     assert_true("ready-for-operator-review summaries: 0" in output, "ready-for-operator-review summaries count should be detected")
-    assert_true("BLOCKED_NEEDS_OPERATOR decisions: 1" in output, "blocked loop decision should be detected")
+    assert_true("BLOCKED_NEEDS_OPERATOR decisions (total historical): 1" in output, "historical blocked loop decision count should be detected")
+
+
+def test_handled_blocker_no_longer_blocks_dispatch(module) -> None:
+    records = fixture_records()
+    records["exchange_lane/result_packets"] = [
+        {"result_id": "res_1", "result_status": "ACCEPTED_FOR_SUMMARY", "trusted": False}
+    ]
+    records["exchange_lane/result_validations"] = [
+        {"validation_id": "val_1", "result_id": "res_1", "validation_status": "VALIDATION_BLOCKED"}
+    ]
+    records["exchange_lane/loop_decisions"] = [
+        {"loop_decision_id": "loop_1", "validation_id": "val_1", "decision": "BLOCKED_NEEDS_OPERATOR"}
+    ]
+
+    output = run_with_fixtures(module, records=records)
+    assert_true("imported pending review: 0" in output, "handled result should not count as imported pending review")
+    assert_true("active blocked decisions: 0" in output, "handled blocker should not count as active blocked decision")
+    assert_true("handled blocked decisions: 1" in output, "handled blocker should be counted as handled")
+    assert_true("safe for another guarded dispatch: YES" in output, "dispatch safety should be YES when blockers are handled")
 
 
 def test_malformed_json_warning(module) -> None:
@@ -153,6 +174,7 @@ def main() -> int:
         test_current_repo_status_returns,
         test_adapter_enabled_warnings,
         test_review_queue_detection,
+        test_handled_blocker_no_longer_blocks_dispatch,
         test_malformed_json_warning,
         test_status_is_pure_read,
     )

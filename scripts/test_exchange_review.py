@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -35,10 +36,9 @@ exchange_review = load_module("exchange_review", LANE_ROOT / "tools" / "exchange
 
 class TestExchangeReview(unittest.TestCase):
     def setUp(self):
-        self.tmp_root = ROOT / "test_exchange_review_root"
-        if self.tmp_root.exists():
-            shutil.rmtree(self.tmp_root)
-        self.tmp_root.mkdir(parents=True)
+        base_tmp = Path(tempfile.gettempdir()) / "_ai_brain_exchange_review_tests"
+        base_tmp.mkdir(parents=True, exist_ok=True)
+        self.tmp_root = Path(tempfile.mkdtemp(prefix="test_exchange_review_", dir=str(base_tmp)))
         (self.tmp_root / "exchange_lane").mkdir()
         (self.tmp_root / "exchange_lane" / "result_packets").mkdir()
         (self.tmp_root / "exchange_lane" / "result_validations").mkdir()
@@ -46,7 +46,7 @@ class TestExchangeReview(unittest.TestCase):
 
     def tearDown(self):
         if self.tmp_root.exists():
-            shutil.rmtree(self.tmp_root)
+            shutil.rmtree(self.tmp_root, ignore_errors=True)
 
     def create_result(self, result_id: str, status: str = "IMPORTED_PENDING_REVIEW"):
         data = {
@@ -90,14 +90,32 @@ class TestExchangeReview(unittest.TestCase):
         self.assertEqual(items[0]["result_id"], "res1")
         self.assertEqual(items[0]["recommended_action"], "validate or review result")
 
-    def test_review_list_finds_blocked_needs_operator(self):
+    def test_review_list_accepted_blocked_is_handled_not_pending(self):
         self.create_result("res1", status="ACCEPTED_FOR_SUMMARY")
         self.create_validation("res1")
         self.create_decision("res1", decision="BLOCKED_NEEDS_OPERATOR")
         
         items = exchange_review.review_list(self.tmp_root / "exchange_lane")
+        self.assertEqual(len(items), 0)
+
+        all_items = exchange_review.review_list(self.tmp_root / "exchange_lane", include_handled=True)
+        self.assertEqual(len(all_items), 1)
+        self.assertEqual(all_items[0]["result_id"], "res1")
+        self.assertEqual(all_items[0]["loop_decision"], "BLOCKED_NEEDS_OPERATOR")
+        self.assertEqual(all_items[0]["queue_state"], "handled_blocked")
+        self.assertTrue(all_items[0]["handled"])
+        self.assertFalse(all_items[0]["active_blocker"])
+
+    def test_review_list_imported_blocked_stays_active(self):
+        self.create_result("res1", status="IMPORTED_PENDING_REVIEW")
+        self.create_validation("res1")
+        self.create_decision("res1", decision="BLOCKED_NEEDS_OPERATOR")
+
+        items = exchange_review.review_list(self.tmp_root / "exchange_lane")
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0]["loop_decision"], "BLOCKED_NEEDS_OPERATOR")
+        self.assertEqual(items[0]["queue_state"], "active_blocker")
+        self.assertTrue(items[0]["active_blocker"])
         self.assertEqual(items[0]["recommended_action"], "manual decision required")
 
     def test_review_accept_promotion(self):
