@@ -95,6 +95,7 @@ def main() -> int:
             rc = runtime_session.main(["adapter-list", "--root", str(test_root)])
         assert_true(rc == 0, "adapter-list should pass")
         assert_true("codex_cli" in output.getvalue(), "adapter-list should show codex_cli")
+        assert_true("ollama_local" in output.getvalue(), "adapter-list should show ollama_local")
         with contextlib.redirect_stdout(io.StringIO()) as output:
             rc = runtime_session.main(["help"])
         assert_true(rc == 0, "help should pass")
@@ -130,6 +131,36 @@ def main() -> int:
         assert_true(session["push_allowed"] is False, "push should default false")
         assert_true(session["merge_allowed"] is False, "merge should default false")
         assert_true(session["automated_terminal_control"] is False, "automated terminal control should default false")
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = runtime_session.main(
+                [
+                    "register",
+                    "--root",
+                    str(test_root),
+                    "--session-id",
+                    "ollama-local-phase",
+                    "--adapter",
+                    "ollama_local",
+                    "--label",
+                    "Ollama local model phase",
+                    "--cwd",
+                    "D:/_ai_brain",
+                    "--lane",
+                    "Exchange Lane",
+                    "--task",
+                    "Local model summary through Exchange only",
+                ]
+            )
+        assert_true(rc == 0, "ollama_local register should pass")
+        ollama_session_path = test_root / "sessions" / "ollama-local-phase.json"
+        assert_true(ollama_session_path.exists(), "ollama_local register should create session JSON")
+        ollama_session = json.loads(ollama_session_path.read_text(encoding="utf-8"))
+        assert_true(ollama_session["adapter_type"] == "ollama_local", "ollama session should preserve adapter_type")
+        assert_true(ollama_session["endpoint"] == "http://127.0.0.1:11434/v1", "ollama session should include endpoint")
+        assert_true(ollama_session["model"] == "hermes3:8b", "ollama session should include model")
+        assert_true(ollama_session["resource_status"] == "LOCAL_RESOURCE_UNKNOWN", "ollama session should include resource status")
+        assert_true(ollama_session["trusted_output_default"] is False, "ollama session output should default untrusted")
 
         with contextlib.redirect_stderr(io.StringIO()):
             rc = runtime_session.main(

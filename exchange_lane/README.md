@@ -139,12 +139,20 @@ Real CLI dispatch is disabled by default. Adapter command templates live under
 `enabled: false`. The operator must deliberately configure and enable an adapter
 command before `--confirm` can launch anything.
 
-Only `codex_cli` and `gemini_cli` are supported initially. The dispatcher builds
-argv from adapter command JSON only, uses `shell=False`, sends the packet prompt
-through stdin, captures stdout/stderr, and writes capture artifacts only. It does
-not start interactive terminals, automate browsers, accept arbitrary shell
-commands, auto-approve permission prompts, create branches, commit, push, or
-merge.
+Only `codex_cli` and `gemini_cli` have guarded CLI execution support initially.
+The dispatcher builds argv from adapter command JSON only, uses `shell=False`,
+sends the packet prompt through stdin, captures stdout/stderr, and writes capture
+artifacts only. It does not start interactive terminals, automate browsers,
+accept arbitrary shell commands, auto-approve permission prompts, create
+branches, commit, push, or merge.
+
+`ollama_local` is a first-class planned adapter with a disabled local-provider
+config at `exchange_lane/adapter_commands/ollama_local_command.json`. It records
+endpoint/model intent for `http://127.0.0.1:11434/v1` and `hermes3:8b`, but
+`ws exchange real-dispatch --confirm` refuses it until a guarded request-body
+provider dispatcher is implemented. Local model output must remain captured,
+imported as untrusted, validated, and loop-decided before it can influence the
+next workstation step.
 
 Flow:
 

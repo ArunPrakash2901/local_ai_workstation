@@ -45,6 +45,13 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/check_local_safety.py
 
 `ws workstation status` is the unified read-only MVP dashboard. It summarizes Execution, Runtime, Exchange, adapter config, result validation, loop decision, report, and generated artifact metadata without running audits, dispatch, models, providers, terminals, or git commands.
 
+Local Ollama is represented as the `ollama_local` adapter. The default endpoint
+is `http://127.0.0.1:11434/v1` with preferred model `hermes3:8b`, but the
+Exchange command config is disabled by default and the current real-dispatch
+path refuses Ollama `--confirm` until a bounded local provider dispatcher exists.
+Any future local model output must still be captured, imported as untrusted,
+validated, and routed through loop decisions.
+
 | Check | Writes files? | Runs ws? | Runs agents/models/providers? | Purpose |
 |---|---:|---:|---:|---|
 | `check_local_safety.py` | No | No | No | No-write validation of safety manifest and syntax |

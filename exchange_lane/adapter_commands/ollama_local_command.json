@@ -1,0 +1,26 @@
+{
+  "adapter_id": "ollama_local",
+  "adapter_type": "ollama_local",
+  "enabled": false,
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "model": "hermes3:8b",
+  "timeout_seconds": 900,
+  "input_mode": "request_body",
+  "capture_behavior": "exchange_outbox_capture_required",
+  "no_shell_execution": true,
+  "provider_dispatcher_implemented": false,
+  "trusted_output_default": false,
+  "local_resource_notes": [
+    "Windows 11 workstation",
+    "RTX 4070 Laptop GPU with 8GB VRAM",
+    "16GB system RAM",
+    "Local model output remains untrusted until Exchange import and validation"
+  ],
+  "notes": [
+    "Disabled by default. This config declares the local Ollama endpoint/model for future guarded provider dispatch.",
+    "The current real-dispatch implementation does not call Ollama. Dry-run may inspect this config; --confirm refuses until a guarded local provider dispatcher is implemented.",
+    "Do not route Ollama through shell wrappers or arbitrary command strings."
+  ],
+  "forbidden_args": [],
+  "allowed_environment_keys": []
+}

@@ -1,9 +1,26 @@
 {
   "adapter_id": "ollama_local",
+  "adapter_type": "ollama_local",
   "display_name": "Ollama Local Model",
   "launch_mode": "manual_terminal",
   "auth_mode": "local_runtime",
   "quota_model": "local_ram_vram_capacity",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "model": "hermes3:8b",
+  "local_resource_notes": [
+    "Windows 11 workstation",
+    "RTX 4070 Laptop GPU with 8GB VRAM",
+    "16GB system RAM",
+    "Local output is captured and treated as untrusted until Exchange validation"
+  ],
+  "allowed_write_roots_default": [],
+  "forbidden_paths_default": [
+    ".git/",
+    "private_config/",
+    "model_weights/",
+    "raw_generated_graph_outputs/"
+  ],
+  "trusted_output_default": false,
   "approval_behavior": "operator_controls_runtime_and_model_selection",
   "supports_checkpointing": "model_and_tooling_dependent",
   "supports_noninteractive_mode": "tooling_dependent",
@@ -15,4 +32,3 @@
   ],
   "notes": "Local model runtime with no external quota, limited by local RAM/VRAM. Runtime Session Lane does not start Ollama."
 }
-

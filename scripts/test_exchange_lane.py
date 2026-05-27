@@ -404,6 +404,14 @@ def main() -> int:
         adapter_config_path = EXCHANGE_LANE_ROOT / "adapter_commands" / adapter_config
         assert_true(adapter_config_path.is_file(), f"{adapter_config} should exist")
         assert_true(read_json(adapter_config_path)["enabled"] is False, f"{adapter_config} should default disabled")
+    ollama_config_path = EXCHANGE_LANE_ROOT / "adapter_commands" / "ollama_local_command.json"
+    assert_true(ollama_config_path.is_file(), "ollama_local command config should exist")
+    ollama_config = read_json(ollama_config_path)
+    assert_true(ollama_config["enabled"] is False, "ollama_local command config should default disabled")
+    assert_true(ollama_config["adapter_type"] == "ollama_local", "ollama_local config should declare adapter_type")
+    assert_true(ollama_config["endpoint"] == "http://127.0.0.1:11434/v1", "ollama_local config should declare endpoint")
+    assert_true(ollama_config["model"] == "hermes3:8b", "ollama_local config should declare preferred model")
+    assert_true(ollama_config["trusted_output_default"] is False, "ollama_local output should default untrusted")
     assert_true("plan-status" in exchange_dispatch_plan.build_parser().format_help(), "dispatch plan help should include plan-status")
     assert_true("fake-dispatch" in exchange_fake_dispatch.build_parser().format_help(), "fake dispatch help should include fake-dispatch")
     assert_true("import-result" in exchange_import_result.build_parser().format_help(), "import result help should include import-result")
@@ -415,6 +423,9 @@ def main() -> int:
     assert_true("fake-dispatch" in exchange_command.build_parser().format_help(), "exchange command help should include fake-dispatch")
     assert_true("real-dispatch" in exchange_command.build_parser().format_help(), "exchange command help should include real-dispatch")
     assert_true("validate-result" in exchange_command.build_parser().format_help(), "exchange command help should include validate-result")
+    rc, stdout, stderr = run_main(exchange_command.main, ["--root", str(EXCHANGE_LANE_ROOT), "adapter-list"])
+    assert_true(rc == 0, f"adapter-list should pass: {stderr}")
+    assert_true("ollama_local" in stdout, "adapter-list should include ollama_local")
 
     source_text = (EXCHANGE_LANE_ROOT / "tools" / "exchange_dispatch_plan.py").read_text(encoding="utf-8")
     forbidden_terms = ("subprocess", "os.system", "Popen", "git checkout", "git commit", "git push", "git branch")
@@ -563,7 +574,7 @@ def main() -> int:
 
         unsupported_plan = dict(plan)
         unsupported_plan["dispatch_plan_id"] = "unsupported_adapter_real_dispatch"
-        unsupported_plan["target_adapter"] = "ollama_local"
+        unsupported_plan["target_adapter"] = "not_supported_adapter"
         write_json(exchange_root / "dispatch_plans" / "unsupported_adapter_real_dispatch.json", unsupported_plan)
         rc, _stdout, _stderr = run_main(
             exchange_real_dispatch.main,
@@ -580,6 +591,53 @@ def main() -> int:
         )
         assert_true(rc == 1, "real-dispatch confirm should refuse unsupported adapter")
         (exchange_root / "dispatch_plans" / "unsupported_adapter_real_dispatch.json").unlink()
+
+        _ollama_packet_id, ollama_plan, _ollama_packet_path = create_planned_dispatch(
+            exchange_packet,
+            exchange_dispatch_plan,
+            runtime_session,
+            exchange_root,
+            runtime_root,
+            repo_root,
+            source_name="ollama_local_plan.md",
+            session_id="ollama-local-session",
+            adapter="ollama_local",
+        )
+        ollama_outbox_before = sorted(str(path.relative_to(exchange_root)) for path in (exchange_root / "outbox").rglob("*") if path.is_file())
+        rc, stdout, stderr = run_main(
+            exchange_real_dispatch.main,
+            [
+                "dispatch",
+                "--root",
+                str(exchange_root),
+                "--runtime-root",
+                str(runtime_root),
+                "--dispatch-plan-id",
+                str(ollama_plan["dispatch_plan_id"]),
+                "--dry-run",
+            ],
+        )
+        assert_true(rc == 0, f"ollama_local real-dispatch dry-run should pass: {stderr}")
+        assert_true("target_adapter: ollama_local" in stdout, "ollama dry-run should identify adapter")
+        assert_true("provider_dispatcher: not implemented" in stdout, "ollama dry-run should refuse provider execution path")
+        assert_true("executes: no" in stdout, "ollama dry-run should execute nothing")
+        ollama_outbox_after = sorted(str(path.relative_to(exchange_root)) for path in (exchange_root / "outbox").rglob("*") if path.is_file())
+        assert_true(ollama_outbox_before == ollama_outbox_after, "ollama dry-run should write no files")
+        rc, _stdout, stderr = run_main(
+            exchange_real_dispatch.main,
+            [
+                "dispatch",
+                "--root",
+                str(exchange_root),
+                "--runtime-root",
+                str(runtime_root),
+                "--dispatch-plan-id",
+                str(ollama_plan["dispatch_plan_id"]),
+                "--confirm",
+            ],
+        )
+        assert_true(rc == 1, "ollama_local real-dispatch confirm should refuse disabled config")
+        assert_true("Adapter command is not enabled" in stderr, "ollama disabled config refusal should be explicit")
 
         blocked_packet_id, blocked_plan, _blocked_packet_path = create_planned_dispatch(
             exchange_packet,

@@ -29,7 +29,7 @@ Runtime Session Lane does not:
 - call APIs
 - assign tasks to an execution engine
 
-Codex CLI and Gemini CLI are treated as human-authenticated subscription CLI tools, not API workers. The workstation records sessions and blockers, but it does not assume API access or unlimited quota.
+Codex CLI and Gemini CLI are treated as human-authenticated subscription CLI tools, not API workers. The workstation records sessions and blockers, but it does not assume API access or unlimited quota. `ollama_local` is tracked as a local runtime bounded by RAM/VRAM capacity; local output is not trusted unless it flows through Exchange capture, import, validation, and loop decision metadata.
 
 ## Commands
 

@@ -253,6 +253,42 @@ def audit_exchange_lane(root: Path) -> AuditResult:
                 if forbidden and forbidden in arg:
                     result.error(f"{command_config_path}: base_args contains forbidden arg {forbidden}")
 
+    ollama_config_path = root / "adapter_commands" / "ollama_local_command.json"
+    ollama = load_json(ollama_config_path, result) if ollama_config_path.is_file() else None
+    if ollama is None:
+        result.error(f"missing adapter command config: {ollama_config_path}")
+    else:
+        for field in (
+            "adapter_id",
+            "adapter_type",
+            "enabled",
+            "endpoint",
+            "model",
+            "timeout_seconds",
+            "input_mode",
+            "capture_behavior",
+            "no_shell_execution",
+            "provider_dispatcher_implemented",
+            "trusted_output_default",
+            "local_resource_notes",
+        ):
+            if field not in ollama:
+                result.error(f"{ollama_config_path}: missing ollama config field {field}")
+        if ollama.get("adapter_id") != "ollama_local" or ollama.get("adapter_type") != "ollama_local":
+            result.error(f"{ollama_config_path}: adapter id/type must be ollama_local")
+        if ollama.get("enabled") is not False:
+            result.warn(f"{ollama_config_path}: ollama_local config is enabled; deliberate operator review required")
+        if ollama.get("provider_dispatcher_implemented") is not False:
+            result.error(f"{ollama_config_path}: provider dispatcher must remain unimplemented in this slice")
+        if ollama.get("input_mode") != "request_body":
+            result.error(f"{ollama_config_path}: input_mode must be request_body")
+        if ollama.get("no_shell_execution") is not True:
+            result.error(f"{ollama_config_path}: no_shell_execution must be true")
+        if ollama.get("trusted_output_default") is not False:
+            result.error(f"{ollama_config_path}: trusted_output_default must be false")
+        if ollama.get("shell") is True:
+            result.error(f"{ollama_config_path}: shell=True is forbidden")
+
     for path in sorted((root / "packets").glob("*.json")):
         data = load_json(path, result)
         if data is None:

@@ -1,8 +1,8 @@
 # Exchange Guarded Real Dispatch Contract
 
 Guarded real dispatch is the first Exchange path that may launch a local
-subscription CLI. It is disabled by default and exists only to capture CLI output
-from an approved dispatch plan. Captured output must still be imported,
+subscription CLI. It is disabled by default and exists only to capture adapter
+output from an approved dispatch plan. Captured output must still be imported,
 validated, and loop-decided separately.
 
 ## Preconditions
@@ -11,7 +11,10 @@ validated, and loop-decided separately.
   PLANNED_NOT_DISPATCHED`.
 - Dispatch requires explicit `--confirm`.
 - Dry-run requires explicit `--dry-run` and writes nothing.
-- Dispatch target must be `codex_cli` or `gemini_cli` for this slice.
+- Dispatch target may be `codex_cli` or `gemini_cli` for guarded CLI execution.
+- `ollama_local` is represented as a planned local-provider adapter in this
+  slice, but `--confirm` must refuse until a guarded request-body provider
+  dispatcher is implemented.
 - Runtime session and assignment must exist.
 - Runtime session, assignment, packet, and dispatch plan adapters must be
   compatible.
@@ -38,12 +41,16 @@ validated, and loop-decided separately.
 
 ## Adapter Command Source
 
-Real dispatch must build the subprocess argv only from
+CLI dispatch must build the subprocess argv only from
 `exchange_lane/adapter_commands/<adapter>_command.json`. The operator must
 deliberately enable the config before real dispatch. Disabled configs must refuse
 with:
 
 `Adapter command is not enabled. Configure exchange_lane/adapter_commands/<adapter>_command.json deliberately before real dispatch.`
+
+`ollama_local_command.json` does not provide a subprocess command. It declares a
+disabled local endpoint/model configuration only. It must not be routed through
+shell wrappers or arbitrary command strings.
 
 ## Capture Location
 

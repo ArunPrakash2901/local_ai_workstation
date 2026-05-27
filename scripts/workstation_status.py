@@ -191,7 +191,14 @@ def adapter_status(root: Path, warnings: list[str]) -> dict[str, str]:
             statuses[adapter] = f"enabled ({Path(executable).name or 'no executable'})"
         else:
             statuses[adapter] = "disabled"
-    statuses["ollama_local"] = "planned" if not (root / "exchange_lane" / "adapter_commands" / "ollama_local_command.json").exists() else "configured"
+    ollama_path = root / "exchange_lane" / "adapter_commands" / "ollama_local_command.json"
+    ollama = load_json(ollama_path, warnings) if ollama_path.exists() else None
+    if ollama is None:
+        statuses["ollama_local"] = "planned"
+    elif ollama.get("enabled") is True:
+        statuses["ollama_local"] = f"enabled ({ollama.get('model') or 'no model'})"
+    else:
+        statuses["ollama_local"] = f"disabled ({ollama.get('model') or 'no model'})"
     return statuses
 
 

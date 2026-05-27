@@ -701,6 +701,11 @@ def register_session(
         "automated_terminal_control": False,
         "runtime_lane_git_actions_performed": False,
     }
+    for optional_field in ("endpoint", "model", "local_resource_notes", "trusted_output_default"):
+        if optional_field in profile:
+            data[optional_field] = profile[optional_field]
+    if adapter == "ollama_local":
+        data["resource_status"] = "LOCAL_RESOURCE_UNKNOWN"
     write_json(path, data)
     return path
 

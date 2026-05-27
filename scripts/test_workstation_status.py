@@ -59,7 +59,7 @@ def run_with_fixtures(
     injected_warning: str = "",
 ) -> str:
     records = records or fixture_records()
-    adapters = adapters or {"codex_cli": "disabled", "gemini_cli": "disabled", "ollama_local": "planned"}
+    adapters = adapters or {"codex_cli": "disabled", "gemini_cli": "disabled", "ollama_local": "disabled (hermes3:8b)"}
 
     def fake_json_records(_root: Path, relative_dir: str, warnings: list[str]) -> list[dict[str, object]]:
         if injected_warning and relative_dir == "exchange_lane/result_packets":
@@ -97,17 +97,22 @@ def test_current_repo_status_returns(module) -> None:
 
 
 def test_adapter_enabled_warnings(module) -> None:
-    output = run_with_fixtures(module, adapters={"codex_cli": "enabled (codex)", "gemini_cli": "disabled", "ollama_local": "planned"})
+    output = run_with_fixtures(module, adapters={"codex_cli": "enabled (codex)", "gemini_cli": "disabled", "ollama_local": "disabled (hermes3:8b)"})
     assert_true("codex_cli: enabled" in output, "codex enabled warning should be visible")
     assert_true("warning: real adapter enabled" in output, "enabled adapter warning should be visible")
 
-    output = run_with_fixtures(module, adapters={"codex_cli": "disabled", "gemini_cli": "enabled (gemini)", "ollama_local": "planned"})
+    output = run_with_fixtures(module, adapters={"codex_cli": "disabled", "gemini_cli": "enabled (gemini)", "ollama_local": "disabled (hermes3:8b)"})
     assert_true("gemini_cli: enabled" in output, "gemini enabled warning should be visible")
+
+    output = run_with_fixtures(module, adapters={"codex_cli": "disabled", "gemini_cli": "disabled", "ollama_local": "enabled (hermes3:8b)"})
+    assert_true("ollama_local: enabled" in output, "ollama enabled warning should be visible")
+    assert_true("warning: real adapter enabled" in output, "ollama enabled warning should be visible")
 
 
 def test_review_queue_detection(module) -> None:
     output = run_with_fixtures(module)
     assert_true("autonomy mode: MANUAL_REVIEW_ONLY" in output, "autonomy mode should be reported")
+    assert_true("ollama_local: disabled" in output, "ollama_local should be reported as disabled when config exists")
     assert_true("raw imported results: 1" in output, "raw imported result count should be detected")
     assert_true("blocked validations: 1" in output, "blocked validation count should be detected")
     assert_true("ready-for-operator-review summaries: 0" in output, "ready-for-operator-review summaries count should be detected")

@@ -41,7 +41,9 @@ DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_ROOT = DEFAULT_ROOT.parents[0] / "runtime_lane"
 
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
-SUPPORTED_ADAPTERS = {"codex_cli", "gemini_cli"}
+CLI_ADAPTERS = {"codex_cli", "gemini_cli"}
+PLANNED_PROVIDER_ADAPTERS = {"ollama_local"}
+SUPPORTED_ADAPTERS = CLI_ADAPTERS | PLANNED_PROVIDER_ADAPTERS
 SESSION_BLOCKING_STATUSES = {
     "WAITING_FOR_OPERATOR_APPROVAL",
     "BLOCKED_QUOTA",
@@ -158,6 +160,34 @@ def load_command_config(root: Path, adapter_id: str) -> dict[str, Any]:
     config = load_json(config_path(root, adapter_id))
     if config.get("adapter_id") != adapter_id:
         raise RealDispatchError(f"adapter command config adapter_id mismatch for {adapter_id}")
+    if adapter_id in PLANNED_PROVIDER_ADAPTERS:
+        for field in (
+            "enabled",
+            "adapter_type",
+            "endpoint",
+            "model",
+            "timeout_seconds",
+            "input_mode",
+            "capture_behavior",
+            "no_shell_execution",
+            "provider_dispatcher_implemented",
+            "trusted_output_default",
+            "local_resource_notes",
+        ):
+            if field not in config:
+                raise RealDispatchError(f"adapter command config missing field: {field}")
+        if config.get("adapter_type") != adapter_id:
+            raise RealDispatchError(f"adapter command config adapter_type mismatch for {adapter_id}")
+        if config.get("input_mode") != "request_body":
+            raise RealDispatchError("ollama_local MVP config must use request_body input_mode")
+        if config.get("no_shell_execution") is not True:
+            raise RealDispatchError("ollama_local config must forbid shell execution")
+        if config.get("trusted_output_default") is not False:
+            raise RealDispatchError("ollama_local output must default to untrusted")
+        timeout = int(config.get("timeout_seconds", 0) or 0)
+        if timeout <= 0 or timeout > 7200:
+            raise RealDispatchError("timeout_seconds must be between 1 and 7200")
+        return config
     for field in (
         "enabled",
         "executable",
@@ -191,8 +221,18 @@ def load_command_config(root: Path, adapter_id: str) -> dict[str, Any]:
 
 
 def validate_argv(config: dict[str, Any], *, require_enabled: bool) -> list[str]:
+    adapter = str(config.get("adapter_id", "adapter"))
+    if adapter in PLANNED_PROVIDER_ADAPTERS:
+        if require_enabled and config.get("enabled") is not True:
+            raise RealDispatchError(
+                f"Adapter command is not enabled. Configure exchange_lane/adapter_commands/{adapter}_command.json deliberately before real dispatch."
+            )
+        if require_enabled:
+            raise RealDispatchError(
+                "ollama_local real dispatch is planned but disabled until a guarded local provider dispatcher is implemented."
+            )
+        return []
     if require_enabled and config.get("enabled") is not True:
-        adapter = str(config.get("adapter_id", "adapter"))
         raise RealDispatchError(
             f"Adapter command is not enabled. Configure exchange_lane/adapter_commands/{adapter}_command.json deliberately before real dispatch."
         )
@@ -237,7 +277,7 @@ def load_dispatch_context(root: Path, runtime_root: Path, dispatch_plan_id: str)
 
     adapter_id = str(plan.get("target_adapter", ""))
     if adapter_id not in SUPPORTED_ADAPTERS:
-        raise RealDispatchError("real dispatch supports only codex_cli or gemini_cli in this slice")
+        raise RealDispatchError("real dispatch supports codex_cli, gemini_cli, and planned/disabled ollama_local in this slice")
 
     packet_id = require_id(str(plan.get("packet_id", "")), "packet_id")
     packet_path = readable_path(str(plan.get("packet_path", "")))
@@ -575,7 +615,7 @@ def dispatch(root: Path, runtime_root: Path, dispatch_plan_id: str, *, dry_run: 
     context = load_dispatch_context(root, runtime_root, dispatch_plan_id)
     config = load_command_config(root, str(context["adapter_id"]))
     argv = validate_argv(config, require_enabled=confirm)
-    cwd = resolve_cwd(root, context["session"], config)
+    cwd = root if context["adapter_id"] in PLANNED_PROVIDER_ADAPTERS else resolve_cwd(root, context["session"], config)
     prompt = build_prompt(context)
     command_manifest = build_command_manifest(context, config, argv, cwd, prompt)
 
@@ -585,6 +625,10 @@ def dispatch(root: Path, runtime_root: Path, dispatch_plan_id: str, *, dry_run: 
         print(f"target_adapter: {context['adapter_id']}")
         print(f"adapter_config: {config_path(root, str(context['adapter_id']))}")
         print(f"adapter_enabled: {bool(config.get('enabled'))}")
+        if context["adapter_id"] in PLANNED_PROVIDER_ADAPTERS:
+            print(f"endpoint: {config.get('endpoint')}")
+            print(f"model: {config.get('model')}")
+            print("provider_dispatcher: not implemented")
         print(f"cwd: {cwd}")
         print(f"timeout_seconds: {config.get('timeout_seconds')}")
         print(f"argv_count: {len(argv)}")
