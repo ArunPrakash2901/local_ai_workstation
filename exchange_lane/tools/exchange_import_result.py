@@ -35,6 +35,8 @@ REQUIRED_CAPTURE_FILES = (
     "validation_path",
     "operator_report_path",
 )
+WINDOWS_ABS_PATH_RE = re.compile(r"^([A-Za-z]):[\\/](.*)$")
+WSL_ABS_PATH_RE = re.compile(r"^/mnt/([a-zA-Z])/(.*)$")
 
 
 class ImportResultError(Exception):
@@ -61,6 +63,41 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ImportResultError(f"JSON root must be an object: {path}")
     return data
+
+
+def resolve_file_reference(raw_path: str, base_dir: Path) -> Path:
+    text = str(raw_path or "").strip()
+    if not text:
+        raise ImportResultError("path reference is empty")
+    candidate = Path(text)
+    candidates: list[Path] = []
+    if candidate.is_absolute():
+        candidates.append(candidate)
+    else:
+        candidates.append((base_dir / candidate).resolve())
+        candidates.append(candidate)
+    if os.name == "nt":
+        match = WSL_ABS_PATH_RE.match(text)
+        if match:
+            drive = match.group(1).upper()
+            tail = match.group(2).replace("/", "\\")
+            candidates.append(Path(f"{drive}:\\{tail}"))
+    else:
+        match = WINDOWS_ABS_PATH_RE.match(text)
+        if match:
+            drive = match.group(1).lower()
+            tail = match.group(2).replace("\\", "/")
+            candidates.append(Path("/mnt") / drive / tail)
+    seen: set[str] = set()
+    for item in candidates:
+        resolved = item.resolve() if not item.is_absolute() else item
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        if resolved.is_file():
+            return resolved
+    raise ImportResultError(f"referenced file does not exist: {text}")
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
@@ -112,15 +149,32 @@ def validate_capture_manifest(manifest_path: Path) -> dict[str, Any]:
         path_text = str(manifest.get(field, ""))
         if not path_text:
             raise ImportResultError(f"capture manifest missing field: {field}")
-        if not Path(path_text).is_file():
-            raise ImportResultError(f"capture artifact missing: {path_text}")
+        try:
+            resolve_file_reference(path_text, manifest_path.parent)
+        except ImportResultError as exc:
+            raise ImportResultError(f"capture artifact missing: {path_text} ({exc})") from exc
     return manifest
+
+
+def load_source_dispatch_plan(manifest: dict[str, Any], capture_manifest: Path) -> dict[str, Any]:
+    raw = str(manifest.get("source_dispatch_plan", "")).strip()
+    if not raw:
+        raise ImportResultError("capture manifest missing field: source_dispatch_plan")
+    try:
+        dispatch_plan_path = resolve_file_reference(raw, capture_manifest.parent)
+    except ImportResultError as exc:
+        raise ImportResultError(f"invalid source dispatch plan reference: {raw} ({exc})") from exc
+    try:
+        return load_json(dispatch_plan_path)
+    except ImportResultError as exc:
+        raise ImportResultError(f"invalid source dispatch plan: {dispatch_plan_path} ({exc})") from exc
 
 
 def import_capture(root: Path, capture_manifest: Path) -> Path:
     root = root.resolve()
     capture_manifest = capture_manifest.resolve()
     manifest = validate_capture_manifest(capture_manifest)
+    dispatch_plan = load_source_dispatch_plan(manifest, capture_manifest)
     capture_id = require_id(str(manifest.get("capture_id", "")), "capture_id")
     packet_id = require_id(str(manifest.get("packet_id", "")), "packet_id")
     dispatch_plan_id = require_id(str(manifest.get("dispatch_plan_id", "")), "dispatch_plan_id")
@@ -130,11 +184,23 @@ def import_capture(root: Path, capture_manifest: Path) -> Path:
         if packet.get("capture_id") == capture_id:
             raise ImportResultError(f"capture already imported by result packet: {packet.get('result_id')}")
 
-    parsed_result = load_json(Path(str(manifest["parsed_result_path"])))
+    parsed_result_path = resolve_file_reference(str(manifest["parsed_result_path"]), capture_manifest.parent)
+    parsed_result = load_json(parsed_result_path)
     result_id = build_result_id(capture_id, packet_id)
     out = result_packet_path(root, result_id)
     if out.exists():
         raise ImportResultError(f"result packet already exists: {out}")
+
+    source_session_id = str(dispatch_plan.get("target_session_id", "")).strip()
+    source_assignment_id = str(dispatch_plan.get("target_assignment_id", "")).strip()
+    source_artifact_checksum = str(dispatch_plan.get("source_artifact_checksum", "")).strip()
+    lineage_warnings: list[str] = []
+    if not source_session_id:
+        lineage_warnings.append("source_session_id is empty in source dispatch plan")
+    if not source_assignment_id:
+        lineage_warnings.append("source_assignment_id is empty in source dispatch plan")
+    if not source_artifact_checksum:
+        lineage_warnings.append("source_artifact_checksum is empty in source dispatch plan")
 
     result_packet = {
         "result_id": result_id,
@@ -144,8 +210,9 @@ def import_capture(root: Path, capture_manifest: Path) -> Path:
         "source_capture_manifest": str(capture_manifest),
         "source_packet": str(manifest.get("source_packet", "")),
         "source_dispatch_plan": str(manifest.get("source_dispatch_plan", "")),
-        "source_session_id": "",
-        "source_assignment_id": "",
+        "source_session_id": source_session_id,
+        "source_assignment_id": source_assignment_id,
+        "source_artifact_checksum": source_artifact_checksum,
         "adapter_id": str(manifest.get("target_adapter", "")),
         "result_status": "IMPORTED_PENDING_REVIEW",
         "summary": str(parsed_result.get("result_summary", "")),
@@ -161,7 +228,7 @@ def import_capture(root: Path, capture_manifest: Path) -> Path:
             "operator_report": str(manifest.get("operator_report_path", "")),
         },
         "errors": [],
-        "warnings": [],
+        "warnings": lineage_warnings,
         "blockers": parsed_result.get("blockers", []),
         "trusted": False,
         "human_review_required": True,

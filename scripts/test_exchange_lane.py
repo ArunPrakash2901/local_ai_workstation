@@ -651,6 +651,28 @@ def main() -> int:
         assert_true(capture_manifest["commit_performed"] is False, "capture should not commit")
         assert_true(capture_manifest["push_performed"] is False, "capture should not push")
         assert_true(capture_manifest["merge_performed"] is False, "capture should not merge")
+        source_dispatch_plan_path = Path(str(capture_manifest.get("source_dispatch_plan", "")))
+        assert_true(source_dispatch_plan_path.is_file(), "capture should reference an existing source dispatch plan")
+        source_dispatch_plan = read_json(source_dispatch_plan_path)
+
+        missing_plan_manifest_path = capture_manifest_path.parent / "capture_manifest_missing_dispatch_plan.json"
+        missing_plan_manifest = dict(capture_manifest)
+        missing_plan_manifest["capture_id"] = f"{capture_manifest['capture_id']}_missing_plan"
+        missing_plan_manifest["source_dispatch_plan"] = str(capture_manifest_path.parent / "missing_dispatch_plan.json")
+        write_json(missing_plan_manifest_path, missing_plan_manifest)
+        rc, _stdout, stderr = run_main(
+            exchange_import_result.main,
+            [
+                "import-result",
+                "--root",
+                str(exchange_root),
+                "--capture-manifest",
+                str(missing_plan_manifest_path),
+                "--confirm",
+            ],
+        )
+        assert_true(rc == 1, "import-result should refuse missing source dispatch plan")
+        assert_true("source dispatch plan" in stderr.lower(), "missing source dispatch plan should be reported clearly")
 
         rc, _stdout, _stderr = run_main(
             exchange_import_result.main,
@@ -679,6 +701,18 @@ def main() -> int:
         assert_true(result_packet["result_status"] == "IMPORTED_PENDING_REVIEW", "imported result should be pending review")
         assert_true(result_packet["trusted"] is False, "imported result should be untrusted")
         assert_true(result_packet["human_review_required"] is True, "imported result should require human review")
+        assert_true(
+            str(result_packet.get("source_session_id", "")) == str(source_dispatch_plan.get("target_session_id", "")),
+            "import-result should stamp source_session_id from dispatch plan",
+        )
+        assert_true(
+            str(result_packet.get("source_assignment_id", "")) == str(source_dispatch_plan.get("target_assignment_id", "")),
+            "import-result should stamp source_assignment_id from dispatch plan",
+        )
+        assert_true(
+            str(result_packet.get("source_artifact_checksum", "")) == str(source_dispatch_plan.get("source_artifact_checksum", "")),
+            "import-result should stamp source_artifact_checksum from dispatch plan",
+        )
         rc, _stdout, _stderr = run_main(
             exchange_import_result.main,
             [
