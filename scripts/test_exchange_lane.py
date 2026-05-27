@@ -426,6 +426,21 @@ def main() -> int:
     rc, stdout, stderr = run_main(exchange_command.main, ["--root", str(EXCHANGE_LANE_ROOT), "adapter-list"])
     assert_true(rc == 0, f"adapter-list should pass: {stderr}")
     assert_true("ollama_local" in stdout, "adapter-list should include ollama_local")
+    rc, stdout, stderr = run_main(
+        exchange_command.main,
+        ["--root", str(EXCHANGE_LANE_ROOT), "adapter-status", "--adapter-id", "ollama_local"],
+    )
+    assert_true(rc == 0, f"adapter-status should pass: {stderr}")
+    assert_true("adapter_id: ollama_local" in stdout, "adapter-status should identify ollama_local")
+    assert_true("endpoint: http://127.0.0.1:11434/v1" in stdout, "adapter-status should report Ollama endpoint")
+    assert_true("model: hermes3:8b" in stdout, "adapter-status should report Ollama model")
+    assert_true(
+        "provider_dispatcher_implemented: false" in stdout,
+        "adapter-status should report provider dispatcher disabled",
+    )
+    assert_true("real_provider_calls: disabled" in stdout, "adapter-status should report no provider calls")
+    assert_true("writes: none" in stdout, "adapter-status should write nothing")
+    assert_true("executes: no" in stdout, "adapter-status should execute nothing")
 
     source_text = (EXCHANGE_LANE_ROOT / "tools" / "exchange_dispatch_plan.py").read_text(encoding="utf-8")
     forbidden_terms = ("subprocess", "os.system", "Popen", "git checkout", "git commit", "git push", "git branch")
@@ -455,9 +470,11 @@ def main() -> int:
     assert_true("validate-result" in subparsers, "ws exchange validate-result should exist")
     assert_true("decide-loop" in subparsers, "ws exchange decide-loop should exist")
     assert_true("loop-status" in subparsers, "ws exchange loop-status should exist")
+    assert_true("adapter-status" in subparsers, "ws exchange adapter-status should exist")
     safety_registry_text = (ROOT / "registry" / "ws_command_safety.yaml").read_text(encoding="utf-8")
     assert_true("ws exchange real-dispatch --dry-run:" in safety_registry_text, "ws real-dispatch dry-run should be in safety registry")
     assert_true("ws exchange real-dispatch --confirm:" in safety_registry_text, "ws real-dispatch confirm should be in safety registry")
+    assert_true("ws exchange adapter-status:" in safety_registry_text, "ws adapter-status should be in safety registry")
     assert_true("GUARDED_EXECUTION" in safety_registry_text, "safety registry should include GUARDED_EXECUTION")
 
     codex_temp = Path.home() / ".codex" / "memories"

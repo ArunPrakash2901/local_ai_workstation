@@ -65,6 +65,7 @@ Canonical ws:
 - `ws exchange loop-status`
 - `ws exchange repair-plan --loop-decision-id <id>`
 - `ws exchange adapter-list`
+- `ws exchange adapter-status --adapter-id <id>`
 
 ## Dispatch Planning
 
@@ -153,6 +154,11 @@ endpoint/model intent for `http://127.0.0.1:11434/v1` and `hermes3:8b`, but
 provider dispatcher is implemented. Local model output must remain captured,
 imported as untrusted, validated, and loop-decided before it can influence the
 next workstation step.
+
+Use `ws exchange adapter-status --adapter-id ollama_local` to inspect the
+disabled Ollama endpoint/model readiness metadata. This status command is
+pure-read: it does not call Ollama, start a process, dispatch a packet, or write
+artifacts.
 
 Flow:
 

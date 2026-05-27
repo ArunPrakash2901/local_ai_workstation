@@ -2978,6 +2978,27 @@ commands:
     - scripts/ws
     confidence: high
     notes: Reads adapter metadata only; no runtime invocation.
+  ws exchange adapter-status:
+    safety_class: PURE_READ
+    description: Shows one Exchange Lane adapter readiness/status record.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange adapter status
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_command.py
+    - exchange_lane/adapter_commands
+    - runtime_lane/adapters
+    - scripts/ws
+    confidence: high
+    notes: Pure-read adapter readiness/status inspection only; reports Ollama endpoint/model metadata without calling providers, starting processes, or writing files.
   ws exchange review-list:
     safety_class: PURE_READ
     description: Lists Exchange result items needing operator attention.

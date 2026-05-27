@@ -52,10 +52,15 @@ path refuses Ollama `--confirm` until a bounded local provider dispatcher exists
 Any future local model output must still be captured, imported as untrusted,
 validated, and routed through loop decisions.
 
+Use `ws exchange adapter-status --adapter-id ollama_local` for the current
+Ollama readiness check. It reads adapter metadata only and reports endpoint,
+model, disabled state, and provider-dispatcher status without calling Ollama.
+
 | Check | Writes files? | Runs ws? | Runs agents/models/providers? | Purpose |
 |---|---:|---:|---:|---|
 | `check_local_safety.py` | No | No | No | No-write validation of safety manifest and syntax |
 | `ws workstation status` | No | Yes | No | Unified read-only MVP spine status |
+| `ws exchange adapter-status --adapter-id ollama_local` | No | Yes | No | Read-only Ollama adapter readiness metadata |
 | `ws ready` | Yes, local readiness/status reports | Yes | No unless implementation changes | Operational readiness/status check |
 
 ## Product Development Lane (v0.2.1)

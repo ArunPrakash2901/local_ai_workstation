@@ -149,6 +149,7 @@ case "$SUBCOMMAND" in
         echo "  exchange packet-list    List exchange packets"
         echo "  exchange packet-status --packet-id <id> Show one packet"
         echo "  exchange adapter-list   List routing adapters"
+        echo "  exchange adapter-status --adapter-id <id> Show one adapter readiness/status"
         echo "  exchange approve-planning --packet-id <id> --note <n> Approve packet for dispatch planning"
         echo "  exchange dispatch-plan --packet-id <id> --session-id <sid> --assignment-id <aid> [--write-report] Create dispatch plan"
         echo "  exchange dispatch-plan-list List dispatch plans"

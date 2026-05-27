@@ -71,6 +71,62 @@ def cmd_adapter_list(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_adapter_status(args: argparse.Namespace) -> int:
+    adapter_id = args.adapter_id
+    if adapter_id not in ROUTING_TARGETS:
+        print(f"error: unsupported adapter_id: {adapter_id}", file=sys.stderr)
+        return 1
+
+    config_path = DEFAULT_ROOT / "adapter_commands" / f"{adapter_id}_command.json"
+    profile_path = REPO_ROOT / "runtime_lane" / "adapters" / f"{adapter_id}_profile.json"
+    config: dict[str, object] = {}
+    profile: dict[str, object] = {}
+    if config_path.is_file():
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            print(f"error: malformed adapter command config: {config_path}: {exc}", file=sys.stderr)
+            return 1
+    if profile_path.is_file():
+        try:
+            profile = json.loads(profile_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            print(f"error: malformed runtime adapter profile: {profile_path}: {exc}", file=sys.stderr)
+            return 1
+
+    endpoint = config.get("endpoint") or profile.get("endpoint") or ""
+    model = config.get("model") or profile.get("model") or ""
+    provider_dispatcher = config.get("provider_dispatcher_implemented")
+
+    print("Exchange Adapter Status")
+    print("=======================")
+    print(f"adapter_id: {adapter_id}")
+    print(f"adapter_config_exists: {str(config_path.is_file()).lower()}")
+    print(f"adapter_config: {config_path}")
+    print(f"runtime_profile_exists: {str(profile_path.is_file()).lower()}")
+    print(f"runtime_profile: {profile_path}")
+    print(f"enabled: {str(bool(config.get('enabled'))).lower() if config else 'unknown'}")
+    print(f"adapter_type: {config.get('adapter_type') or profile.get('adapter_type') or adapter_id}")
+    if endpoint:
+        print(f"endpoint: {endpoint}")
+    if model:
+        print(f"model: {model}")
+    if provider_dispatcher is not None:
+        print(f"provider_dispatcher_implemented: {str(bool(provider_dispatcher)).lower()}")
+    if "input_mode" in config:
+        print(f"input_mode: {config.get('input_mode')}")
+    if "trusted_output_default" in config:
+        print(f"trusted_output_default: {str(bool(config.get('trusted_output_default'))).lower()}")
+    if "no_shell_execution" in config:
+        print(f"no_shell_execution: {str(bool(config.get('no_shell_execution'))).lower()}")
+    if adapter_id == "ollama_local":
+        print("real_provider_calls: disabled")
+        print("next_required_step: implement guarded local provider dispatcher before confirm dispatch")
+    print("writes: none")
+    print("executes: no")
+    return 0
+
+
 def cmd_approve_planning(args: argparse.Namespace) -> int:
     return exchange_packet.main(
         [
@@ -316,6 +372,8 @@ def build_parser() -> argparse.ArgumentParser:
     repair_plan = sub.add_parser("repair-plan", help="Create metadata-only repair packet when repair is allowed.")
     repair_plan.add_argument("--loop-decision-id", required=True)
     sub.add_parser("adapter-list", help="List routing adapters.")
+    adapter_status = sub.add_parser("adapter-status", help="Show one routing adapter status.")
+    adapter_status.add_argument("--adapter-id", required=True)
 
     sub.add_parser("review-list", help="List Exchange items needing operator attention.")
 
@@ -381,6 +439,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_repair_plan(args)
     if command == "adapter-list":
         return cmd_adapter_list(args)
+    if command == "adapter-status":
+        return cmd_adapter_status(args)
     if command == "review-list":
         return cmd_review_list(args)
     if command == "review-result":
