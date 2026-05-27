@@ -286,6 +286,7 @@ def build_status(root: Path) -> str:
     blocked_validations = [item for item in validations if str(item.get("validation_status") or "").startswith("VALIDATION_BLOCKED")]
     blocked_loops = [item for item in loop_decisions if str(item.get("decision") or "").startswith("BLOCKED")]
     daily_review = [item for item in loop_decisions if item.get("decision") == "COMPLETED_PENDING_DAILY_REVIEW"]
+    ready_for_review = [item for item in loop_decisions if item.get("decision") == "READY_FOR_OPERATOR_REVIEW"]
     blocked_sessions = [item for item in sessions if str(item.get("status") or "") in BLOCKED_SESSION_STATUSES]
     blocked_assignments = [item for item in assignments if str(item.get("assignment_status") or "") in BLOCKED_ASSIGNMENT_STATUSES]
     ready_plans = [item for item in dispatch_plans if item.get("planned_status") == "PLANNED_NOT_DISPATCHED"]
@@ -303,6 +304,8 @@ def build_status(root: Path) -> str:
     else:
         generated_line += f"; untracked generated files: {untracked_generated}"
 
+    autonomy_mode = "MANUAL_REVIEW_ONLY"
+
     lines = [
         "# Local AI Workstation Status",
         "",
@@ -311,6 +314,7 @@ def build_status(root: Path) -> str:
         f"- origin/main: {git_alignment(root)}",
         f"- safety baseline: {safety_baseline}",
         f"- reports: {report_summary}",
+        f"- autonomy mode: {autonomy_mode}",
         "",
         "## Adapters",
         f"- codex_cli: {adapters['codex_cli']}",
@@ -342,8 +346,9 @@ def build_status(root: Path) -> str:
         f"- loop decisions by status: {render_counter(count_by(loop_decisions, 'decision'))}",
         "",
         "## Review Queue",
-        f"- untrusted imported results: {len(untrusted)}",
+        f"- raw imported results: {len(untrusted)}",
         f"- blocked validations: {len(blocked_validations)}",
+        f"- ready-for-operator-review summaries: {len(ready_for_review)}",
         f"- BLOCKED_NEEDS_OPERATOR decisions: {sum(1 for item in loop_decisions if item.get('decision') == 'BLOCKED_NEEDS_OPERATOR')}",
         f"- results validated but awaiting decision: {len(validations_awaiting_decision)}",
         f"- daily review candidates: {len(daily_review)}",

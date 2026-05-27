@@ -107,8 +107,10 @@ def test_adapter_enabled_warnings(module) -> None:
 
 def test_review_queue_detection(module) -> None:
     output = run_with_fixtures(module)
-    assert_true("untrusted imported results: 1" in output, "untrusted result count should be detected")
+    assert_true("autonomy mode: MANUAL_REVIEW_ONLY" in output, "autonomy mode should be reported")
+    assert_true("raw imported results: 1" in output, "raw imported result count should be detected")
     assert_true("blocked validations: 1" in output, "blocked validation count should be detected")
+    assert_true("ready-for-operator-review summaries: 0" in output, "ready-for-operator-review summaries count should be detected")
     assert_true("BLOCKED_NEEDS_OPERATOR decisions: 1" in output, "blocked loop decision should be detected")
 
 
