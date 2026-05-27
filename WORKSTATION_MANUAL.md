@@ -90,6 +90,46 @@ Audit lane structure (PURE_READ):
 
 ---
 
+## Exchange Review Queue (Post-MVP Slice 3)
+
+The operator review queue allows managing model outputs and loop decisions without manually inspecting every raw packet.
+
+### Commands (WSL preferred)
+
+List items needing operator attention (PURE_READ):
+```bash
+./scripts/ws exchange review-list
+```
+
+Concise review of one result (PURE_READ):
+```bash
+./scripts/ws exchange review-result --result-id <id>
+```
+
+Accept and promote a result (GUARDED_WRITE, requires --confirm):
+```bash
+./scripts/ws exchange review-accept --result-id <id> --scope <summary|repair|patch-proposal|test-run> --confirm
+```
+
+Reject a result (GUARDED_WRITE, requires --confirm and reason):
+```bash
+./scripts/ws exchange review-reject --result-id <id> --reason "<reason>" --confirm
+```
+
+Generate a review summary report (LOCAL_REPORT_WRITE):
+```bash
+./scripts/ws exchange review-checkpoint
+```
+
+### Safety Notes
+- `review-list` and `review-result` are read-only and do not mutate any metadata.
+- `review-accept` promote results to validated scopes but does not approve source mutation or git actions.
+- `review-reject` marks results as rejected by policy.
+- `review-checkpoint` generates a local markdown report under `exchange_lane/review_reports/`.
+- No commands in this section run models, dispatch packets, or mutate project source code.
+
+---
+
 ## Product Lane Phase 0 + Phase 1 Slice 5 + Phase 2 Slice 4 + Scope Revision Slice 2
 
 Current Product Lane supports:

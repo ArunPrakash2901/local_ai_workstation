@@ -24,6 +24,7 @@ import exchange_import_result  # noqa: E402
 import exchange_loop_decision  # noqa: E402
 import exchange_packet  # noqa: E402
 import exchange_real_dispatch  # noqa: E402
+import exchange_review  # noqa: E402
 import exchange_validate_result  # noqa: E402
 
 
@@ -215,6 +216,32 @@ def cmd_repair_plan(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_review_list(args: argparse.Namespace) -> int:
+    return exchange_review.main(["review-list", "--root", args.root])
+
+
+def cmd_review_result(args: argparse.Namespace) -> int:
+    return exchange_review.main(["review-result", "--root", args.root, "--result-id", args.result_id])
+
+
+def cmd_review_accept(args: argparse.Namespace) -> int:
+    argv = ["review-accept", "--root", args.root, "--result-id", args.result_id, "--scope", args.scope]
+    if args.confirm:
+        argv.append("--confirm")
+    return exchange_review.main(argv)
+
+
+def cmd_review_reject(args: argparse.Namespace) -> int:
+    argv = ["review-reject", "--root", args.root, "--result-id", args.result_id, "--reason", args.reason]
+    if args.confirm:
+        argv.append("--confirm")
+    return exchange_review.main(argv)
+
+
+def cmd_review_checkpoint(args: argparse.Namespace) -> int:
+    return exchange_review.main(["review-checkpoint", "--root", args.root])
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     root = Path(args.root)
     packets = exchange_packet.list_packets(root)
@@ -289,6 +316,24 @@ def build_parser() -> argparse.ArgumentParser:
     repair_plan = sub.add_parser("repair-plan", help="Create metadata-only repair packet when repair is allowed.")
     repair_plan.add_argument("--loop-decision-id", required=True)
     sub.add_parser("adapter-list", help="List routing adapters.")
+
+    sub.add_parser("review-list", help="List Exchange items needing operator attention.")
+
+    review_result_cmd = sub.add_parser("review-result", help="Show concise operator review view for one result.")
+    review_result_cmd.add_argument("--result-id", required=True)
+
+    review_accept = sub.add_parser("review-accept", help="Record operator acceptance for a bounded scope.")
+    review_accept.add_argument("--result-id", required=True)
+    review_accept.add_argument("--scope", required=True, choices=["summary", "repair", "patch-proposal", "test-run"])
+    review_accept.add_argument("--confirm", action="store_true")
+
+    review_reject = sub.add_parser("review-reject", help="Record operator rejection.")
+    review_reject.add_argument("--result-id", required=True)
+    review_reject.add_argument("--reason", required=True)
+    review_reject.add_argument("--confirm", action="store_true")
+
+    sub.add_parser("review-checkpoint", help="Generate a review summary report.")
+
     return parser
 
 
@@ -336,6 +381,17 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_repair_plan(args)
     if command == "adapter-list":
         return cmd_adapter_list(args)
+    if command == "review-list":
+        return cmd_review_list(args)
+    if command == "review-result":
+        return cmd_review_result(args)
+    if command == "review-accept":
+        return cmd_review_accept(args)
+    if command == "review-reject":
+        return cmd_review_reject(args)
+    if command == "review-checkpoint":
+        return cmd_review_checkpoint(args)
+
     print(parser.format_help())
     return 1
 

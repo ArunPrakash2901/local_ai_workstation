@@ -283,6 +283,8 @@ def build_status(root: Path) -> str:
     loop_decisions = json_records(root, "exchange_lane/loop_decisions", warnings)
 
     untrusted = [item for item in results if item.get("trusted") is False]
+    accepted = [item for item in results if str(item.get("result_status") or "").startswith("ACCEPTED_FOR")]
+    rejected = [item for item in results if item.get("result_status") == "REJECTED_BY_POLICY"]
     blocked_validations = [item for item in validations if str(item.get("validation_status") or "").startswith("VALIDATION_BLOCKED")]
     blocked_loops = [item for item in loop_decisions if str(item.get("decision") or "").startswith("BLOCKED")]
     daily_review = [item for item in loop_decisions if item.get("decision") == "COMPLETED_PENDING_DAILY_REVIEW"]
@@ -351,6 +353,8 @@ def build_status(root: Path) -> str:
         f"- ready-for-operator-review summaries: {len(ready_for_review)}",
         f"- BLOCKED_NEEDS_OPERATOR decisions: {sum(1 for item in loop_decisions if item.get('decision') == 'BLOCKED_NEEDS_OPERATOR')}",
         f"- results validated but awaiting decision: {len(validations_awaiting_decision)}",
+        f"- accepted (promoted): {len(accepted)}",
+        f"- rejected: {len(rejected)}",
         f"- daily review candidates: {len(daily_review)}",
         f"- latest result: {latest_id(results, 'result_id') or 'none'}",
         f"- latest validation: {latest_id(validations, 'validation_id') or 'none'}",

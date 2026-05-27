@@ -2978,6 +2978,115 @@ commands:
     - scripts/ws
     confidence: high
     notes: Reads adapter metadata only; no runtime invocation.
+  ws exchange review-list:
+    safety_class: PURE_READ
+    description: Lists Exchange result items needing operator attention.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange review list
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_review.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read summary of pending operator review items.
+  ws exchange review-result:
+    safety_class: PURE_READ
+    description: Shows a concise operator review view for one Exchange result.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange review result
+    warning_label: ''
+    evidence:
+    - exchange_lane/tools/exchange_review.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Pure-read inspection of result lineage and artifacts.
+  ws exchange review-accept:
+    safety_class: GUARDED_WRITE
+    description: Records operator acceptance of an Exchange result for a bounded scope.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Exchange review accept
+    warning_label: Updates result packet status and promotes to validated scope
+    tui_dispatch_policy: guarded_write
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_result_packets
+    evidence:
+    - exchange_lane/tools/exchange_review.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Records human decision only; does not mutate source, dispatch packets, or perform git actions.
+  ws exchange review-reject:
+    safety_class: GUARDED_WRITE
+    description: Records operator rejection of an Exchange result.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Exchange review reject
+    warning_label: Updates result packet status to REJECTED_BY_POLICY
+    tui_dispatch_policy: guarded_write
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_result_packets
+    evidence:
+    - exchange_lane/tools/exchange_review.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Records human decision only; does not mutate source or dispatch repair.
+  ws exchange review-checkpoint:
+    safety_class: LOCAL_REPORT_WRITE
+    description: Generates a summary report of the current Exchange review queue.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: true
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Exchange review checkpoint
+    warning_label: Writes local review summary report under exchange_lane/review_reports/
+    tui_dispatch_policy: preview_only
+    tui_dispatch_allowed: false
+    report_write_scope: exchange_lane_review_reports
+    evidence:
+    - exchange_lane/tools/exchange_review.py
+    - exchange_lane/tools/exchange_command.py
+    - scripts/ws
+    confidence: high
+    notes: Generates a read-only summary report of the operator queue state.
   ws exchange-new --dry-run:
     read_only_strict: true
     read_only_with_local_reports: true
