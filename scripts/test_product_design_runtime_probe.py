@@ -26,6 +26,8 @@ from product_design_runtime_probe import (  # noqa: E402
     PARTIAL_RUNTIME_FOUND,
     RUNTIME_CANDIDATE_FOUND,
     RUNTIME_NOT_FOUND,
+    RENDER_CONTRACT_FOUND,
+    RENDER_READY,
     PROBE_COMMAND_NAMES,
     classify_runtime_readiness,
     probe_design_runtime,
@@ -58,6 +60,19 @@ def _pick_temp_parent(root: Path) -> Path:
 
 def _files_snapshot(root: Path) -> list[str]:
     return sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+
+
+def _create_source_checkout(root: Path, *, include_daemon_cli: bool) -> Path:
+    checkout = root / "open_design_source"
+    checkout.mkdir(parents=True, exist_ok=True)
+    (checkout / "package.json").write_text("{}\n", encoding="utf-8")
+    (checkout / "pnpm-lock.yaml").write_text("lockfileVersion: '9.0'\n", encoding="utf-8")
+    (checkout / "node_modules").mkdir(parents=True, exist_ok=True)
+    if include_daemon_cli:
+        daemon_cli = checkout / "apps" / "daemon" / "dist" / "cli.js"
+        daemon_cli.parent.mkdir(parents=True, exist_ok=True)
+        daemon_cli.write_text("console.log('cli');\n", encoding="utf-8")
+    return checkout
 
 
 def main() -> int:
@@ -147,9 +162,11 @@ def main() -> int:
             detail=str(partial_probe["readiness_classification"]),
         )
 
+        source_candidate = _create_source_checkout(temp_root, include_daemon_cli=False)
         candidate_probe = probe_design_runtime(
             temp_root,
             "open-design",
+            env={"OPEN_DESIGN_HOME": source_candidate.as_posix()},
             which_fn=lambda name, path=None: (
                 {
                     "open-design": "C:/fake/open-design",
@@ -163,6 +180,51 @@ def main() -> int:
             candidate_probe["readiness_classification"] == RUNTIME_CANDIDATE_FOUND
             and RUNTIME_CANDIDATE_FOUND in render_design_runtime_probe(candidate_probe),
             failures,
+        )
+
+        source_contract = _create_source_checkout(temp_root, include_daemon_cli=True)
+        contract_probe = probe_design_runtime(
+            temp_root,
+            "open-design",
+            env={"OPEN_DESIGN_HOME": source_contract.as_posix()},
+            which_fn=lambda name, path=None: (
+                {
+                    "node": "C:/fake/node.exe",
+                    "pnpm": "C:/fake/pnpm.cmd",
+                }.get(name)
+            ),
+        )
+        expect(
+            "detects render contract found when daemon CLI exists",
+            contract_probe["readiness_classification"] == RENDER_CONTRACT_FOUND,
+            failures,
+            detail=str(contract_probe["readiness_classification"]),
+        )
+        expect(
+            "does not classify render ready when provider requirements unknown",
+            "provider requirements known: `false`" in render_design_runtime_probe(contract_probe).lower(),
+            failures,
+        )
+
+        ready_probe = probe_design_runtime(
+            temp_root,
+            "open-design",
+            env={
+                "OPEN_DESIGN_HOME": source_contract.as_posix(),
+                "OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli",
+            },
+            which_fn=lambda name, path=None: (
+                {
+                    "node": "C:/fake/node.exe",
+                    "pnpm": "C:/fake/pnpm.cmd",
+                }.get(name)
+            ),
+        )
+        expect(
+            "classifies render ready when provider requirements satisfied",
+            ready_probe["readiness_classification"] == RENDER_READY,
+            failures,
+            detail=str(ready_probe["readiness_classification"]),
         )
 
         secret_value = "VERY_SECRET_TOKEN_SHOULD_NOT_PRINT"

@@ -8,6 +8,7 @@ import hashlib
 import io
 import json
 import os
+import subprocess
 import shutil
 import sys
 import tempfile
@@ -29,6 +30,8 @@ from product_design_adapter import (  # noqa: E402
     build_design_render_preview,
     validate_design_tool,
 )
+import product_design_render_runtime as render_runtime  # noqa: E402
+from product_design_run import prepare_design_run  # noqa: E402
 from product_registry import create_product, initialize_products_dir, save_product  # noqa: E402
 from product_scope_lock import compute_scope_lock_hash  # noqa: E402
 from ws_product_design_render import main as render_cli_main  # noqa: E402
@@ -166,6 +169,49 @@ def _make_product(
         payload["active_technical_plan_revision"] = 1
     _write_record(pdir / "product.yaml", payload)
     return product_id, pdir
+
+
+def _create_open_design_checkout(root: Path, *, include_daemon_cli: bool = True) -> Path:
+    checkout = root / "open_design_source"
+    checkout.mkdir(parents=True, exist_ok=True)
+    (checkout / "package.json").write_text("{}\n", encoding="utf-8")
+    (checkout / "pnpm-lock.yaml").write_text("lockfileVersion: '9.0'\n", encoding="utf-8")
+    (checkout / "node_modules").mkdir(parents=True, exist_ok=True)
+    if include_daemon_cli:
+        daemon_cli = checkout / "apps" / "daemon" / "dist" / "cli.js"
+        daemon_cli.parent.mkdir(parents=True, exist_ok=True)
+        daemon_cli.write_text("console.log('daemon');\n", encoding="utf-8")
+    return checkout
+
+
+def _fake_runtime_probe(
+    source_checkout: Path,
+    *,
+    readiness: str = "RENDER_READY",
+    daemon_cli_present: bool = True,
+    node_path: str = "/usr/bin/node",
+) -> dict[str, object]:
+    return {
+        "readiness_classification": readiness,
+        "detected_command_paths": {
+            "open-design": None,
+            "od": None,
+            "node": node_path,
+            "pnpm": "/usr/bin/pnpm",
+            "npm": "/usr/bin/npm",
+        },
+        "source_checkout_detection": {
+            "path": source_checkout.as_posix(),
+            "exists": True,
+            "is_valid": True,
+            "required_files": {
+                "package.json": True,
+                "pnpm-lock.yaml": True,
+                "node_modules/": True,
+                "apps/daemon/dist/cli.js": daemon_cli_present,
+            },
+        },
+    }
 
 
 def _expect_blocked(root: Path, product_id: str, failures: list[str], name: str, expected_fragment: str) -> None:
@@ -332,15 +378,312 @@ def main() -> int:
             )
         expect("dry-run CLI succeeds", rc == 0, failures)
 
-        for script_name in ("product_design_adapter.py", "ws_product_design_render.py"):
+        # Guarded render dry-run plan details.
+        planned_product_id, _planned_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, planned_product_id, "open-design", confirm=True)
+        source_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=True)
+        original_probe = render_runtime.probe_design_runtime
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                source_checkout,
+                readiness="RENDER_READY",
+                daemon_cli_present=True,
+            )
+            plan = render_runtime.build_open_design_render_plan(
+                temp_root,
+                planned_product_id,
+                "open-design",
+                env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+            )
+            plan_rendered = render_runtime.render_open_design_render_plan(plan)
+            expect("dry-run reports command plan/capture paths", "run_events.ndjson" in plan_rendered and "command_manifest.json" in plan_rendered, failures)
+            expect("dry-run writes nothing and executes nothing", plan["execution"] == "no" and plan["writes"] == "none" and plan["provider_call"] == "no", failures)
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+
+        # Confirm refuses if daemon CLI missing.
+        no_daemon_product_id, _no_daemon_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, no_daemon_product_id, "open-design", confirm=True)
+        no_daemon_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=False)
+        original_probe = render_runtime.probe_design_runtime
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                no_daemon_checkout,
+                readiness="RUNTIME_CANDIDATE_FOUND",
+                daemon_cli_present=False,
+            )
+            try:
+                _ = render_runtime.execute_open_design_render_confirm(
+                    temp_root,
+                    no_daemon_product_id,
+                    "open-design",
+                    env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+                )
+                failures.append("FAIL: confirm refuses if daemon CLI missing - expected exception")
+            except ValueError as exc:
+                expect("confirm refuses if daemon CLI missing", "DAEMON_CLI_MISSING" in str(exc), failures, str(exc))
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+
+        # Confirm refuses if allowed write root escapes run sandbox.
+        escape_root_product_id, escape_root_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, escape_root_product_id, "open-design", confirm=True)
+        escape_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=True)
+        run_yaml = (
+            escape_root_dir
+            / "design_runs"
+            / "open_design"
+            / "open-design-render-v1"
+            / "design_run.yaml"
+        )
+        run_payload = json.loads(run_yaml.read_text(encoding="utf-8"))
+        run_payload["allowed_write_root"] = "../escape_root/"
+        _write_record(run_yaml, run_payload)
+        original_probe = render_runtime.probe_design_runtime
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                escape_checkout,
+                readiness="RENDER_READY",
+                daemon_cli_present=True,
+            )
+            try:
+                _ = render_runtime.execute_open_design_render_confirm(
+                    temp_root,
+                    escape_root_product_id,
+                    "open-design",
+                    env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+                )
+                failures.append("FAIL: confirm refuses if OD_DATA_DIR escapes allowed root - expected exception")
+            except ValueError as exc:
+                expect(
+                    "confirm refuses if OD_DATA_DIR escapes allowed root",
+                    "path escapes expected base" in str(exc),
+                    failures,
+                    str(exc),
+                )
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+
+        # Confirm refuses if capture/output paths escape allowed root.
+        capture_escape_product_id, _capture_escape_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, capture_escape_product_id, "open-design", confirm=True)
+        capture_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=True)
+        original_probe = render_runtime.probe_design_runtime
+        original_plan = render_runtime.build_open_design_render_plan
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                capture_checkout,
+                readiness="RENDER_READY",
+                daemon_cli_present=True,
+            )
+            safe_plan = original_plan(
+                temp_root,
+                capture_escape_product_id,
+                "open-design",
+                env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+            )
+            bad_plan = dict(safe_plan)
+            bad_capture = dict(safe_plan["capture_paths"])
+            bad_capture["stdout.txt"] = "../escape/stdout.txt"
+            bad_plan["capture_paths"] = bad_capture
+            render_runtime.build_open_design_render_plan = lambda *_args, **_kwargs: bad_plan  # type: ignore[assignment]
+            try:
+                _ = render_runtime.execute_open_design_render_confirm(
+                    temp_root,
+                    capture_escape_product_id,
+                    "open-design",
+                    env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+                )
+                failures.append("FAIL: confirm refuses if output/capture path escapes allowed root - expected exception")
+            except ValueError as exc:
+                expect(
+                    "confirm refuses if output/capture path escapes allowed root",
+                    "path escapes expected base" in str(exc),
+                    failures,
+                    str(exc),
+                )
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+            render_runtime.build_open_design_render_plan = original_plan  # type: ignore[assignment]
+
+        # Confirm executes mocked daemon lifecycle using explicit argv and shell=False.
+        confirm_product_id, _confirm_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, confirm_product_id, "open-design", confirm=True)
+        confirm_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=True)
+        original_probe = render_runtime.probe_design_runtime
+        original_popen = render_runtime.subprocess.Popen
+        original_run = render_runtime.subprocess.run
+        original_choose_port = render_runtime._choose_free_port
+        popen_calls: list[dict[str, object]] = []
+        run_calls: list[dict[str, object]] = []
+
+        class _FakePopen:
+            def __init__(
+                self,
+                cmd: list[str],
+                *,
+                cwd: str | None = None,
+                env: dict[str, str] | None = None,
+                stdout=None,
+                stderr=None,
+                text: bool | None = None,
+                shell: bool | None = None,
+            ) -> None:
+                popen_calls.append(
+                    {"cmd": list(cmd), "cwd": cwd, "shell": shell, "env_has_od_data_dir": bool(env and env.get("OD_DATA_DIR"))}
+                )
+                self._poll: int | None = None
+
+            def poll(self) -> int | None:
+                return self._poll
+
+            def terminate(self) -> None:
+                self._poll = 0
+
+            def wait(self, timeout: int | None = None) -> int:
+                _ = timeout
+                self._poll = 0
+                return 0
+
+            def kill(self) -> None:
+                self._poll = -9
+
+        def _fake_run(
+            cmd: list[str],
+            *,
+            cwd: str | None = None,
+            env: dict[str, str] | None = None,
+            capture_output: bool = False,
+            text: bool = False,
+            timeout: int | None = None,
+            shell: bool | None = None,
+        ) -> subprocess.CompletedProcess[str]:
+            run_calls.append(
+                {"cmd": list(cmd), "cwd": cwd, "shell": shell, "timeout": timeout, "env_has_od_data_dir": bool(env and env.get("OD_DATA_DIR"))}
+            )
+            _ = (capture_output, text)
+            if len(cmd) >= 3 and cmd[2] == "status":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"status":"ok"}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "project" and cmd[3] == "create":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"project":{"id":"proj_1"}}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "run" and cmd[3] == "start":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"event":"run_started"}\n{"event":"run_completed"}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "files" and cmd[3] == "list":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"files":[{"name":"prototype/index.html","size":123}]}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "daemon" and cmd[3] == "stop":
+                return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                confirm_checkout,
+                readiness="RENDER_READY",
+                daemon_cli_present=True,
+            )
+            render_runtime.subprocess.Popen = _FakePopen  # type: ignore[assignment]
+            render_runtime.subprocess.run = _fake_run  # type: ignore[assignment]
+            render_runtime._choose_free_port = lambda: 18555  # type: ignore[assignment]
+            confirm_result = render_runtime.execute_open_design_render_confirm(
+                temp_root,
+                confirm_product_id,
+                "open-design",
+                env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+            )
+            expect("confirm starts mocked daemon with explicit argv list, no shell=True", all(call["shell"] is False for call in popen_calls + run_calls), failures, detail=str(popen_calls + run_calls))
+            expect("confirm captures mocked NDJSON events", bool(confirm_result["capture_paths"]["run_events.ndjson"]), failures)
+            run_events_path = temp_root / confirm_result["capture_paths"]["run_events.ndjson"]
+            expect("confirm writes run events file", run_events_path.is_file() and "run_started" in run_events_path.read_text(encoding="utf-8"), failures)
+            render_manifest_path = temp_root / confirm_result["capture_paths"]["render_manifest.json"]
+            output_file_list_path = temp_root / confirm_result["capture_paths"]["output_file_list.json"]
+            expect("confirm records render manifest and output file list", render_manifest_path.is_file() and output_file_list_path.is_file(), failures)
+            expect("confirm preserves no app/source mutation", confirm_result["source_mutation_detected"] is False, failures)
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+            render_runtime.subprocess.Popen = original_popen  # type: ignore[assignment]
+            render_runtime.subprocess.run = original_run  # type: ignore[assignment]
+            render_runtime._choose_free_port = original_choose_port  # type: ignore[assignment]
+
+        # Confirm handles UI blocker without inventing answers.
+        ui_blocker_product_id, _ui_blocker_dir = _make_product(temp_root, product_type="website")
+        _ = prepare_design_run(temp_root, ui_blocker_product_id, "open-design", confirm=True)
+        ui_checkout = _create_open_design_checkout(temp_root, include_daemon_cli=True)
+        original_probe = render_runtime.probe_design_runtime
+        original_popen = render_runtime.subprocess.Popen
+        original_run = render_runtime.subprocess.run
+        original_choose_port = render_runtime._choose_free_port
+
+        class _UIFakePopen(_FakePopen):
+            pass
+
+        def _ui_fake_run(
+            cmd: list[str],
+            *,
+            cwd: str | None = None,
+            env: dict[str, str] | None = None,
+            capture_output: bool = False,
+            text: bool = False,
+            timeout: int | None = None,
+            shell: bool | None = None,
+        ) -> subprocess.CompletedProcess[str]:
+            _ = (cwd, env, capture_output, text, timeout, shell)
+            if len(cmd) >= 3 and cmd[2] == "status":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"status":"ok"}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "project" and cmd[3] == "create":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"project":{"id":"proj_ui"}}\n', stderr="")
+            if len(cmd) >= 4 and cmd[2] == "run" and cmd[3] == "start":
+                return subprocess.CompletedProcess(
+                    cmd,
+                    0,
+                    stdout='{"event":"genui_surface_request","type":"question-form"}\n',
+                    stderr="",
+                )
+            if len(cmd) >= 4 and cmd[2] == "files" and cmd[3] == "list":
+                return subprocess.CompletedProcess(cmd, 0, stdout='{"files":[]}\n', stderr="")
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        try:
+            render_runtime.probe_design_runtime = lambda *_args, **_kwargs: _fake_runtime_probe(  # type: ignore[assignment]
+                ui_checkout,
+                readiness="RENDER_READY",
+                daemon_cli_present=True,
+            )
+            render_runtime.subprocess.Popen = _UIFakePopen  # type: ignore[assignment]
+            render_runtime.subprocess.run = _ui_fake_run  # type: ignore[assignment]
+            render_runtime._choose_free_port = lambda: 19555  # type: ignore[assignment]
+            ui_result = render_runtime.execute_open_design_render_confirm(
+                temp_root,
+                ui_blocker_product_id,
+                "open-design",
+                env={"OPEN_DESIGN_RENDER_PROVIDER_MODE": "local_cli"},
+            )
+            expect(
+                "confirm handles UI/GenUI blocker without inventing answers",
+                ui_result["status"] == "BLOCKED_NEEDS_OPERATOR_UI_RESPONSE"
+                and "GENUI_SURFACE_REQUEST" in ui_result["ui_blockers"],
+                failures,
+                detail=str(ui_result),
+            )
+        finally:
+            render_runtime.probe_design_runtime = original_probe  # type: ignore[assignment]
+            render_runtime.subprocess.Popen = original_popen  # type: ignore[assignment]
+            render_runtime.subprocess.run = original_run  # type: ignore[assignment]
+            render_runtime._choose_free_port = original_choose_port  # type: ignore[assignment]
+
+        for script_name in ("product_design_adapter.py", "ws_product_design_render.py", "product_design_render_runtime.py"):
             source = (SCRIPTS_DIR / script_name).read_text(encoding="utf-8").lower()
-            disallowed = ("import requests", "subprocess.run(", "pip install", "npm install", "openai.", "anthropic.")
+            disallowed = ("import requests", "pip install", "npm install", "openai.", "anthropic.")
             expect(
                 "Open Design is not executed or installed",
                 all(token not in source for token in disallowed),
                 failures,
                 script_name,
             )
+        runtime_source = (SCRIPTS_DIR / "product_design_render_runtime.py").read_text(encoding="utf-8")
+        expect(
+            "guarded render runtime does not use shell=True",
+            "shell=True" not in runtime_source,
+            failures,
+        )
 
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)

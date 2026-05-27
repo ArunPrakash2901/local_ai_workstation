@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dry-run Product Lane design render preview CLI."""
+"""Product Lane guarded Open Design render CLI."""
 
 from __future__ import annotations
 
@@ -8,10 +8,12 @@ import os
 import sys
 from pathlib import Path
 
-from product_design_adapter import (
-    build_design_render_preview,
-    render_design_render_preview,
-    validate_design_tool,
+from product_design_adapter import validate_design_tool
+from product_design_render_runtime import (
+    build_open_design_render_plan,
+    execute_open_design_render_confirm,
+    render_open_design_render_plan,
+    render_open_design_render_result,
 )
 
 
@@ -45,17 +47,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         tool = validate_design_tool(str(args.tool).strip())
-        preview = build_design_render_preview(root, str(args.product_id).strip(), tool)
-        
+        product_id = str(args.product_id).strip()
+        plan = build_open_design_render_plan(root, product_id, tool)
         if args.confirm:
-            # We enforce missing command contract failure here for guarded execution
-            from product_design_runtime_probe import probe_design_runtime
-            probe = probe_design_runtime(root, tool)
-            # Only RUNTIME_CANDIDATE_FOUND with a specific identified executable would be valid.
-            # We currently have NO valid execution contract (tools-dev fails, od missing).
-            raise ValueError("REFUSED_MISSING_RENDER_COMMAND_CONTRACT")
-            
-        print(render_design_render_preview(preview).rstrip())
+            result = execute_open_design_render_confirm(root, product_id, tool)
+            print(render_open_design_render_result(result).rstrip())
+            return 0
+
+        print(render_open_design_render_plan(plan).rstrip())
         return 0
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

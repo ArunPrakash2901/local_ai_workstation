@@ -1582,7 +1582,32 @@ commands:
     - scripts/ws
     confidence: high
     slash_command: /design render
-    notes: previews Open Design render sandbox and artifact schema only; no tool execution or install and no writes
+    notes: previews guarded Open Design daemon render contract plan, sandbox paths, and capture targets only; no daemon start, no provider/model call, no execution, and no writes
+  ws product-design-render --confirm:
+    safety_class: GUARDED_EXECUTION
+    description: Executes guarded Open Design daemon render lifecycle with bounded sandbox capture.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: true
+    external_provider_or_cloud: true
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Execute guarded product design render
+    warning_label: Starts Open Design daemon/run lifecycle and writes captured render artifacts inside prepared run sandbox
+    tui_dispatch_policy: guarded_execution
+    tui_dispatch_allowed: false
+    report_write_scope: product_design_run_output
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_render_runtime.py
+    - scripts/ws_product_design_render.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design render-confirm
+    notes: requires prepared run packet and explicit node apps/daemon/dist/cli.js contract; enforces OD_DATA_DIR and capture paths under allowed_write_root; uses argv with shell=false; captures daemon/run output; blocks on provider/env gaps, UI response, timeout, or sandbox escapes; does not write app/source repos or perform git actions
   ws product-design-run-prepare:
     safety_class: GUARDED_WRITE
     description: Prepares sandboxed Open Design run packet files from approved Product Lane artifacts.

@@ -20,6 +20,8 @@ RUNTIME_REPORT_SLASH_COMMAND = "/design runtime"
 RUNTIME_NOT_FOUND = "RUNTIME_NOT_FOUND"
 PARTIAL_RUNTIME_FOUND = "PARTIAL_RUNTIME_FOUND"
 RUNTIME_CANDIDATE_FOUND = "RUNTIME_CANDIDATE_FOUND"
+RENDER_CONTRACT_FOUND = "RENDER_CONTRACT_FOUND"
+RENDER_READY = "RENDER_READY"
 
 PROBE_COMMAND_NAMES = ("open-design", "od", "node", "pnpm", "npm")
 ENV_VAR_HINTS = (
@@ -32,25 +34,82 @@ ENV_VAR_HINTS = (
 )
 DEFAULT_PACKET_PRODUCT_ID = "portfolio-website-redesign"
 DEFAULT_PACKET_RUN_ID = "open-design-render-v1"
+RENDER_PROVIDER_MODE_ENV = "OPEN_DESIGN_RENDER_PROVIDER_MODE"
+RENDER_PROVIDER_MODE_API = "api"
+RENDER_PROVIDER_MODE_LOCAL_CLI = "local_cli"
+SUPPORTED_RENDER_PROVIDER_MODES = (
+    RENDER_PROVIDER_MODE_API,
+    RENDER_PROVIDER_MODE_LOCAL_CLI,
+)
 
 
-def classify_runtime_readiness(command_paths: dict[str, str | None], source_checkout_info: dict[str, Any] | None = None) -> str:
+def evaluate_provider_requirements(env_map: dict[str, str]) -> dict[str, Any]:
+    mode_raw = str(env_map.get(RENDER_PROVIDER_MODE_ENV, "")).strip().lower()
+    has_any_provider_key = any(bool(env_map.get(name)) for name in ENV_VAR_HINTS if name.endswith("_API_KEY"))
+
+    if mode_raw not in SUPPORTED_RENDER_PROVIDER_MODES:
+        return {
+            "mode": mode_raw or "UNSET",
+            "known": False,
+            "satisfied": False,
+            "reason": (
+                f"Set {RENDER_PROVIDER_MODE_ENV} to one of: "
+                f"{', '.join(SUPPORTED_RENDER_PROVIDER_MODES)}."
+            ),
+        }
+
+    if mode_raw == RENDER_PROVIDER_MODE_LOCAL_CLI:
+        return {
+            "mode": mode_raw,
+            "known": True,
+            "satisfied": True,
+            "reason": "Local CLI provider mode selected.",
+        }
+
+    if has_any_provider_key:
+        return {
+            "mode": mode_raw,
+            "known": True,
+            "satisfied": True,
+            "reason": "API provider mode selected with at least one provider key present.",
+        }
+    return {
+        "mode": mode_raw,
+        "known": True,
+        "satisfied": False,
+        "reason": "API provider mode selected but no provider API key is present.",
+    }
+
+
+def classify_runtime_readiness(
+    command_paths: dict[str, str | None],
+    source_checkout_info: dict[str, Any] | None = None,
+    *,
+    render_contract_available: bool = False,
+    provider_requirements: dict[str, Any] | None = None,
+) -> str:
     open_design_found = bool(command_paths.get("open-design"))
     od_found = bool(command_paths.get("od"))
     node_found = bool(command_paths.get("node"))
     package_manager_found = bool(command_paths.get("pnpm") or command_paths.get("npm"))
     any_found = any(command_paths.get(name) for name in PROBE_COMMAND_NAMES)
-    source_checkout_valid = source_checkout_info and source_checkout_info.get("is_valid", False)
+    source_checkout_valid = bool(source_checkout_info and source_checkout_info.get("is_valid", False))
+    required_files = source_checkout_info.get("required_files", {}) if isinstance(source_checkout_info, dict) else {}
+    daemon_cli_found = bool(required_files.get("apps/daemon/dist/cli.js"))
+    provider_known = bool(provider_requirements and provider_requirements.get("known"))
+    provider_satisfied = bool(provider_requirements and provider_requirements.get("satisfied"))
 
     if not any_found and not source_checkout_valid:
         return RUNTIME_NOT_FOUND
-    if open_design_found and node_found and package_manager_found:
-        return RUNTIME_CANDIDATE_FOUND
-    if not open_design_found and node_found and package_manager_found and source_checkout_valid:
-        return RUNTIME_CANDIDATE_FOUND
-    if od_found and not open_design_found:
+    if not source_checkout_valid or not node_found or not package_manager_found:
         return PARTIAL_RUNTIME_FOUND
-    return PARTIAL_RUNTIME_FOUND
+    if not daemon_cli_found or not render_contract_available:
+        return RUNTIME_CANDIDATE_FOUND
+    if provider_known and provider_satisfied:
+        return RENDER_READY
+    if provider_known and not provider_satisfied:
+        return RENDER_CONTRACT_FOUND
+    return RENDER_CONTRACT_FOUND
 
 
 def _detect_source_checkout(env_map: dict[str, str]) -> dict[str, Any]:
@@ -69,16 +128,23 @@ def _detect_source_checkout(env_map: dict[str, str]) -> dict[str, Any]:
         "required_files": {
             "package.json": False,
             "pnpm-lock.yaml": False,
-            "node_modules/": False
-        }
+            "node_modules/": False,
+            "apps/daemon/dist/cli.js": False,
+        },
     }
 
     if info["exists"]:
         info["required_files"]["package.json"] = (candidate_path / "package.json").is_file()
         info["required_files"]["pnpm-lock.yaml"] = (candidate_path / "pnpm-lock.yaml").is_file()
         info["required_files"]["node_modules/"] = (candidate_path / "node_modules").is_dir()
+        info["required_files"]["apps/daemon/dist/cli.js"] = (
+            candidate_path / "apps" / "daemon" / "dist" / "cli.js"
+        ).is_file()
         
-        info["is_valid"] = all(info["required_files"].values())
+        info["is_valid"] = all(
+            bool(info["required_files"].get(key))
+            for key in ("package.json", "pnpm-lock.yaml", "node_modules/")
+        )
 
     return info
 
@@ -149,8 +215,17 @@ def probe_design_runtime(
     env_presence = {name: bool(name in env_map) for name in ENV_VAR_HINTS}
     source_checkout_info = _detect_source_checkout(env_map)
     packet_probe = _prepared_packet_probe(root_path)
-    
-    readiness = classify_runtime_readiness(detected_paths, source_checkout_info)
+    render_contract_available = bool(
+        source_checkout_info.get("required_files", {}).get("apps/daemon/dist/cli.js")
+    )
+    provider_requirements = evaluate_provider_requirements(env_map)
+
+    readiness = classify_runtime_readiness(
+        detected_paths,
+        source_checkout_info,
+        render_contract_available=render_contract_available,
+        provider_requirements=provider_requirements,
+    )
     
     warnings: list[str] = []
     if detected_paths.get("od") and not detected_paths.get("open-design"):
@@ -172,6 +247,11 @@ def probe_design_runtime(
         "detected_command_paths": detected_paths,
         "source_checkout_detection": source_checkout_info,
         "environment_variable_presence": env_presence,
+        "render_contract": {
+            "available": render_contract_available,
+            "explicit_node_cli_command": "node apps/daemon/dist/cli.js ...",
+            "provider_requirements": provider_requirements,
+        },
         "prepared_packet_probe": packet_probe,
         "warnings": warnings,
         "execution_attempted": False,
@@ -232,6 +312,21 @@ def render_design_runtime_probe(probe: dict[str, Any]) -> str:
     )
     for name in ENV_VAR_HINTS:
         lines.append(f"- {name}: `{probe['environment_variable_presence'][name]}`")
+
+    render_contract = probe.get("render_contract", {})
+    provider_requirements = render_contract.get("provider_requirements", {})
+    lines.extend(
+        [
+            "",
+            "## Render Contract",
+            f"- available: `{render_contract.get('available', False)}`",
+            f"- explicit CLI command: `{render_contract.get('explicit_node_cli_command', 'UNSET')}`",
+            f"- provider mode: `{provider_requirements.get('mode', 'UNSET')}`",
+            f"- provider requirements known: `{provider_requirements.get('known', False)}`",
+            f"- provider requirements satisfied: `{provider_requirements.get('satisfied', False)}`",
+            f"- provider note: {provider_requirements.get('reason', 'none')}",
+        ]
+    )
 
     if probe.get("warnings"):
         lines.extend(["", "## Warnings"])
@@ -316,6 +411,14 @@ def render_design_runtime_report(probe: dict[str, Any]) -> str:
         lines.append("- no source checkout detection info available")
 
     lines.extend([
+        "",
+        "## Render Contract",
+        f"- available: `{probe.get('render_contract', {}).get('available', False)}`",
+        "- explicit CLI command: `node apps/daemon/dist/cli.js ...`",
+        (
+            "- provider requirements: "
+            f"{probe.get('render_contract', {}).get('provider_requirements', {}).get('reason', 'unknown')}"
+        ),
         "",
         "## Environment Variable Names (Presence Only)",
         "- values are not printed by policy",

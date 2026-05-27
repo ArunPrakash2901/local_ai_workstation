@@ -86,7 +86,7 @@ case "$SUBCOMMAND" in
         echo "  product-implementation-plan-review --product <id> --dry-run Review implementation plan deterministically"
         echo "  product-implementation-exchange-preview --product <id> --dry-run Preview implementation exchange packet draft"
         echo "  product-design-adapter-preview --product <id> --tool open-design --dry-run Preview design adapter sandbox run"
-        echo "  product-design-render --product <id> --tool open-design --dry-run Preview design render schema sandbox run"
+        echo "  product-design-render --product <id> --tool open-design --dry-run|--confirm Guarded Open Design daemon render preview/execute"
         echo "  product-design-run-prepare --product <id> --tool open-design --confirm Prepare sandbox design run packet files only"
         echo "  product-design-run-status --product <id> --tool open-design Show prepared sandbox design run status"
         echo "  product-design-run-review --product <id> --tool open-design [--dry-run|--confirm] Preview or write static design run review surface"

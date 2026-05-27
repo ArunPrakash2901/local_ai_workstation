@@ -384,7 +384,7 @@ def get_design_run_status(root: str | Path, product_id: str, tool: str) -> dict[
         "output_folder_presence": output_presence,
         "next_command": DESIGN_RUN_RENDER_NEXT_ACTION,
         "slash_command_surface": DESIGN_STATUS_SLASH_COMMAND,
-        "open_design_executed": False,
+        "open_design_executed": bool(run_payload.get("open_design_executed", False)),
         "open_design_installed": False,
         "writes_files": False,
     }
@@ -452,4 +452,3 @@ def render_design_run_status(status: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines)
-
