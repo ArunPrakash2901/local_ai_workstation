@@ -256,6 +256,28 @@ commands:
     - scripts/ai_model_current.sh
     confidence: medium
     notes: No file writes observed; probes local services.
+  ws workstation status:
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    warning_label: ''
+    safety_class: PURE_READ
+    description: Shows unified read-only MVP workstation status across execution,
+      runtime, exchange, adapter, result, validation, and loop-decision metadata.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    operator_label: Workstation status
+    evidence:
+    - scripts/ws
+    - scripts/workstation_status.py
+    confidence: high
+    notes: Pure-read dashboard; parses existing metadata and git refs/index directly
+      with the Python standard library. Does not run audits, dispatch, models,
+      terminals, providers, or git commands.
   ws tui:
     read_only_strict: false
     read_only_with_local_reports: true

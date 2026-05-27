@@ -13,11 +13,12 @@ Use repo-local invocation from `D:\_ai_brain`:
 - `wsl bash -lc "cd /mnt/d/_ai_brain && ./scripts/ws ..."` (portable fallback)
 
 ## Daily Workflow
-1. `ws ready`: Verify system health (Ollama, GPU, WSL, Registry).
-2. `ws agent-hygiene`: Audit and cleanup transient agent artifacts.
-3. `ws stronghold-status`: Check active cognitive workspaces.
-4. `ws task-status`: Review pending implementation tasks.
-5. `ws tui`: Open the read-only operator dashboard when you want a terminal summary view.
+1. `ws workstation status`: Review the unified MVP spine dashboard without writing files.
+2. `ws ready`: Verify system health (Ollama, GPU, WSL, Registry).
+3. `ws agent-hygiene`: Audit and cleanup transient agent artifacts.
+4. `ws stronghold-status`: Check active cognitive workspaces.
+5. `ws task-status`: Review pending implementation tasks.
+6. `ws tui`: Open the read-only operator dashboard when you want a terminal summary view.
 
 ---
 
@@ -42,9 +43,12 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/check_local_safety.py
 
 `ws ready` is different. It is an operational readiness/status workflow and may write local readiness/status reports. Use it when you want workstation readiness information and accept local report writes. Do not treat `ws ready` as strict no-write; in `READ_ONLY_STRICT` contexts, prefer `scripts/check_local_safety.py`.
 
+`ws workstation status` is the unified read-only MVP dashboard. It summarizes Execution, Runtime, Exchange, adapter config, result validation, loop decision, report, and generated artifact metadata without running audits, dispatch, models, providers, terminals, or git commands.
+
 | Check | Writes files? | Runs ws? | Runs agents/models/providers? | Purpose |
 |---|---:|---:|---:|---|
 | `check_local_safety.py` | No | No | No | No-write validation of safety manifest and syntax |
+| `ws workstation status` | No | Yes | No | Unified read-only MVP spine status |
 | `ws ready` | Yes, local readiness/status reports | Yes | No unless implementation changes | Operational readiness/status check |
 
 ## Product Development Lane (v0.2.1)

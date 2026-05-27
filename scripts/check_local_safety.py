@@ -19,6 +19,8 @@ AST_CHECKS = (
     ROOT / "scripts" / "check_local_safety.py",
     ROOT / "scripts" / "validate_ws_command_safety.py",
     ROOT / "scripts" / "test_tui_action_visibility.py",
+    ROOT / "scripts" / "workstation_status.py",
+    ROOT / "scripts" / "test_workstation_status.py",
     ROOT / "scripts" / "check_ws_manifest_drift.py",
     ROOT / "scripts" / "test_next_safe_action.py",
     ROOT / "scripts" / "test_action_dispatcher.py",
@@ -173,6 +175,7 @@ AST_CHECKS = (
 CHECK_STEPS = (
     ("Command safety manifest validation", ROOT / "scripts" / "validate_ws_command_safety.py"),
     ("TUI action visibility validation", ROOT / "scripts" / "test_tui_action_visibility.py"),
+    ("Workstation status validation", ROOT / "scripts" / "test_workstation_status.py"),
     ("WS manifest drift validation", ROOT / "scripts" / "check_ws_manifest_drift.py"),
     ("Next Safe Action Engine validation", ROOT / "scripts" / "test_next_safe_action.py"),
     ("Safe Action Dispatcher validation", ROOT / "scripts" / "test_action_dispatcher.py"),

@@ -195,6 +195,7 @@ case "$SUBCOMMAND" in
         echo ""
         echo "Global:"
         echo "  help                Show this help"
+        echo "  workstation status  Show unified read-only MVP workstation status"
         echo "  audit               Run all workstation-wide audits"
         echo "  version             Show workstation version"
         echo "  safety-matrix       Show safety classification matrix"
@@ -279,6 +280,9 @@ case "$SUBCOMMAND" in
             pwsh -NoLogo -NoProfile -File "$SCRIPTS_DIR/check_health.ps1" "$@" || true
         fi
         bash "$SCRIPTS_DIR/ai_model_current.sh" "$@"
+        ;;
+    workstation)
+        "$PYTHON_EXEC" "$SCRIPTS_DIR/workstation_status.py" "$@"
         ;;
     ready)
         bash "$SCRIPTS_DIR/ws_readiness.sh" "$@"
