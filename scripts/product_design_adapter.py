@@ -363,6 +363,8 @@ def build_design_render_preview(root: str | Path, product_id: str, tool: str) ->
         },
         "next_step": "future ws product-design-render --product <id> --tool open-design --confirm",
         "no_write": True,
+        "render_confirm_allowed": False,
+        "render_confirm_refusal_reason": "REFUSED_MISSING_RENDER_COMMAND_CONTRACT"
     }
 
 
@@ -466,16 +468,18 @@ def render_design_render_preview(preview: dict[str, Any]) -> str:
     )
     for item in preview["forbidden_paths"]:
         lines.append(f"- `{item}`")
-    lines.extend(
-        [
-            "",
-            "## External Execution Status",
-            f"- Open Design not executed: `{not preview['external_execution_status']['open_design_executed']}`",
-            f"- no install attempted: `{not preview['external_execution_status']['install_attempted']}`",
-            "",
-            "## Next Step",
-            f"- {preview['next_step']}",
-            "",
-        ]
-    )
+    lines.extend([
+        "",
+        "## External Execution Status",
+        f"- Open Design not executed: `{not preview['external_execution_status']['open_design_executed']}`",
+        f"- no install attempted: `{not preview['external_execution_status']['install_attempted']}`",
+        "",
+        "## Render Execution",
+        f"- render_confirm_allowed: `{preview['render_confirm_allowed']}`",
+        f"- reason: `{preview.get('render_confirm_refusal_reason', 'none')}`",
+        "",
+        "## Next Step",
+        f"- {preview['next_step']}",
+        "",
+    ])
     return "\n".join(lines)

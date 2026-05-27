@@ -298,20 +298,23 @@ def main() -> int:
             failures,
         )
 
-        with contextlib.redirect_stdout(io.StringIO()) as stdout_capture:
-            rc = render_cli_main(
-                [
-                    "--root",
-                    str(temp_root),
-                    "--product",
-                    ready_product_id,
-                    "--tool",
-                    "open-design",
-                ]
-            )
+        with contextlib.redirect_stderr(io.StringIO()) as stderr_capture:
+            try:
+                rc = render_cli_main(
+                    [
+                        "--root",
+                        str(temp_root),
+                        "--product",
+                        ready_product_id,
+                        "--tool",
+                        "open-design",
+                    ]
+                )
+            except SystemExit as exc:
+                rc = exc.code
         expect(
-            "CLI requires --dry-run",
-            rc == 2 and "Write-mode product-design-render is not implemented in this slice. Use --dry-run." in stdout_capture.getvalue(),
+            "CLI requires exactly one of --dry-run or --confirm",
+            rc == 2 and "one of the arguments --dry-run --confirm is required" in stderr_capture.getvalue(),
             failures,
         )
 

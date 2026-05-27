@@ -34,21 +34,53 @@ DEFAULT_PACKET_PRODUCT_ID = "portfolio-website-redesign"
 DEFAULT_PACKET_RUN_ID = "open-design-render-v1"
 
 
-def classify_runtime_readiness(command_paths: dict[str, str | None]) -> str:
+def classify_runtime_readiness(command_paths: dict[str, str | None], source_checkout_info: dict[str, Any] | None = None) -> str:
     open_design_found = bool(command_paths.get("open-design"))
     od_found = bool(command_paths.get("od"))
     node_found = bool(command_paths.get("node"))
     package_manager_found = bool(command_paths.get("pnpm") or command_paths.get("npm"))
     any_found = any(command_paths.get(name) for name in PROBE_COMMAND_NAMES)
+    source_checkout_valid = source_checkout_info and source_checkout_info.get("is_valid", False)
 
-    if not any_found:
+    if not any_found and not source_checkout_valid:
         return RUNTIME_NOT_FOUND
     if open_design_found and node_found and package_manager_found:
+        return RUNTIME_CANDIDATE_FOUND
+    if not open_design_found and node_found and package_manager_found and source_checkout_valid:
         return RUNTIME_CANDIDATE_FOUND
     if od_found and not open_design_found:
         return PARTIAL_RUNTIME_FOUND
     return PARTIAL_RUNTIME_FOUND
 
+
+def _detect_source_checkout(env_map: dict[str, str]) -> dict[str, Any]:
+    home_env = env_map.get("OPEN_DESIGN_HOME")
+    default_path = Path("/mnt/d/open_design_eval/open-design")
+    
+    if home_env:
+        candidate_path = Path(home_env)
+    else:
+        candidate_path = default_path
+
+    info = {
+        "path": candidate_path.as_posix(),
+        "exists": candidate_path.is_dir(),
+        "is_valid": False,
+        "required_files": {
+            "package.json": False,
+            "pnpm-lock.yaml": False,
+            "node_modules/": False
+        }
+    }
+
+    if info["exists"]:
+        info["required_files"]["package.json"] = (candidate_path / "package.json").is_file()
+        info["required_files"]["pnpm-lock.yaml"] = (candidate_path / "pnpm-lock.yaml").is_file()
+        info["required_files"]["node_modules/"] = (candidate_path / "node_modules").is_dir()
+        
+        info["is_valid"] = all(info["required_files"].values())
+
+    return info
 
 def _prepared_packet_probe(root: Path) -> dict[str, Any]:
     run_dir = (
@@ -89,7 +121,23 @@ def probe_design_runtime(
     env_map = env if env is not None else dict(os.environ)
 
     if which_fn is None:
-        which_impl = lambda name: shutil.which(name, path=path_env)  # noqa: E731
+        def custom_which(name: str, path: str | None = None) -> str | None:
+            # Check standard PATH first
+            res = shutil.which(name, path=path)
+            if res:
+                return res
+            # Fallback to checking typical NVM paths if not found
+            if name in ("node", "pnpm", "npm"):
+                import glob
+                nvm_dir = Path.home() / ".nvm" / "versions" / "node"
+                if nvm_dir.exists():
+                    # Simple heuristic: find the latest version dir
+                    # (In a real setup we might parse .node-version or .nvmrc, but this is a fallback probe)
+                    for candidate in sorted(nvm_dir.glob("v*/bin/" + name), reverse=True):
+                        if candidate.is_file() and os.access(candidate, os.X_OK):
+                            return str(candidate)
+            return None
+        which_impl = custom_which
     else:
         which_impl = lambda name: which_fn(name, path=path_env)  # noqa: E731
 
@@ -98,9 +146,12 @@ def probe_design_runtime(
         resolved = which_impl(name)
         detected_paths[name] = str(Path(resolved).expanduser()) if resolved else None
 
-    readiness = classify_runtime_readiness(detected_paths)
     env_presence = {name: bool(name in env_map) for name in ENV_VAR_HINTS}
+    source_checkout_info = _detect_source_checkout(env_map)
     packet_probe = _prepared_packet_probe(root_path)
+    
+    readiness = classify_runtime_readiness(detected_paths, source_checkout_info)
+    
     warnings: list[str] = []
     if detected_paths.get("od") and not detected_paths.get("open-design"):
         warnings.append(
@@ -119,6 +170,7 @@ def probe_design_runtime(
             "python": platform.python_version(),
         },
         "detected_command_paths": detected_paths,
+        "source_checkout_detection": source_checkout_info,
         "environment_variable_presence": env_presence,
         "prepared_packet_probe": packet_probe,
         "warnings": warnings,
@@ -156,6 +208,20 @@ def render_design_runtime_probe(probe: dict[str, Any]) -> str:
         lines.append(f"- {name}: `{resolved or 'NOT_FOUND'}`")
     if probe.get("warnings"):
         lines.append("- warning: `od` path is advisory only unless `open-design` is also found")
+
+    lines.append("")
+    lines.append("## Source Checkout Detection")
+    sco = probe.get("source_checkout_detection", {})
+    if sco:
+        lines.append(f"- path: `{sco.get('path', 'unknown')}`")
+        lines.append(f"- exists: `{sco.get('exists', False)}`")
+        lines.append(f"- is_valid: `{sco.get('is_valid', False)}`")
+        reqs = sco.get("required_files", {})
+        if reqs:
+            for k, v in reqs.items():
+                lines.append(f"  - {k}: `{v}`")
+    else:
+        lines.append("- no source checkout detection info available")
 
     lines.extend(
         [
@@ -235,24 +301,42 @@ def render_design_runtime_report(probe: dict[str, Any]) -> str:
         f"- pnpm: `{detected.get('pnpm') or 'NOT_FOUND'}`",
         f"- npm: `{detected.get('npm') or 'NOT_FOUND'}`",
         "",
+        "## Source Checkout Detection",
+    ]
+    sco = probe.get("source_checkout_detection", {})
+    if sco:
+        lines.append(f"- path: `{sco.get('path', 'unknown')}`")
+        lines.append(f"- exists: `{sco.get('exists', False)}`")
+        lines.append(f"- is_valid: `{sco.get('is_valid', False)}`")
+        reqs = sco.get("required_files", {})
+        if reqs:
+            for k, v in reqs.items():
+                lines.append(f"  - {k}: `{v}`")
+    else:
+        lines.append("- no source checkout detection info available")
+
+    lines.extend([
+        "",
         "## Environment Variable Names (Presence Only)",
         "- values are not printed by policy",
-        f"- present: `{', '.join(present_env) if present_env else 'none'}`",
-        f"- missing: `{', '.join(missing_env) if missing_env else 'none'}`",
+        f"- present: {', '.join(present_env) if present_env else 'none'}",
+        f"- missing: {', '.join(missing_env) if missing_env else 'none'}",
         "",
         "## Prepared Packet Presence (Optional)",
-        f"- product_id: `{packet_probe['product_id']}`",
-        f"- run_id: `{packet_probe['run_id']}`",
-        f"- run directory present: `{packet_probe['run_dir_present']}`",
+        f"- product_id: {packet_probe['product_id']}",
+        f"- run_id: {packet_probe['run_id']}",
+        f"- run directory present: {packet_probe['run_dir_present']}",
         "",
         "## Safety Guarantees",
-        f"- execution attempted: `{probe['execution_attempted']}`",
-        f"- install attempted: `{probe['install_attempted']}`",
-        f"- agent CLI execution attempted: `{probe['agent_cli_execution_attempted']}`",
-        f"- network used: `{probe['network_used']}`",
-        f"- files written: `{probe['writes_files']}`",
-    ]
+        f"- execution attempted: {probe['execution_attempted']}",
+        f"- install attempted: {probe['install_attempted']}",
+        f"- agent CLI execution attempted: {probe['agent_cli_execution_attempted']}",
+        f"- network used: {probe['network_used']}",
+        f"- files written: {probe['writes_files']}",
+    ])
+
     if probe.get("warnings"):
+
         lines.extend(["", "## Warnings"])
         for warning in probe["warnings"]:
             lines.append(f"- {warning}")
