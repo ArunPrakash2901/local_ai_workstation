@@ -24,6 +24,11 @@ if str(TOOL_DIR) not in sys.path:
 
 import exchange_validate_result  # noqa: E402
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -74,6 +79,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise LoopDecisionError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -88,14 +98,22 @@ def repair_packet_path(root: Path, repair_packet_id: str) -> Path:
 
 def build_loop_decision_id(validation: dict[str, Any]) -> str:
     validation_id = str(validation.get("validation_id", "validation"))
-    seed = "|".join([validation_id, str(validation.get("result_id", "")), utc_now()])
-    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:12]
-    return require_id(f"loop__{safe_id(validation_id)}__{digest}", "loop_decision_id")
+    return require_id(
+        make_artifact_id(
+            "loop",
+            [validation_id, str(validation.get("result_id", ""))],
+            timestamp=utc_now(),
+            max_len=64,
+        ),
+        "loop_decision_id",
+    )
 
 
 def build_repair_packet_id(loop_decision_id: str) -> str:
-    digest = hashlib.sha256(loop_decision_id.encode("utf-8")).hexdigest()[:12]
-    return require_id(f"repair__{safe_id(loop_decision_id)}__{digest}", "repair_packet_id")
+    return require_id(
+        make_artifact_id("repair", [loop_decision_id], max_len=64),
+        "repair_packet_id",
+    )
 
 
 def validation_path(root: Path, validation_id: str) -> Path:

@@ -20,6 +20,11 @@ sys.dont_write_bytecode = True
 SCRIPT_PATH = Path(__file__).resolve()
 DEFAULT_ROOT = SCRIPT_PATH.parents[1]
 REPO_ROOT = SCRIPT_PATH.parents[2]
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id, safe_slug  # noqa: E402
 
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
@@ -84,6 +89,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise ExchangePacketError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -127,9 +137,14 @@ def create_packet(
         raise ExchangePacketError(f"source artifact does not exist: {source_artifact}")
     checksum = sha256_file(source_path) if source_path.is_file() else ""
     now = utc_now()
-    base = source_path.stem[:48] or "artifact"
+    packet_label = f"{source_lane} {target_adapter} {task_type} {source_path.stem}"
     packet_id = require_id(
-        f"{source_lane}__{target_adapter}__{task_type}__{base}__{now.replace(':', '').replace('-', '').replace('Z', 'z')}",
+        make_artifact_id(
+            "xp",
+            [source_lane, target_adapter, task_type, source_path.stem, str(source_path), objective],
+            timestamp=now,
+            max_len=64,
+        ),
         "packet_id",
     )
     packet = {
@@ -146,6 +161,8 @@ def create_packet(
         "target_assignment_id": "",
         "task_type": task_type,
         "objective": objective,
+        "packet_label": safe_slug(packet_label, max_len=48),
+        "human_readable_label": packet_label,
         "input_artifacts": [str(source_path)],
         "expected_outputs": [],
         "allowed_write_roots": [],

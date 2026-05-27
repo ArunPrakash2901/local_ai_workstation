@@ -24,8 +24,12 @@ REPO_ROOT = LANE_ROOT.parents[0]
 TOOL_DIR = SCRIPT_PATH.parent
 if str(TOOL_DIR) not in sys.path:
     sys.path.insert(0, str(TOOL_DIR))
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 import audit_execution_lane  # noqa: E402
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 ALLOWED_RUN_STATUSES = {
     "PLANNED_DRY_RUN",
@@ -109,6 +113,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise ExecutionError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -256,9 +265,10 @@ def validate_queue(queue_path: Path) -> dict[str, Any]:
 
 
 def run_id_for_set(set_id: str) -> str:
-    safe = require_id(set_id, "set_id")
-    stamp = utc_now().replace("-", "").replace(":", "").replace("Z", "z")
-    return require_id(f"{safe}__{stamp}", "run_id")
+    return require_id(
+        make_artifact_id("run", [set_id], timestamp=utc_now(), max_len=64),
+        "run_id",
+    )
 
 
 def run_manifest_path(root: Path, run_id: str) -> Path:
@@ -297,6 +307,11 @@ def write_run_report(root: Path, run: dict[str, Any], task_packets: list[dict[st
     for note in run.get("safety_notes", []):
         lines.append(f"- {note}")
     out = root / "run_reports" / f"{run['run_id']}.md"
+    report_len = check_path_length(out)
+    if report_len["status"] == "fail":
+        raise ExecutionError(f"refusing to write overlong run report path: {report_len['message']} -> {out}")
+    if report_len["status"] == "warn":
+        print(f"warning: {report_len['message']} -> {out}", file=sys.stderr)
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out
 
@@ -310,8 +325,10 @@ def build_task_packet(
     linked_product_artifacts: list[str],
 ) -> dict[str, Any]:
     phase_id = require_id(str(phase.get("phase_id", "")), "phase_id")
-    stamp = utc_now().replace("-", "").replace(":", "").replace("Z", "z")
-    task_packet_id = require_id(f"{run_id}__{phase_id}__{stamp}", "task_packet_id")
+    task_packet_id = require_id(
+        make_artifact_id("task", [run_id, phase_id], timestamp=utc_now(), max_len=64),
+        "task_packet_id",
+    )
     product_paths = [
         str((REPO_ROOT / "product_development_lane" / rel).resolve())
         for rel in linked_product_artifacts
@@ -582,8 +599,14 @@ def cmd_handoff_preview(args: argparse.Namespace) -> int:
     print(f"target_adapter: {target}")
     for packet in packets:
         phase_id = str(packet.get("phase_id", ""))
-        preview_name = f"{run_id}__{phase_id}__{target}_exchange_packet_preview.json"
-        prompt_name = f"{run_id}__{phase_id}__{target}_prompt_preview.md"
+        preview_name = (
+            make_artifact_id("handoff", [run_id, phase_id, target], max_len=56)
+            + "_exchange_packet_preview.json"
+        )
+        prompt_name = (
+            make_artifact_id("handoff", [run_id, phase_id, target], max_len=56)
+            + "_prompt_preview.md"
+        )
         preview_path = (Path(args.root).resolve() / "handoff_previews" / preview_name).resolve()
         prompt_path = (Path(args.root).resolve() / "handoff_previews" / prompt_name).resolve()
         print(

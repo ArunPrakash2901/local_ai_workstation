@@ -46,3 +46,8 @@ Not implemented:
 - `contracts/execution_run_contract.md`
 - `contracts/worker_task_packet_contract.md`
 - `contracts/execution_handoff_preview_contract.md`
+
+## Artifact Naming
+
+Execution run and worker task packet filenames use compact IDs for Windows-safe
+paths. Full set/phase/objective context remains in artifact metadata content.

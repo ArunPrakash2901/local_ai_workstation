@@ -27,6 +27,11 @@ if str(TOOL_DIR) not in sys.path:
 import exchange_dispatch_plan  # noqa: E402
 import exchange_packet  # noqa: E402
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -59,6 +64,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise FakeDispatchError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -136,7 +146,14 @@ def fake_dispatch(root: Path, dispatch_plan_id: str) -> Path:
     source_artifact_path = str(plan.get("source_artifact_path", ""))
     source_artifact_exists = bool(source_artifact_path and Path(source_artifact_path).exists())
     target_adapter = str(plan.get("target_adapter", ""))
-    capture_dir = root / "outbox" / packet_id / dispatch_plan_id
+    packet_bucket = make_artifact_id("pkt", [packet_id], max_len=24)
+    plan_bucket = make_artifact_id("dp", [dispatch_plan_id], max_len=24)
+    capture_dir = root / "outbox" / packet_bucket / plan_bucket
+    capture_len = check_path_length(capture_dir)
+    if capture_len["status"] == "fail":
+        raise FakeDispatchError(f"refusing to write overlong outbox path: {capture_len['message']} -> {capture_dir}")
+    if capture_len["status"] == "warn":
+        print(f"warning: {capture_len['message']} -> {capture_dir}", file=sys.stderr)
     capture_manifest_path = capture_dir / "capture_manifest.json"
     if capture_manifest_path.exists():
         raise FakeDispatchError(f"capture already exists: {capture_manifest_path}")
@@ -157,7 +174,15 @@ def fake_dispatch(root: Path, dispatch_plan_id: str) -> Path:
         "human_review_required": True,
         "trusted": False,
     }
-    capture_id = f"{packet_id}__{dispatch_plan_id}__fake_capture"
+    capture_id = require_id(
+        make_artifact_id(
+            "cap",
+            [packet_id, dispatch_plan_id, "fake"],
+            timestamp=utc_now(),
+            max_len=64,
+        ),
+        "capture_id",
+    )
     manifest = {
         "capture_id": capture_id,
         "packet_id": packet_id,
@@ -165,6 +190,8 @@ def fake_dispatch(root: Path, dispatch_plan_id: str) -> Path:
         "source_dispatch_plan": str(plan_path.resolve()),
         "source_packet": str(packet_path.resolve()),
         "target_adapter": target_adapter,
+        "outbox_packet_bucket": packet_bucket,
+        "outbox_dispatch_bucket": plan_bucket,
         "fake_execution": True,
         "real_cli_execution": False,
         "created_at": utc_now(),

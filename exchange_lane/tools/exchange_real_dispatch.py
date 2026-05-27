@@ -31,6 +31,11 @@ if str(TOOL_DIR) not in sys.path:
 import exchange_dispatch_plan  # noqa: E402
 import exchange_packet  # noqa: E402
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_ROOT = DEFAULT_ROOT.parents[0] / "runtime_lane"
@@ -107,6 +112,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise RealDispatchError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -361,7 +371,14 @@ def write_capture(
     packet_id = str(context["packet_id"])
     dispatch_plan_id = str(context["dispatch_plan_id"])
     adapter_id = str(context["adapter_id"])
-    capture_dir = root / "outbox" / packet_id / dispatch_plan_id
+    packet_bucket = make_artifact_id("pkt", [packet_id], max_len=24)
+    plan_bucket = make_artifact_id("dp", [dispatch_plan_id], max_len=24)
+    capture_dir = root / "outbox" / packet_bucket / plan_bucket
+    capture_len = check_path_length(capture_dir)
+    if capture_len["status"] == "fail":
+        raise RealDispatchError(f"refusing to write overlong outbox path: {capture_len['message']} -> {capture_dir}")
+    if capture_len["status"] == "warn":
+        print(f"warning: {capture_len['message']} -> {capture_dir}", file=sys.stderr)
     capture_manifest_path = capture_dir / "capture_manifest.json"
     if capture_manifest_path.exists():
         raise RealDispatchError(f"capture already exists: {capture_manifest_path}")
@@ -398,11 +415,21 @@ def write_capture(
         "trusted": False,
     }
 
-    capture_id = f"{packet_id}__{dispatch_plan_id}__real_capture"
+    capture_id = require_id(
+        make_artifact_id(
+            "cap",
+            [packet_id, dispatch_plan_id, "real"],
+            timestamp=utc_now(),
+            max_len=64,
+        ),
+        "capture_id",
+    )
     manifest = {
         "capture_id": capture_id,
         "packet_id": packet_id,
         "dispatch_plan_id": dispatch_plan_id,
+        "outbox_packet_bucket": packet_bucket,
+        "outbox_dispatch_bucket": plan_bucket,
         "source_dispatch_plan": str(Path(context["plan_path"]).resolve()),
         "source_packet": str(Path(context["packet_path"]).resolve()),
         "target_adapter": adapter_id,

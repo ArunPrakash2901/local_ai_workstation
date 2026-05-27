@@ -104,6 +104,12 @@ Workload reports:
 Reports:
 - reserved for future human-readable summaries
 
+## Artifact Naming
+
+Runtime metadata files now use compact, path-safe IDs for assignments and
+blockers. Human-readable task/source details are preserved inside JSON metadata
+instead of long filename stems to reduce Windows path-length risk.
+
 ## Normal Operator Flow
 
 1. Operator opens and controls terminal/CLI sessions manually.

@@ -204,6 +204,7 @@ def main() -> int:
         assert_true(rc == 0, "assign should pass")
         assignment_files = list((test_root / "assignments").glob("*.json"))
         assert_true(len(assignment_files) == 1, "assignment JSON should be created")
+        assert_true(len(assignment_files[0].stem) <= 96, "assignment filename stem should stay <= 96 chars")
         assignment = json.loads(assignment_files[0].read_text(encoding="utf-8"))
         assert_true(assignment["assignment_status"] == "ASSIGNED_NOT_STARTED", "assignment should default to assigned-not-started")
         assert_true(assignment["execution_allowed"] is False, "execution_allowed should default false")

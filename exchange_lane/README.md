@@ -90,7 +90,7 @@ Dispatch planning does not grant commit, push, or merge.
 2. Dispatch plan is created.
 3. Fake dispatch simulates adapter output:
    `ws exchange fake-dispatch --dispatch-plan-id <id> --confirm`
-4. Result capture is written under `exchange_lane/outbox/<packet_id>/<dispatch_plan_id>/`.
+4. Result capture is written under `exchange_lane/outbox/<packet_bucket>/<dispatch_bucket>/`.
 5. Import result:
    `ws exchange import-result --capture-manifest <path> --confirm`
 6. Result packet becomes `IMPORTED_PENDING_REVIEW`.
@@ -102,6 +102,11 @@ Imported output is untrusted.
 Import does not apply code.
 Import does not approve the result.
 Import does not grant commit, push, or merge.
+
+Artifact naming policy: new packet/plan/result/validation/loop IDs are compact
+and path-safe. Traceability stays in JSON metadata fields, not verbose filenames.
+Outbox capture folders use compact bucket names while capture manifests still
+record the original `packet_id` and `dispatch_plan_id`.
 
 ## Automated Result Validation and Loop Decisions
 

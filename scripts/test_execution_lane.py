@@ -16,6 +16,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
+from workstation_ids import check_path_length
+
 
 ROOT = Path(__file__).resolve().parents[1]
 EXECUTION_LANE_ROOT = ROOT / "execution_lane"
@@ -227,6 +229,11 @@ def main() -> int:
         assert_true(len(run_files) == 1, "prepare should create one run manifest")
         assert_true(len(task_files) >= 1, "prepare should create worker task packets")
         assert_true(len(report_files) == 1, "prepare should create run report")
+        assert_true(len(run_files[0].stem) <= 96, "run filename stem should stay <= 96 chars")
+        for task_file in task_files:
+            assert_true(len(task_file.stem) <= 96, "worker task packet filename stem should stay <= 96 chars")
+            length_check = check_path_length(task_file)
+            assert_true(length_check["status"] != "fail", "worker task packet path should stay below fail threshold")
 
         run = load_json(run_files[0])
 

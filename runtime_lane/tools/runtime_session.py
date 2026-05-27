@@ -25,6 +25,12 @@ sys.dont_write_bytecode = True
 
 SCRIPT_PATH = Path(__file__).resolve()
 DEFAULT_ROOT = SCRIPT_PATH.parents[1]
+REPO_ROOT = DEFAULT_ROOT.parent
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 SESSION_STATUSES = {
     "PLANNED",
@@ -142,6 +148,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise RuntimeSessionError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -286,7 +297,12 @@ def create_assignment(
     blockers = open_blocker_ids(root, session_id)
     now = utc_now()
     assignment_id = require_id(
-        f"{session_id}__{task_source_type}__{source_path.stem}__{now.replace(':', '').replace('-', '').replace('Z', 'z')}",
+        make_artifact_id(
+            "asn",
+            [session_id, task_source_type, source_path.stem, str(resolved_source)],
+            timestamp=now,
+            max_len=64,
+        ),
         "assignment_id",
     )
     session_status = assignment_status_for_session(session, blockers)
@@ -628,6 +644,11 @@ def render_workload(root: Path) -> str:
 def write_workload_report(root: Path, content: str) -> Path:
     ensure_dirs(root)
     path = root / "workload_reports" / "runtime_workload_report.md"
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise RuntimeSessionError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.write_text(content + "\n", encoding="utf-8")
     return path
 
@@ -709,8 +730,15 @@ def report_blocker(root: Path, *, session_id: str, blocker_type: str, descriptio
     session_file = session_path(root, session_id)
     session = load_json(session_file)
     now = utc_now()
-    safe_type = blocker_type.lower()
-    blocker_id = f"{session_id}__{safe_type}__{now.replace(':', '').replace('-', '').replace('Z', 'z')}"
+    blocker_id = require_id(
+        make_artifact_id(
+            "blk",
+            [session_id, blocker_type, description],
+            timestamp=now,
+            max_len=64,
+        ),
+        "blocker_id",
+    )
     blocker = {
         "blocker_id": blocker_id,
         "session_id": session_id,

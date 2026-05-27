@@ -23,6 +23,12 @@ if str(TOOL_DIR) not in sys.path:
 
 import exchange_packet  # noqa: E402
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
+
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNTIME_ROOT = DEFAULT_ROOT.parents[0] / "runtime_lane"
@@ -94,6 +100,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise DispatchPlanError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -121,8 +132,15 @@ def choose_planned_status(blocked_statuses: set[str]) -> str:
 
 
 def build_dispatch_plan_id(packet_id: str, session_id: str, assignment_id: str) -> str:
-    stamp = utc_now().replace(":", "").replace("-", "").replace("Z", "z")
-    return require_id(f"{packet_id}__{session_id}__{assignment_id}__{stamp}", "dispatch_plan_id")
+    return require_id(
+        make_artifact_id(
+            "dp",
+            [packet_id, session_id, assignment_id],
+            timestamp=utc_now(),
+            max_len=64,
+        ),
+        "dispatch_plan_id",
+    )
 
 
 def render_report(plan: dict[str, Any]) -> str:
@@ -323,6 +341,13 @@ def create_plan(
     write_json(out, plan)
     if write_report:
         report_path = root / "dispatch_plan_reports" / f"{plan['dispatch_plan_id']}.md"
+        report_length = check_path_length(report_path)
+        if report_length["status"] == "fail":
+            raise DispatchPlanError(
+                f"refusing to write overlong dispatch-plan report path: {report_length['message']} -> {report_path}"
+            )
+        if report_length["status"] == "warn":
+            print(f"warning: {report_length['message']} -> {report_path}", file=sys.stderr)
         report_path.write_text(render_report(plan) + "\n", encoding="utf-8")
 
     if mark_dispatch_planned:

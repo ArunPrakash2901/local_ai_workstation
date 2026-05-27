@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -61,6 +62,31 @@ class AuditResult:
 
     def warn(self, message: str) -> None:
         self.warnings.append(message)
+
+
+WINDOWS_ABS_PATH_RE = re.compile(r"^([A-Za-z]):[\\/](.*)$")
+WSL_ABS_PATH_RE = re.compile(r"^/mnt/([a-zA-Z])/(.*)$")
+
+
+def resolve_cross_platform_path(raw_path: str) -> Path:
+    """Best-effort conversion between Windows and WSL absolute paths."""
+    text = str(raw_path or "").strip()
+    direct = Path(text)
+    if direct.exists():
+        return direct
+    if os.name != "nt":
+        match = WINDOWS_ABS_PATH_RE.match(text)
+        if match:
+            drive = match.group(1).lower()
+            tail = match.group(2).replace("\\", "/")
+            return Path("/mnt") / drive / tail
+    else:
+        match = WSL_ABS_PATH_RE.match(text)
+        if match:
+            drive = match.group(1).upper()
+            tail = match.group(2).replace("/", "\\")
+            return Path(f"{drive}:\\{tail}")
+    return direct
 
 
 def load_json(path: Path, result: AuditResult) -> dict[str, Any] | None:
@@ -134,9 +160,12 @@ def audit_runtime_lane(root: Path) -> AuditResult:
             result.error(f"{path}: invalid task_source_type {task_source_type!r}")
         task_source_path = str(data.get("task_source_path", ""))
         if task_source_path:
-            source_path = Path(task_source_path)
+            source_path = resolve_cross_platform_path(task_source_path)
             if status != "ABANDONED" and not data.get("task_source_missing") and not source_path.exists():
-                result.error(f"{path}: missing task_source_path {task_source_path}")
+                result.error(
+                    f"{path}: missing task_source_path {task_source_path}"
+                    + (f" (resolved={source_path})" if str(source_path) != task_source_path else "")
+                )
         else:
             result.error(f"{path}: missing task_source_path")
         session_id = str(data.get("session_id", ""))

@@ -21,6 +21,11 @@ from typing import Any
 os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
 sys.dont_write_bytecode = True
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -59,6 +64,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise ImportResultError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -68,9 +78,10 @@ def result_packet_path(root: Path, result_id: str) -> Path:
 
 
 def build_result_id(capture_id: str, packet_id: str) -> str:
-    digest = hashlib.sha256(capture_id.encode("utf-8")).hexdigest()[:16]
-    safe_packet = re.sub(r"[^A-Za-z0-9_.-]+", "_", packet_id).strip("._-") or "packet"
-    return require_id(f"result__{safe_packet}__{digest}", "result_id")
+    return require_id(
+        make_artifact_id("res", [capture_id, packet_id], max_len=64),
+        "result_id",
+    )
 
 
 def iter_result_packets(root: Path) -> list[dict[str, Any]]:

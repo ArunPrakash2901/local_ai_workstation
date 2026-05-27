@@ -16,6 +16,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
+from workstation_ids import check_path_length
+
 
 ROOT = Path(__file__).resolve().parents[1]
 EXCHANGE_LANE_ROOT = ROOT / "exchange_lane"
@@ -134,7 +136,10 @@ def create_packet(exchange_packet, exchange_root: Path, source_artifact: Path, t
         source_lane="product_development_lane",
         target_adapter=target_adapter,
         task_type="implementation_planning",
-        objective="Plan dispatch metadata only.",
+        objective=(
+            "Plan dispatch metadata only. "
+            "Keep full intent in metadata while filenames remain compact for Windows-safe paths."
+        ),
     )
     packet = read_json(packet_path)
     return packet_path, str(packet["packet_id"])
@@ -150,7 +155,9 @@ def clone_imported_result_fixture(
     source_manifest = read_json(capture_manifest_path)
     packet_id = str(source_manifest["packet_id"])
     dispatch_plan_id = str(source_manifest["dispatch_plan_id"])
-    cloned_capture_dir = target_exchange_root / "outbox" / packet_id / dispatch_plan_id
+    packet_bucket = str(source_manifest.get("outbox_packet_bucket", packet_id))
+    dispatch_bucket = str(source_manifest.get("outbox_dispatch_bucket", dispatch_plan_id))
+    cloned_capture_dir = target_exchange_root / "outbox" / packet_bucket / dispatch_bucket
     shutil.copytree(capture_manifest_path.parent, cloned_capture_dir)
 
     cloned_manifest_path = cloned_capture_dir / "capture_manifest.json"
@@ -160,6 +167,10 @@ def clone_imported_result_fixture(
     cloned_manifest["validation_path"] = str((cloned_capture_dir / "validation.md").resolve())
     cloned_manifest["operator_report_path"] = str((cloned_capture_dir / "operator_report.md").resolve())
     cloned_manifest["imported_result_packet"] = str((target_exchange_root / "result_packets" / f"{result_id}.json").resolve())
+    cloned_manifest["packet_id"] = packet_id
+    cloned_manifest["dispatch_plan_id"] = dispatch_plan_id
+    cloned_manifest["outbox_packet_bucket"] = packet_bucket
+    cloned_manifest["outbox_dispatch_bucket"] = dispatch_bucket
     write_json(cloned_manifest_path, cloned_manifest)
 
     cloned_result = read_json(source_exchange_root / "result_packets" / f"{result_id}.json")
@@ -209,6 +220,26 @@ def latest_record_by_field(exchange_root: Path, folder: str, field: str, value: 
     assert_true(bool(matches), f"{folder} record should exist for {field}={value}")
     latest = max(matches, key=lambda item: item.stat().st_mtime_ns)
     return read_json(latest)
+
+
+def latest_record_path_by_field(exchange_root: Path, folder: str, field: str, value: str) -> Path:
+    matches: list[Path] = []
+    for path in (exchange_root / folder).glob("*.json"):
+        data = read_json(path)
+        if str(data.get(field, "")) == value:
+            matches.append(path)
+    assert_true(bool(matches), f"{folder} path should exist for {field}={value}")
+    return max(matches, key=lambda item: item.stat().st_mtime_ns)
+
+
+def find_capture_manifest(exchange_root: Path, packet_id: str, dispatch_plan_id: str) -> Path:
+    matches: list[Path] = []
+    for path in (exchange_root / "outbox").rglob("capture_manifest.json"):
+        data = read_json(path)
+        if str(data.get("packet_id", "")) == packet_id and str(data.get("dispatch_plan_id", "")) == dispatch_plan_id:
+            matches.append(path)
+    assert_true(bool(matches), f"capture manifest should exist for packet={packet_id} dispatch_plan={dispatch_plan_id}")
+    return max(matches, key=lambda item: item.stat().st_mtime_ns)
 
 
 def plan_packet(
@@ -433,6 +464,12 @@ def main() -> int:
         write_text(source_artifact, "# implementation plan\n")
 
         packet_path, draft_packet_id = create_packet(exchange_packet, exchange_root, source_artifact, "codex_cli")
+        assert_true(len(packet_path.stem) <= 96, "exchange packet filename stem should stay <= 96 chars")
+        created_packet = read_json(packet_path)
+        assert_true(
+            "metadata while filenames remain compact" in str(created_packet.get("objective", "")),
+            "long objective text should remain in packet JSON metadata",
+        )
         rc, _stdout, stderr = approve_planning(exchange_packet, exchange_root, draft_packet_id, "should fail")
         assert_true(rc == 1, f"approve-planning should refuse DRAFT packets: {stderr}")
 
@@ -449,6 +486,7 @@ def main() -> int:
         create_session(runtime_session, runtime_root, repo_root, "session-ready", "codex_cli")
         update_session_status(runtime_session, runtime_root, "session-ready", "READY")
         assignment_path = create_assignment(runtime_session, runtime_root, "session-ready", source_artifact, "compatible assignment")
+        assert_true(len(assignment_path.stem) <= 96, "runtime assignment filename stem should stay <= 96 chars")
         assignment_id = str(read_json(assignment_path)["assignment_id"])
 
         rc, _stdout, stderr = plan_packet(
@@ -461,6 +499,8 @@ def main() -> int:
         )
         assert_true(rc == 0, f"dispatch-plan should succeed: {stderr}")
         plan = plan_for_packet(exchange_root, draft_packet_id)
+        plan_path = latest_record_path_by_field(exchange_root, "dispatch_plans", "packet_id", draft_packet_id)
+        assert_true(len(plan_path.stem) <= 96, "dispatch plan filename stem should stay <= 96 chars")
         assert_true(plan["planned_status"] == "PLANNED_NOT_DISPATCHED", "compatible dispatch plan should be planned")
         assert_true(plan["execution_allowed"] is False, "dispatch plan execution_allowed should stay false")
         assert_true(plan["cli_executed"] is False, "dispatch plan must not execute CLI")
@@ -592,14 +632,12 @@ def main() -> int:
         )
         assert_true(rc == 0, f"fake-dispatch should create capture: {stderr}")
         assert_true("fake dispatch capture written:" in stdout, "fake-dispatch should report capture path")
-        capture_manifest_path = (
-            exchange_root
-            / "outbox"
-            / draft_packet_id
-            / str(plan["dispatch_plan_id"])
-            / "capture_manifest.json"
-        )
+        capture_manifest_path = find_capture_manifest(exchange_root, draft_packet_id, str(plan["dispatch_plan_id"]))
         assert_true(capture_manifest_path.is_file(), "fake-dispatch should write capture_manifest.json")
+        assert_true(
+            check_path_length(capture_manifest_path)["status"] != "fail",
+            "nested fake-dispatch outbox path should stay below fail threshold",
+        )
         capture_manifest = read_json(capture_manifest_path)
         assert_true((capture_manifest_path.parent / "raw_output.md").is_file(), "fake-dispatch should write raw_output.md")
         assert_true((capture_manifest_path.parent / "parsed_result.json").is_file(), "fake-dispatch should write parsed_result.json")
@@ -636,6 +674,7 @@ def main() -> int:
         result_id = str(imported_manifest["imported_result_id"])
         result_path = exchange_root / "result_packets" / f"{result_id}.json"
         assert_true(result_path.is_file(), "import-result should create result packet")
+        assert_true(len(result_path.stem) <= 96, "result packet filename stem should stay <= 96 chars")
         result_packet = read_json(result_path)
         assert_true(result_packet["result_status"] == "IMPORTED_PENDING_REVIEW", "imported result should be pending review")
         assert_true(result_packet["trusted"] is False, "imported result should be untrusted")
@@ -669,6 +708,8 @@ def main() -> int:
         assert_true(rc == 0, f"validate-result should create validation record: {stderr}")
         assert_true("validation record written:" in stdout, "validate-result should report validation path")
         validation = latest_record_by_field(exchange_root, "result_validations", "result_id", result_id)
+        validation_path = latest_record_path_by_field(exchange_root, "result_validations", "result_id", result_id)
+        assert_true(len(validation_path.stem) <= 96, "validation filename stem should stay <= 96 chars")
         validation_id = str(validation["validation_id"])
         assert_true(validation["validation_status"] == "VALIDATION_PASSED", "conservative fake result should pass validation")
         assert_true(
@@ -691,6 +732,8 @@ def main() -> int:
         assert_true(rc == 0, f"decide-loop should create loop decision: {stderr}")
         assert_true("loop decision written:" in stdout, "decide-loop should report loop decision path")
         loop_decision = latest_record_by_field(exchange_root, "loop_decisions", "validation_id", validation_id)
+        loop_path = latest_record_path_by_field(exchange_root, "loop_decisions", "validation_id", validation_id)
+        assert_true(len(loop_path.stem) <= 96, "loop decision filename stem should stay <= 96 chars")
         loop_decision_id = str(loop_decision["loop_decision_id"])
         assert_true(
             loop_decision["decision"] == "COMPLETED_PENDING_DAILY_REVIEW",
@@ -731,6 +774,10 @@ def main() -> int:
         assert_true(rc == 0, f"repair-plan should create metadata for repairable decision: {stderr}")
         assert_true("repair packet written:" in stdout, "repair-plan should report repair packet path")
         repair_packet = latest_record_by_field(exchange_root, "repair_packets", "loop_decision_id", str(repairable_loop["loop_decision_id"]))
+        repair_path = latest_record_path_by_field(
+            exchange_root, "repair_packets", "loop_decision_id", str(repairable_loop["loop_decision_id"])
+        )
+        assert_true(len(repair_path.stem) <= 96, "repair packet filename stem should stay <= 96 chars")
         assert_true(repair_packet["execution_allowed"] is False, "repair packet execution_allowed should stay false")
         assert_true(repair_packet["dispatch_allowed"] is False, "repair packet dispatch_allowed should stay false")
         assert_true(repair_packet["commit_allowed"] is False, "repair packet commit_allowed should stay false")
@@ -783,7 +830,7 @@ def main() -> int:
         assert_true("real dispatch capture written:" in stdout, "real-dispatch should report capture")
         assert_true(recorded_calls and recorded_calls[0]["argv"][0] == "fake_adapter_cli", "real-dispatch test should use fake adapter executable")
         assert_true(recorded_calls[0]["kwargs"].get("shell") is False, "real-dispatch should use shell=False")
-        real_capture = exchange_root / "outbox" / real_success_packet_id / str(real_success_plan["dispatch_plan_id"]) / "capture_manifest.json"
+        real_capture = find_capture_manifest(exchange_root, real_success_packet_id, str(real_success_plan["dispatch_plan_id"]))
         assert_true(real_capture.is_file(), "real-dispatch should write capture_manifest.json")
         real_capture_manifest = read_json(real_capture)
         assert_true((real_capture.parent / "stdout.txt").is_file(), "real-dispatch should write stdout.txt")
@@ -851,7 +898,7 @@ def main() -> int:
         finally:
             exchange_real_dispatch.subprocess.run = original_subprocess_run
         assert_true(rc == 0, f"mocked real-dispatch nonzero should still write capture: {stderr}")
-        nonzero_capture = exchange_root / "outbox" / real_nonzero_packet_id / str(real_nonzero_plan["dispatch_plan_id"]) / "capture_manifest.json"
+        nonzero_capture = find_capture_manifest(exchange_root, real_nonzero_packet_id, str(real_nonzero_plan["dispatch_plan_id"]))
         nonzero_manifest = read_json(nonzero_capture)
         assert_true(nonzero_manifest["return_code"] == 7, "nonzero capture should record return code")
         assert_true(read_json(nonzero_capture.parent / "parsed_result.json")["validation_status"] == "CLI_RETURNED_NONZERO", "nonzero parsed result should record CLI_RETURNED_NONZERO")
@@ -894,10 +941,17 @@ def main() -> int:
         finally:
             exchange_real_dispatch.subprocess.run = original_subprocess_run
         assert_true(rc == 0, f"mocked real-dispatch timeout should still write capture: {stderr}")
-        timeout_capture = exchange_root / "outbox" / real_timeout_packet_id / str(real_timeout_plan["dispatch_plan_id"]) / "capture_manifest.json"
+        timeout_capture = find_capture_manifest(exchange_root, real_timeout_packet_id, str(real_timeout_plan["dispatch_plan_id"]))
         timeout_manifest = read_json(timeout_capture)
         assert_true(timeout_manifest["timed_out"] is True, "timeout capture should record timed_out true")
         assert_true(read_json(timeout_capture.parent / "parsed_result.json")["validation_status"] == "CLI_TIMEOUT", "timeout parsed result should record CLI_TIMEOUT")
+
+        path_ok = check_path_length("C:/a")
+        path_warn = check_path_length(Path("C:/") / ("a" * 181))
+        path_fail = check_path_length(Path("C:/") / ("a" * 221))
+        assert_true(path_ok["status"] == "ok", "check_path_length should classify short paths as ok")
+        assert_true(path_warn["status"] == "warn", "check_path_length should classify warn-threshold paths as warn")
+        assert_true(path_fail["status"] == "fail", "check_path_length should classify fail-threshold paths as fail")
 
         missing_exchange_root = tmp_root / "missing_capture_repo" / "exchange_lane"
         missing_manifest_path = clone_imported_result_fixture(exchange_root, missing_exchange_root, result_id, capture_manifest_path)
@@ -1204,7 +1258,8 @@ def main() -> int:
             )
             assert_true(rc == 0, f"ws exchange fake-dispatch should pass: {stderr}")
             assert_true("fake dispatch capture written:" in stdout, "ws fake-dispatch should report capture")
-            ws_capture = exchange_root / "outbox" / ws_fake_packet_id / str(ws_plan["dispatch_plan_id"]) / "capture_manifest.json"
+            ws_capture = find_capture_manifest(exchange_root, ws_fake_packet_id, str(ws_plan["dispatch_plan_id"]))
+            assert_true(ws_capture.is_file(), "ws fake-dispatch should create capture manifest")
             rc, stdout, stderr = run_ws_exchange(
                 repo_root,
                 ["import-result", "--capture-manifest", str(ws_capture), "--confirm"],

@@ -20,15 +20,12 @@ from repo_context_lane.tools import (
 
 class TestRepoContextLane(unittest.TestCase):
     def setUp(self):
-        # Use the system temp area; repo-local and scratch temp roots can be read-only on this Windows host.
+        # Use a unique directory created via pathlib.mkdir; mkdtemp roots on this host
+        # can have ACLs that deny nested directory creation.
         base_tmp = Path(tempfile.gettempdir()) / "_ai_brain_repo_context_tests"
         base_tmp.mkdir(parents=True, exist_ok=True)
-        self.test_root = Path(
-            tempfile.mkdtemp(
-                prefix=f"test_repo_context_lane_root_{uuid.uuid4().hex}_",
-                dir=str(base_tmp),
-            )
-        )
+        self.test_root = base_tmp / f"test_repo_context_lane_root_{uuid.uuid4().hex}"
+        self.test_root.mkdir(parents=True, exist_ok=False)
         
         self.output_root = self.test_root / "lane_output"
         self.output_root.mkdir(parents=True, exist_ok=True)

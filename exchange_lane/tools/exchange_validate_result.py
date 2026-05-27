@@ -22,6 +22,11 @@ from typing import Any
 os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
 sys.dont_write_bytecode = True
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from workstation_ids import check_path_length, make_artifact_id  # noqa: E402
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -124,6 +129,11 @@ def try_load_json(path: Path) -> tuple[dict[str, Any] | None, str | None]:
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
+    length_check = check_path_length(path)
+    if length_check["status"] == "fail":
+        raise ValidateResultError(f"refusing to write overlong path: {length_check['message']} -> {path}")
+    if length_check["status"] == "warn":
+        print(f"warning: {length_check['message']} -> {path}", file=sys.stderr)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -137,16 +147,19 @@ def validation_path(root: Path, validation_id: str) -> Path:
 
 
 def build_validation_id(result_id: str, result_packet: dict[str, Any]) -> str:
-    seed = "|".join(
-        [
-            result_id,
-            str(result_packet.get("capture_id", "")),
-            str(result_packet.get("source_capture_manifest", "")),
-            utc_now(),
-        ]
+    return require_id(
+        make_artifact_id(
+            "val",
+            [
+                result_id,
+                str(result_packet.get("capture_id", "")),
+                str(result_packet.get("source_capture_manifest", "")),
+            ],
+            timestamp=utc_now(),
+            max_len=64,
+        ),
+        "validation_id",
     )
-    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:12]
-    return require_id(f"validation__{safe_id(result_id)}__{digest}", "validation_id")
 
 
 def check(name: str, passed: bool, detail: str) -> dict[str, Any]:
