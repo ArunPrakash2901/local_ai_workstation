@@ -261,8 +261,9 @@ def probe_design_runtime(
         "writes_files": False,
         "readiness_classification": readiness,
         "next_step": (
-            "manual local install/evaluation or future guarded "
-            "ws product-design-render --product <id> --tool open-design --confirm"
+            "use ws product-design-runtime-status --tool open-design first; "
+            "managed runtime start requires explicit --confirm; "
+            "headless render confirm remains experimental"
         ),
     }
 

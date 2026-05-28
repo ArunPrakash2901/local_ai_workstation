@@ -1763,6 +1763,122 @@ commands:
     confidence: high
     slash_command: /design runtime
     notes: safe read-only runtime visibility report; no secret values, no install, and no Open Design execution
+  ws product-design-runtime-status:
+    safety_class: PURE_READ
+    description: Shows Open Design managed runtime status through the supported pnpm tools-dev status lifecycle command.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Show Open Design managed runtime status
+    warning_label: ''
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_managed_runtime.py
+    - scripts/ws_product_design_runtime_status.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime-status
+    notes: runs pnpm tools-dev status with explicit argv and shell=false; reports daemon/web state only; does not start runtime, submit design-generation requests, call providers, run agent CLIs, use /usr/bin/od, or write files
+  ws product-design-runtime-start --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews Open Design managed runtime start through pnpm tools-dev without starting processes.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview Open Design managed runtime start
+    warning_label: ''
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_managed_runtime.py
+    - scripts/ws_product_design_runtime_start.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime-start
+    notes: dry-run plans pnpm tools-dev start web with managed tools-dev root and OD_DATA_DIR; writes no files and does not start daemon/web, submit design-generation requests, call providers, run agent CLIs, or use /usr/bin/od
+  ws product-design-runtime-start --confirm:
+    safety_class: GUARDED_EXECUTION
+    description: Starts the Open Design managed daemon/web runtime through pnpm tools-dev and writes local lifecycle capture metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Start Open Design managed runtime
+    warning_label: Starts local Open Design daemon/web runtime and writes local managed runtime capture metadata
+    tui_dispatch_policy: guarded_execution
+    tui_dispatch_allowed: false
+    report_write_scope: product_design_managed_runtime
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_managed_runtime.py
+    - scripts/ws_product_design_runtime_start.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime-start-confirm
+    notes: requires explicit --confirm; uses pnpm tools-dev start web with explicit argv and shell=false; writes only managed runtime captures under product_development_lane/runtime/open_design/managed_runtime; does not submit design-generation requests, call providers, run Codex/Gemini, use /usr/bin/od, modify product source, or perform git actions
+  ws product-design-runtime-stop --dry-run:
+    safety_class: DRY_RUN_ONLY
+    description: Previews Open Design managed runtime stop through pnpm tools-dev without stopping processes.
+    writes_local_files: false
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: true
+    read_only_with_local_reports: true
+    safe_dry_run: true
+    tui_exposure: hidden
+    confirmation: none
+    operator_label: Preview Open Design managed runtime stop
+    warning_label: ''
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_managed_runtime.py
+    - scripts/ws_product_design_runtime_stop.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime-stop
+    notes: dry-run plans pnpm tools-dev stop with managed tools-dev root; writes no files and does not stop processes or use /usr/bin/od
+  ws product-design-runtime-stop --confirm:
+    safety_class: GUARDED_EXECUTION
+    description: Stops the Open Design managed runtime through pnpm tools-dev and writes local lifecycle capture metadata.
+    writes_local_files: true
+    writes_project_files: false
+    invokes_agent_or_model: false
+    external_provider_or_cloud: false
+    read_only_strict: false
+    read_only_with_local_reports: false
+    safe_dry_run: false
+    tui_exposure: hidden
+    confirmation: explicit
+    operator_label: Stop Open Design managed runtime
+    warning_label: Stops local Open Design daemon/web runtime and writes local managed runtime capture metadata
+    tui_dispatch_policy: guarded_execution
+    tui_dispatch_allowed: false
+    report_write_scope: product_design_managed_runtime
+    evidence:
+    - product_development_lane/contracts/open_design_daemon_render_contract.md
+    - scripts/product_design_managed_runtime.py
+    - scripts/ws_product_design_runtime_stop.py
+    - scripts/ws
+    confidence: high
+    slash_command: /design runtime-stop-confirm
+    notes: requires explicit --confirm; uses pnpm tools-dev stop with explicit argv and shell=false; writes only managed runtime captures; does not submit design-generation requests, call providers, run agent CLIs, use /usr/bin/od, modify product source, or perform git actions
 
   ws knowledge-inventory --dry-run:
     safety_class: DRY_RUN_ONLY

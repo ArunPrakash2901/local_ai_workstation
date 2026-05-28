@@ -17,6 +17,9 @@
         "probe": "ws product-design-runtime-probe --tool open-design --dry-run",
         "install-check": "ws product-design-install-checklist --tool open-design --dry-run",
         "runtime": "ws product-design-runtime-report --tool open-design --dry-run",
+        "runtime-status": "ws product-design-runtime-status --tool open-design",
+        "runtime-start": "ws product-design-runtime-start --tool open-design --dry-run",
+        "runtime-stop": "ws product-design-runtime-stop --tool open-design --dry-run",
         "review": "ws product-design-run-review --product <current_product> --tool open-design --dry-run",
         "review-write": "ws product-design-run-review --product <current_product> --tool open-design --confirm"
       },

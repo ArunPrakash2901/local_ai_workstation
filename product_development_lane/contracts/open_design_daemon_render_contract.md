@@ -1,6 +1,11 @@
 # Open Design Daemon Render Contract v0.1
 
-This contract defines the guarded workstation integration for Open Design render execution.
+This contract defines two Open Design workstation modes:
+
+- Mode A: managed runtime lifecycle through Open Design's supported `pnpm tools-dev` entry point.
+- Mode B: experimental headless daemon render through `node apps/daemon/dist/cli.js`.
+
+Mode A is the primary local usage path. Mode B remains guarded and experimental until a real headless run succeeds safely.
 
 ## Scope
 - Workstation repository: `D:\_ai_brain`
@@ -9,7 +14,39 @@ This contract defines the guarded workstation integration for Open Design render
 - Global `od`/`open-design` binaries are not trusted for execution routing in this slice.
 
 ## Execution Model
-Open Design render is a two-step daemon lifecycle, not a one-shot render command.
+Open Design is not a one-shot render CLI. The documented local lifecycle is a managed daemon/web runtime.
+
+### Mode A: Managed Runtime Mode
+
+Supported lifecycle command family:
+
+- `pnpm tools-dev status --namespace workstation --tools-dev-root <runtime_root> --json`
+- `pnpm tools-dev check --namespace workstation --tools-dev-root <runtime_root> --json`
+- `pnpm tools-dev start web --namespace workstation --tools-dev-root <runtime_root> --json`
+- `pnpm tools-dev stop --namespace workstation --tools-dev-root <runtime_root> --json`
+
+Workstation commands:
+
+- `ws product-design-runtime-status --tool open-design`
+- `ws product-design-runtime-start --tool open-design --dry-run`
+- `ws product-design-runtime-start --tool open-design --confirm`
+- `ws product-design-runtime-stop --tool open-design --dry-run`
+- `ws product-design-runtime-stop --tool open-design --confirm`
+
+Mode A starts/checks/stops the Open Design managed daemon/web runtime only. It does not submit design requests, spawn local code-agent CLIs, call providers for generation, apply files, or trust outputs.
+
+Managed runtime paths:
+
+- Open Design checkout: `/mnt/d/open_design_eval/open-design`
+- tools-dev root: `product_development_lane/runtime/open_design/managed_runtime/tools_dev/`
+- OD_DATA_DIR: `product_development_lane/runtime/open_design/managed_runtime/open_design_data/`
+- lifecycle captures: `product_development_lane/runtime/open_design/managed_runtime/captures/`
+
+Mode A must use explicit argv with `pnpm tools-dev ...`; it must not use global `od`, global `open-design`, `/usr/bin/od`, or shell wrappers.
+
+### Mode B: Experimental Headless Daemon Mode
+
+The existing guarded render confirm path uses the daemon CLI directly. It is experimental until proven by a real safe run.
 
 1. Build prerequisite (manual/operator or pre-validated):
 - `pnpm --filter @open-design/daemon build`
@@ -60,6 +97,7 @@ Planned captures:
 ## Safety Boundaries
 - No `shell=True`.
 - No shell wrapper execution (`cmd`, `powershell`, `bash`, `wsl`) as adapter command contract.
+- No `/usr/bin/od`; it is the Unix octal dump utility on this host and must never be treated as Open Design.
 - Explicit argv list only.
 - Capture/output paths must remain under prepared `allowed_write_root`.
 - Generated output is untrusted until operator review pipeline accepts it.

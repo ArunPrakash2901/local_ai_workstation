@@ -93,6 +93,9 @@ case "$SUBCOMMAND" in
         echo "  product-design-runtime-probe --tool open-design --dry-run Probe local Open Design runtime visibility without execution"
         echo "  product-design-install-checklist --tool open-design --dry-run Preview manual Open Design install/evaluation checklist"
         echo "  product-design-runtime-report --tool open-design --dry-run Show operator-friendly Open Design runtime visibility report"
+        echo "  product-design-runtime-status --tool open-design Show Open Design managed runtime status"
+        echo "  product-design-runtime-start --tool open-design --dry-run|--confirm Preview or start managed Open Design runtime"
+        echo "  product-design-runtime-stop --tool open-design --dry-run|--confirm Preview or stop managed Open Design runtime"
         echo ""
         echo "Discovery Lane:"
         echo "  discovery intake-set <path> Validate a set of phase-wise Markdown research reports"
@@ -498,6 +501,15 @@ case "$SUBCOMMAND" in
         ;;
     product-design-runtime-report)
         python3 "$SCRIPTS_DIR/ws_product_design_runtime_report.py" "$@"
+        ;;
+    product-design-runtime-status)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_status.py" "$@"
+        ;;
+    product-design-runtime-start)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_start.py" "$@"
+        ;;
+    product-design-runtime-stop)
+        python3 "$SCRIPTS_DIR/ws_product_design_runtime_stop.py" "$@"
         ;;
     product-new)
         python3 "$SCRIPTS_DIR/ws_product_new.py" "$@"

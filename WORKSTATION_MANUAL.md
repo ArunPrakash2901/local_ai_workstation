@@ -173,6 +173,8 @@ Current Product Lane supports:
 - Probing Open Design runtime visibility without execution (`ws product-design-runtime-probe --tool open-design --dry-run`)
 - Previewing Open Design manual install/evaluation checklist (`ws product-design-install-checklist --tool open-design --dry-run`)
 - Showing Open Design runtime visibility report (`ws product-design-runtime-report --tool open-design --dry-run`)
+- Checking Open Design managed runtime status (`ws product-design-runtime-status --tool open-design`)
+- Previewing managed runtime start/stop (`ws product-design-runtime-start --tool open-design --dry-run`, `ws product-design-runtime-stop --tool open-design --dry-run`)
 
 See `products/README.md` for the on-disk registry layout.
 
@@ -275,6 +277,9 @@ wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-run-review --pr
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-probe --tool open-design --dry-run'
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-install-checklist --tool open-design --dry-run'
 wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-report --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-status --tool open-design'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-start --tool open-design --dry-run'
+wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-stop --tool open-design --dry-run'
 ```
 
 ### Safety Notes
@@ -304,9 +309,13 @@ wsl bash -lc 'cd /mnt/d/_ai_brain && ./scripts/ws product-design-runtime-report 
 - `ws product-design-runtime-probe --dry-run` is `DRY_RUN_ONLY`, reports local runtime PATH/prerequisite visibility only, writes no files, does not execute Open Design, does not execute agent CLIs, and does not install tools.
 - `ws product-design-install-checklist --dry-run` is `DRY_RUN_ONLY`, previews manual install/evaluation steps and stop conditions only, writes no files, does not install Open Design, and does not execute package managers.
 - `ws product-design-runtime-report --dry-run` is `DRY_RUN_ONLY`, reports operator-friendly runtime visibility only, writes no files, does not execute Open Design, and does not execute package managers.
+- `ws product-design-runtime-status` is `PURE_READ`, calls `pnpm tools-dev status --json` through explicit argv, reports managed daemon/web state, and does not submit design-generation requests.
+- `ws product-design-runtime-start --dry-run` and `ws product-design-runtime-stop --dry-run` are `DRY_RUN_ONLY`; they plan `pnpm tools-dev start/stop` without execution or writes.
+- `ws product-design-runtime-start --confirm` and `ws product-design-runtime-stop --confirm` are guarded lifecycle operations for the managed Open Design daemon/web runtime. They do not run design generation, do not apply outputs, do not use `/usr/bin/od`, and write only local managed-runtime capture metadata.
+- `ws product-design-render --confirm` remains an experimental headless daemon render path until a real safe Open Design run succeeds through it.
 - Human shortcut for this preview is `/design`; canonical machine command is `ws product-design-adapter-preview --product <id> --tool open-design --dry-run`.
 - Planned human subaction is `/design render`; canonical machine command is `ws product-design-render --product <id> --tool open-design --dry-run`.
-- Planned human subactions include `/design prepare`, `/design status`, `/design review`, `/design probe`, `/design install-check`, and `/design runtime` mapped to canonical `ws product-design-run-prepare`, `ws product-design-run-status`, `ws product-design-run-review`, `ws product-design-runtime-probe`, `ws product-design-install-checklist`, and `ws product-design-runtime-report`.
+- Planned human subactions include `/design prepare`, `/design status`, `/design review`, `/design probe`, `/design install-check`, `/design runtime`, `/design runtime-status`, `/design runtime-start`, and `/design runtime-stop` mapped to canonical Product Design `ws` commands.
 - `ws product-new` requires `--confirm` for actual creation; use `--dry-run` first to preview paths and the record.
 - `ws product-intake --confirm` requires `--product <product_id>`; use `--dry-run` first.
 - `ws product-answer-import --confirm` requires both `--product <product_id>` and `--file <answers_file>`.
